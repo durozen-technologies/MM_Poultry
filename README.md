@@ -34,14 +34,19 @@ Demo credentials: `.core/TEST_CREDENTIALS.md` (tenant users need `organization_s
 Workflow: [`.github/workflows/apk-debug.yml`](.github/workflows/apk-debug.yml)
 
 1. Push to `main` / `dev`, or run **Actions → Build Debug APK (Development) → Run workflow**.
-2. Optional input / secret: `EXPO_PUBLIC_API_BASE_URL` (LAN IP for real devices, e.g. `http://10.x.x.x:8000`).
-3. Download the `mmbroilers-debug-*` artifact (`app-debug.apk`).
-4. Install on Android, then start Metro: `cd frontend && npm run start:dev`.
-
-Local equivalent (JDK 17 + Android SDK required):
+2. Leave the API URL input **blank** (recommended). Keep `EXPO_PUBLIC_API_BASE_URL` in laptop `frontend/.env` — Metro picks it up with `npm run start:dev`.
+3. Optional: fill the workflow input / secret only if you want a URL baked into that APK build.
+4. Download the `mmbroliers-debug-*` artifact (`app-debug.apk`), install on Android, then:
 
 ```bash
 cd frontend
-export EXPO_PUBLIC_API_BASE_URL=http://10.x.x.x:8000
+# frontend/.env already has EXPO_PUBLIC_API_BASE_URL=...
+npm run start:dev
+```
+
+Local APK build (JDK 17 + Android SDK):
+
+```bash
+cd frontend
 npm run build:debug-apk
 ```

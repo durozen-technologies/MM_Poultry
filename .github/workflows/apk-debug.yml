@@ -1,11 +1,12 @@
 name: Build Debug APK (Development)
 
 # Local Gradle debug APK (no EAS). Prefer manual runs per .core/RULES.md.
+# Dev-client APK loads JS from Metro; leave API URL empty so laptop frontend/.env is used at run time.
 on:
   workflow_dispatch:
     inputs:
       api_base_url:
-        description: EXPO_PUBLIC_API_BASE_URL for this APK (e.g. http://10.x.x.x:8000)
+        description: Optional bake-in only. Leave blank to use laptop frontend/.env via Metro (recommended).
         type: string
         required: false
   push:
@@ -43,7 +44,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Resolve API base URL
+      - name: Resolve API base URL (optional)
         id: config
         working-directory: .
         env:
@@ -52,19 +53,25 @@ jobs:
         run: |
           if [[ -n "${INPUT_API_URL:-}" ]]; then
             API_URL="$INPUT_API_URL"
+            SOURCE="workflow input"
           elif [[ -n "${SECRET_API_URL:-}" ]]; then
             API_URL="$SECRET_API_URL"
+            SOURCE="repository secret"
           else
-            # Emulator loopback to host machine; override via input/secret for real devices.
-            API_URL="http://10.0.2.2:8000"
-            echo "No API URL input/secret; defaulting to emulator host ${API_URL}"
+            # Debug/dev-client: do not bake a CI default. Metro + laptop frontend/.env supplies the URL.
+            API_URL=""
+            SOURCE="none (use laptop frontend/.env with Metro)"
+            echo "No API URL input/secret — building native shell only; set EXPO_PUBLIC_API_BASE_URL in laptop frontend/.env"
           fi
-          if [[ ! "$API_URL" =~ ^https?:// ]]; then
+          if [[ -n "$API_URL" && ! "$API_URL" =~ ^https?:// ]]; then
             echo "API base URL must start with http:// or https://" >&2
             exit 1
           fi
-          echo "EXPO_PUBLIC_API_BASE_URL=$API_URL" >> "$GITHUB_ENV"
-          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+          if [[ -n "$API_URL" ]]; then
+            echo "EXPO_PUBLIC_API_BASE_URL=$API_URL" >> "$GITHUB_ENV"
+          fi
+          echo "api_url=${API_URL:-"(laptop .env / Metro)"}" >> "$GITHUB_OUTPUT"
+          echo "api_source=$SOURCE" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -96,8 +103,6 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: Prebuild + assembleDebug
-        env:
-          EXPO_PUBLIC_API_BASE_URL: ${{ env.EXPO_PUBLIC_API_BASE_URL }}
         run: |
           chmod +x ./scripts/build-debug-apk.sh
           npm run build:debug-apk
@@ -116,7 +121,7 @@ jobs:
       - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mmbroliers-debug-${{ github.ref_name }}-${{ github.run_number }}
+          name: mmbroilers-debug-${{ github.ref_name }}-${{ github.run_number }}
           path: ${{ env.APK_OUTPUT }}
           if-no-files-found: error
           retention-days: 30
@@ -134,7 +139,9 @@ jobs:
             echo "| Commit | \`${{ github.sha }}\` |"
             echo "| Variant | \`assembleDebug\` |"
             echo "| API URL | \`${{ steps.config.outputs.api_url }}\` |"
+            echo "| API source | \`${{ steps.config.outputs.api_source }}\` |"
             echo "| APK size | $(du -h "${{ env.APK_OUTPUT }}" | cut -f1) |"
             echo ""
-            echo "Download **mmbroliers-debug-*** from **Artifacts**, install on device, then run Metro with \`npx expo start --dev-client\`."
+            echo "Download **mmbroliers-debug-*** from **Artifacts**, install on device."
+            echo "Keep \`EXPO_PUBLIC_API_BASE_URL\` in laptop \`frontend/.env\`, then run \`npm run start:dev\`."
           } >> "$GITHUB_STEP_SUMMARY"

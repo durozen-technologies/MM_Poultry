@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Build a development debug APK (assembleDebug) without EAS.
-# Requires: Node, JDK 17+, Android SDK, EXPO_PUBLIC_API_BASE_URL
+# Requires: Node, JDK 17+, Android SDK
+# EXPO_PUBLIC_API_BASE_URL is optional for debug/dev-client builds:
+#   - If set (env / frontend/.env), it may be baked at prebuild time
+#   - If unset, Metro + laptop frontend/.env supplies the URL at run time
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -14,12 +17,11 @@ if [[ -z "${EXPO_PUBLIC_API_BASE_URL:-}" && -f .env ]]; then
   set +a
 fi
 
-if [[ -z "${EXPO_PUBLIC_API_BASE_URL:-}" ]]; then
-  echo "EXPO_PUBLIC_API_BASE_URL is required (set in frontend/.env or CI env)" >&2
-  exit 1
+if [[ -n "${EXPO_PUBLIC_API_BASE_URL:-}" ]]; then
+  echo "Building debug APK (optional bake-in API: ${EXPO_PUBLIC_API_BASE_URL})"
+else
+  echo "Building debug APK without baked API URL — use laptop frontend/.env with Metro (--dev-client)"
 fi
-
-echo "Building debug APK with API: ${EXPO_PUBLIC_API_BASE_URL}"
 
 npx expo prebuild --platform android --clean --no-install
 
