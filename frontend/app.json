@@ -1,0 +1,32 @@
+{
+  "name": "mmbroilers",
+  "slug": "mmbroilers",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "userInterfaceStyle": "light",
+  "platforms": [
+    "ios",
+    "android",
+    "web"
+  ],
+  "android": {
+    "package": "com.durozen.mmbroilers",
+    "permissions": [
+      "android.permission.BLUETOOTH",
+      "android.permission.BLUETOOTH_ADMIN",
+      "android.permission.BLUETOOTH_CONNECT",
+      "android.permission.BLUETOOTH_SCAN",
+      "android.permission.ACCESS_FINE_LOCATION"
+    ]
+  },
+  "extra": {
+    "apiBaseUrl": "http://127.0.0.1:8000"
+  },
+  "plugins": [
+    "expo-dev-client",
+    "@react-native-community/datetimepicker",
+    "expo-secure-store",
+    "expo-sharing",
+    "expo-status-bar"
+  ]
+}

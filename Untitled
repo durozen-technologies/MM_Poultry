@@ -1,0 +1,302 @@
+from pathlib import Path
+
+source = Path("/mnt/data/Broiler_Wholesale_App_Proposal(1).md")
+architecture = Path("/mnt/data/Pasted markdown(2).md")
+
+proposal = source.read_text(encoding="utf-8")
+arch = architecture.read_text(encoding="utf-8")
+
+updated = f"""# BROILER WHOLESALE MANAGEMENT APP
+## Complete Product IDEA, Feature Map & Implementation Approach
+
+> **Document purpose:** This is the expanded product-idea and implementation-planning document for the Broiler Wholesale Management App. It combines the original customer proposal with the current Duro_POS-aligned architecture and additional product ideas, workflows, controls, automation opportunities, hardware integration approaches, analytics, and future expansion paths.
+>
+> **Status:** Product discovery + solution blueprint  
+> **Last updated:** 2026-08-09  
+> **Company:** Durozen Technologies Pvt. Ltd.
+
+---
+
+# 1. Product Vision
+
+Build a **mobile-first operating system for broiler wholesalers** that connects:
+
+**Farm → Loading → Vehicle → Delivery Route → Retailer → Weighing → Billing → Payment → Ledger → Weight Loss → Profitability → Reports**
+
+The core objective is not simply to create a billing application. The product should become the wholesaler's **daily operating control system**.
+
+The system should answer, at any moment:
+
+- What did each retailer order?
+- How much chicken is required today?
+- How much was loaded from each farm?
+- Which vehicle and driver are carrying it?
+- Which retailers are on today's route?
+- How much was actually delivered to each retailer?
+- What was the loaded-vs-delivered weight difference?
+- What amount was billed?
+- How much has the retailer paid?
+- What is outstanding?
+- How much did the wholesaler buy?
+- What is the actual margin?
+- Where is abnormal weight loss happening?
+- Which retailer, driver, route, farm, or vehicle is creating a recurring problem?
+
+The original proposal already defines the core workflow of retailer orders, farm loading, Bluetooth weighing, thermal printing, billing, ledger, and weight-loss analysis. This document expands that into a complete product strategy. 
+
+---
+
+# 2. Original Core Workflow
+
+The baseline workflow is:
+
+1. Retailer receives secure login.
+2. Retailer places daily requirement in kilograms.
+3. Wholesaler sees all orders in one dashboard.
+4. Wholesaler loads birds from farm and records loading weight.
+5. Delivery staff reaches retailers.
+6. Bluetooth weighing scale sends actual delivery weight.
+7. Receipt is printed.
+8. Retailer sees delivery, bill, payments and outstanding.
+9. System calculates loaded weight, delivered weight and weight loss.
+
+This remains the **MVP backbone**.
+
+---
+
+# 3. Recommended Product Modules
+
+## 3.1 Super Admin / SaaS Control Plane
+
+For Durozen's own platform operation.
+
+### Features
+
+- Create wholesaler organization
+- Create tenant
+- Activate/deactivate tenant
+- Subscription plan
+- Trial period
+- Tenant usage statistics
+- Tenant user count
+- Device count
+- Printer count
+- Scale count
+- API usage
+- Storage usage
+- Subscription status
+- Feature flags
+- Tenant support access
+- Audit logs
+- Platform announcements
+- System health
+- Backup status
+- Migration status
+
+### SaaS plans
+
+Possible plans:
+
+| Plan | Target | Possible Features |
+|---|---|---|
+| Starter | Small wholesaler | Orders, delivery, billing, ledger |
+| Growth | Medium wholesaler | Routes, staff, reports, WhatsApp |
+| Professional | Large wholesaler | Multi-branch, advanced analytics, automation |
+| Enterprise | Large distributor | Custom integrations, API, SLA, dedicated infrastructure |
+
+---
+
+# 4. Wholesaler Admin Module
+
+## Dashboard
+
+The first screen should immediately answer:
+
+### Today's operational numbers
+
+- Total orders
+- Ordered kg
+- Loaded kg
+- Delivered kg
+- Pending kg
+- Total sales
+- Total collection
+- Outstanding
+- Weight loss
+- Weight loss %
+- Number of retailers
+- Completed deliveries
+- Pending deliveries
+- Failed deliveries
+
+### Operational status
+
+- Orders not confirmed
+- Farm load not completed
+- Vehicle not dispatched
+- Deliveries in progress
+- Deliveries completed
+- Payment pending
+- Printer disconnected
+- Scale disconnected
+- Offline transactions waiting for sync
+
+### Alerts
+
+- Abnormal weight loss
+- Retailer overdue
+- Retailer order increased sharply
+- Retailer order not received
+- Farm loading mismatch
+- Vehicle capacity exceeded
+- Delivery delayed
+- Scale disconnected
+- Printer disconnected
+- Duplicate/failed transaction
+- Low cash collection
+- Unusual rate change
+
+---
+
+# 5. Retailer Management
+
+## Retailer Master
+
+Fields:
+
+- Retailer name
+- Shop name
+- Owner name
+- Mobile number
+- WhatsApp number
+- Address
+- GPS location
+- Area
+- Route
+- Opening balance
+- Credit limit
+- Payment terms
+- Preferred delivery time
+- Active/inactive
+- GSTIN, if applicable
+- FSSAI details, if applicable
+- Notes
+- Assigned delivery staff
+- Assigned vehicle
+- Price category
+
+## Retailer categories
+
+Examples:
+
+- Regular
+- Premium
+- Cash customer
+- Credit customer
+- High-volume
+- Low-volume
+- Wholesale retailer
+- Hotel/restaurant
+- Institutional buyer
+
+## Retailer-specific pricing
+
+Allow different prices for the same product:
+
+- Base rate
+- Retailer rate
+- Special rate
+- Temporary rate
+- Date-specific rate
+- Quantity-based rate
+- Cash rate
+- Credit rate
+
+Every rate change should have:
+
+- Old rate
+- New rate
+- Effective date
+- Changed by
+- Reason
+
+---
+
+# 6. Retailer Login
+
+The retailer app should be extremely simple.
+
+## Home
+
+Show:
+
+- Today's order
+- Today's delivered kg
+- Today's bill
+- Amount paid
+- Current outstanding
+- Next expected delivery
+- Last delivery
+- Quick reorder
+
+## Order
+
+Retailer can:
+
+- Enter kg
+- Increase/decrease quantity
+- Select delivery date
+- Add notes
+- Set preferred delivery time
+- Repeat yesterday's order
+- Repeat last week's order
+- Cancel before cutoff
+- Modify pending order
+
+## History
+
+- Orders
+- Deliveries
+- Bills
+- Payments
+- Outstanding
+- Receipts
+- Ledger statement
+
+## Payment
+
+Possible future integrations:
+
+- UPI payment link
+- QR payment
+- Payment screenshot upload
+- Payment reference
+- Online payment gateway
+- Payment request
+
+---
+
+# 7. Daily Order Management
+
+This should be one of the strongest modules.
+
+## Order lifecycle
+
+```text
+Draft
+  ↓
+Submitted
+  ↓
+Confirmed
+  ↓
+Allocated
+  ↓
+Loaded
+  ↓
+Out for Delivery
+  ↓
+Delivered
+  ↓
+Billed
+  ↓
+Paid / Partially Paid / Credit
