@@ -6,7 +6,7 @@
 cd backend
 cp .env.example .env
 uv sync
-# create DB once: createdb mmbroilers  (or via psql)
+# create DB once: createdb MM_Poultry  (or via psql)
 uv run python migrate.py
 uv run python seed.py
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
