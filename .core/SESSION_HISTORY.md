@@ -133,3 +133,13 @@
 - Deleted obsolete bash scripts (`scripts/build-debug-apk.sh`) that were previously managing the build manually.
 
 **Outcome:** CI/CD pipeline simplified and standardized against the Duro_Erode framework.
+
+### [2026-08-11 13:14:08] Database Setup and Migration Generation
+**User request:** Resolving database errors after adapting `Duro_Erode` structure.
+
+**Actions:** 
+- Updated `config.py` to use `postgresql+psycopg://` for synchronous Alembic connection matching the `psycopg[binary]` dependency.
+- Generated the initial `public` migration script (`uv run alembic revision --autogenerate`).
+- Applied the database migration to the local PostgreSQL database (`uv run alembic upgrade head`).
+- Ran `backend/seed.py` successfully injecting `admin` and `superadmin` credentials to resolve login errors.
+- Pushed these database migration artifacts to `main`.

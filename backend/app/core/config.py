@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     
     @property
     def sync_database_url(self) -> str:
-        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
+        return f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
 
     @property
     def cors_origins(self) -> list[str]:

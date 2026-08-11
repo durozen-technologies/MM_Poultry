@@ -174,3 +174,15 @@ cd d:\MMbroliers\frontend; npm install --no-fund --no-audit
 ### [2026-08-10 12:06:33]
 **User:** check all the .gitignore for all files
 **Assistant:** Reviewed `D:\MM_Poultry\.gitignore` and realized it was quite sparse. Rewrote the entire file to match the comprehensive `Duro_Erode` `.gitignore` template, ensuring everything from `.env` and `.env.*` to IDE cache and agent directories are properly ignored.
+
+### [2026-08-10 12:11:43]
+**User:** push
+**Assistant:** Successfully staged and committed all the recent configuration and GitHub Action changes. Attempted to push to GitHub but received a `403 Permission Denied` error. Alerted the user.
+
+### [2026-08-10 12:16:22]
+**User:** try again
+**Assistant:** Retried `git push`. This time the push succeeded and all changes are now live on the remote `main` branch.
+
+### [2026-08-11 13:14:08]
+**User:** push
+**Assistant:** Staged the initial Alembic migration (`dcfcaa07b246_init_public.py`) and the updated psycopg dialect in `config.py`, committed, and pushed to `main`.
