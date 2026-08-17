@@ -1,6 +1,6 @@
 # Broiler Wholesale — Implementation Plan
 
-*Master tracker for building the app from `Broiler_Wholesale_App_Proposal.md`, architecture aligned with Duro_POS.*
+*Master tracker for building the app from `MM_Poultry_Documentation.md`, architecture aligned with Duro_POS.*
 
 ## What We Have Done Till Now
 

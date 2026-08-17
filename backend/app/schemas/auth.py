@@ -119,6 +119,7 @@ class RateOut(BaseModel):
 
 class DailyOrderCreate(BaseModel):
     requested_kg: Decimal = Field(gt=0)
+    bird_size: str | None = None
     notes: str | None = None
 
 
@@ -129,6 +130,7 @@ class DailyOrderOut(BaseModel):
     retailer_id: UUID
     order_date: IstDate
     requested_kg: Decimal
+    bird_size: str | None = None
     notes: str | None
     status: OrderStatus
     retailer_name: str | None = None
@@ -144,8 +146,11 @@ class TodayOrdersResponse(BaseModel):
 
 class FarmCreate(BaseModel):
     name: str
+    owner_name: str | None = None
     location: str | None = None
+    address: str | None = None
     contact_phone: str | None = None
+    capacity: int | None = None
 
 
 class FarmOut(BaseModel):
@@ -153,8 +158,11 @@ class FarmOut(BaseModel):
 
     id: UUID
     name: str
+    owner_name: str | None = None
     location: str | None
+    address: str | None = None
     contact_phone: str | None
+    capacity: int | None = None
     is_active: bool
 
 
@@ -167,6 +175,10 @@ class FarmLoadCreate(BaseModel):
     driver_user_id: UUID | None = None
     loaded_weight_kg: Decimal = Field(gt=0)
     bird_count: int | None = None
+    rate_per_kg: Decimal | None = None
+    total_amount: Decimal | None = None
+    paid_amount: Decimal | None = None
+    payment_method: str | None = None
     remarks: str | None = None
 
 
@@ -181,6 +193,10 @@ class FarmLoadOut(BaseModel):
     driver_name: str | None
     loaded_weight_kg: Decimal
     bird_count: int | None
+    rate_per_kg: Decimal | None = None
+    total_amount: Decimal | None = None
+    paid_amount: Decimal | None = None
+    payment_method: str | None = None
     remarks: str | None
     status: FarmLoadStatus
 
@@ -374,6 +390,28 @@ class ReportSummary(BaseModel):
 class OrganizationCreate(BaseModel):
     name: str
     slug: str
+
+
+class OrganizationRegisterRequest(BaseModel):
+    name: str
+    slug: str
+    admin_username: str
+    admin_password: str
+
+
+class OrganizationUpdate(BaseModel):
+    name: str | None = None
+    is_active: bool | None = None
+
+
+class TenantAdminCreate(BaseModel):
+    username: str
+    password: str
+
+
+class TenantAdminUpdate(BaseModel):
+    is_active: bool | None = None
+    password: str | None = None
 
 
 class OrganizationOut(BaseModel):

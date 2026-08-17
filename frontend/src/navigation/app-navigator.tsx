@@ -5,6 +5,12 @@ import { useAuthStore } from "../store/auth-store";
 import { LoginScreen } from "../screens/auth/login-screen";
 import { AdminHomeScreen } from "../screens/admin/admin-home-screen";
 import { AdminRetailersScreen } from "../screens/admin/admin-retailers-screen";
+import { AdminAddRetailerScreen } from "../screens/admin/admin-add-retailer-screen";
+import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-profile-screen";
+import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
+import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
+import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-screen";
+import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
 import { RetailerHomeScreen } from "../screens/retailer/retailer-home-screen";
 import { SuperAdminHomeScreen } from "../screens/super-admin/super-admin-home-screen";
@@ -36,7 +42,30 @@ export function AppNavigator() {
             <Stack.Screen
               name="Retailers"
               component={AdminRetailersScreen}
-              options={{ headerShown: true, title: "Retailers" }}
+            />
+            <Stack.Screen
+              name="AddRetailer"
+              component={AdminAddRetailerScreen}
+            />
+            <Stack.Screen
+              name="RetailerProfile"
+              component={AdminRetailerProfileScreen}
+            />
+            <Stack.Screen
+              name="Farms"
+              component={AdminFarmsScreen}
+            />
+            <Stack.Screen
+              name="AddFarm"
+              component={AdminAddFarmScreen}
+            />
+            <Stack.Screen
+              name="FarmPurchase"
+              component={AdminFarmPurchaseScreen}
+            />
+            <Stack.Screen
+              name="Orders"
+              component={AdminOrdersScreen}
             />
           </>
         ) : user.role === "DELIVERY" ? (

@@ -1,6 +1,6 @@
 # Broiler Wholesale Coding Rules & Constraints
 
-*Supersedes LedgerDesk-era rules for new work. Historical LedgerDesk constraints lived in prior revisions of this file intent; this rewrite aligns with Duro_POS + `Broiler_Wholesale_App_Proposal.md` (2026-08-09).*
+*Supersedes LedgerDesk-era rules for new work. Historical LedgerDesk constraints lived in prior revisions of this file intent; this rewrite aligns with Duro_POS + `MM_Poultry_Documentation.md`.*
 
 ## 1. Python Backend (FastAPI)
 
@@ -16,6 +16,7 @@
 ## 2. Frontend (Expo React Native)
 
 - **Language:** TypeScript (`.tsx`) only.
+- **Package Manager:** Use `bun` instead of `npm`, `npx`, or `node`.
 - **Stack:** Expo 54 patterns from Duro_POS — NativeWind, Zustand for client state, React Navigation.
 - **API data:** Prefer explicit API modules + hooks; mirror DTOs in `frontend/src/types/`.
 - **Hardware:** Bluetooth scale via BLE (`react-native-ble-plx`); thermal ESC/POS on Android. Web/iOS get graceful fallbacks (no fake success on print).

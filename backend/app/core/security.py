@@ -44,7 +44,7 @@ def create_access_token(
         payload["role"] = role.value
     if org_id is not None:
         payload["org_id"] = str(org_id)
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
 def create_access_token_for_user(user: Any) -> str:
@@ -57,4 +57,4 @@ def create_access_token_for_user(user: Any) -> str:
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
+    return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

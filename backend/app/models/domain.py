@@ -94,6 +94,7 @@ class RetailerDailyOrder(Base, BaseModelMixin):
     )
     order_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     requested_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    bird_size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[OrderStatus] = mapped_column(
         SqlEnum(OrderStatus, name="order_status", native_enum=False),
@@ -108,8 +109,11 @@ class Farm(Base, BaseModelMixin):
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    owner_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     location: Mapped[str | None] = mapped_column(String(250), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )
@@ -160,6 +164,10 @@ class FarmLoad(Base, BaseModelMixin):
     driver_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
     loaded_weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    total_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
     remarks: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[FarmLoadStatus] = mapped_column(
         SqlEnum(FarmLoadStatus, name="farm_load_status", native_enum=False),

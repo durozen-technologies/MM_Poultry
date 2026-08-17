@@ -35,3 +35,7 @@ Do not just acknowledge ideas in chat; they must be persistently recorded in the
 ## 🚨 MANDATORY ACTION: DOCUMENTATION PRESERVATION
 **CRITICAL RULE: NEVER OVERWRITE HISTORICAL DOCUMENTATION.**
 When making architectural pivots or massive changes to the data models, do NOT overwrite `.core/ARCHITECTURE.md` or `.core/DATA_MODELS.md`. Instead, you MUST **APPEND** your new structures under a timestamped header (e.g. `### [2026-06-30 13:25:54] New Architecture`). The original, historical structures must remain intact above it so the project can be rewound to previous states if necessary.
+
+## 🚨 MANDATORY ACTION: PACKAGE MANAGER
+**CRITICAL RULE: USE BUN INSTEAD OF NPM OR NODE.**
+Always use `bun` as the package manager and runtime for JS/TS tasks. Do not use `npm`, `npx` or `node` unless explicitly required by a tool that does not support bun.

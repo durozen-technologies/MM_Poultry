@@ -93,6 +93,7 @@ graphify-out/
 *.tmp
 *.temp
 *.pdf
+*.zip
 .cache/
 coverage/
 

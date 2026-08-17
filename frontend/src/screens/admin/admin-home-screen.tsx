@@ -5,12 +5,13 @@ import {
   Pressable,
   RefreshControl,
   Text,
-  TextInput,
   View,
+  ScrollView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../api/client";
-import { DatePickerField } from "../../components/date-picker-field";
 import { useAuthStore } from "../../store/auth-store";
 import type {
   DailyOrder,
@@ -25,17 +26,7 @@ import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const logout = useAuthStore((s) => s.logout);
   const [orders, setOrders] = useState<DailyOrder[]>([]);
-  const [totalKg, setTotalKg] = useState("0");
-  const [retailers, setRetailers] = useState<Retailer[]>([]);
-  const [loads, setLoads] = useState<FarmLoad[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [dashboard, setDashboard] = useState<OpsDashboard | null>(null);
-  const [report, setReport] = useState<ReportSummary | null>(null);
-  const [loadKg, setLoadKg] = useState("100");
-  const [vehicle, setVehicle] = useState("");
-  const [newVehicle, setNewVehicle] = useState("");
-  const [rate, setRate] = useState("180");
-  const [loadDate, setLoadDate] = useState(todayIstDate());
   const [reportDate, setReportDate] = useState(todayIstDate());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -43,25 +34,14 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const refresh = useCallback(async () => {
     setBusy(true);
     try {
-      const [o, r, l, v, dash, rep] = await Promise.all([
+      const [o, dash] = await Promise.all([
         api.get("/admin/orders/today"),
-        api.get("/admin/retailers"),
-        api.get("/admin/farm-loads"),
-        api.get("/admin/vehicles"),
         api.get("/admin/dashboard", {
           params: { on_date: toApiDate(reportDate) },
         }),
-        api.get("/admin/reports/summary", {
-          params: { period: "daily", on_date: toApiDate(reportDate) },
-        }),
       ]);
       setOrders(o.data.items);
-      setTotalKg(o.data.total_requested_kg);
-      setRetailers(r.data.items);
-      setLoads(l.data);
-      setVehicles(v.data);
       setDashboard(dash.data);
-      setReport(rep.data);
       setMessage(null);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed to load");
@@ -80,216 +60,297 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
     void refresh();
   }, [reportDate]);
 
-  async function createLoad() {
-    setBusy(true);
-    try {
-      await api.post("/admin/farm-loads", {
-        load_date: toApiDate(loadDate),
-        loaded_weight_kg: loadKg,
-        vehicle_number: vehicle || vehicles[0]?.number || null,
-        vehicle_id: vehicles[0]?.id || null,
-        driver_name: vehicles[0]?.driver_name || "Driver",
-      });
-      await refresh();
-      setMessage("Farm load created");
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveVehicle() {
-    if (!newVehicle.trim()) return;
-    setBusy(true);
-    try {
-      await api.post("/admin/vehicles", {
-        number: newVehicle.trim(),
-        driver_name: "Driver",
-      });
-      setNewVehicle("");
-      await refresh();
-      setMessage("Vehicle saved");
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveDefaultRate() {
-    setBusy(true);
-    try {
-      await api.put("/admin/rates", {
-        retailer_id: null,
-        rate_per_kg: rate,
-      });
-      setMessage(`Default rate ₹${rate}/kg saved`);
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function buildRun() {
-    if (!loads[0] || orders.length === 0) {
-      setMessage("Need a farm load and at least one order");
-      return;
-    }
-    setBusy(true);
-    try {
-      await api.post("/admin/delivery-runs", {
-        farm_load_id: loads[0].id,
-        order_ids: orders.map((o) => o.id),
-        run_date: toApiDate(loadDate),
-      });
-      setMessage("Delivery run created");
-      await refresh();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const pendingKg = dashboard 
+    ? Math.max(0, Number(dashboard.ordered_kg) - Number(dashboard.delivered_kg)).toFixed(1)
+    : "0";
 
   return (
-    <View className="flex-1 bg-brand-sand">
-      <View className="px-4 pt-12 pb-3 flex-row justify-between items-center bg-brand-ink">
-        <Text className="text-white text-xl font-bold">Admin</Text>
-        <Pressable onPress={() => logout()}>
-          <Text className="text-brand-sand">Logout</Text>
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      {/* Header */}
+      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
+        <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+          Dashboard
+        </Text>
+        <View className="flex-row items-center gap-4">
+          <Pressable
+            className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
+            onPress={refresh}
+          >
+            <MaterialIcons name="refresh" size={24} color="#414844" />
+          </Pressable>
+          <Pressable
+            className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
+            onPress={logout}
+          >
+            <MaterialIcons name="logout" size={24} color="#414844" />
+          </Pressable>
+        </View>
+      </View>
+
+      {message && (
+        <Text className="px-4 py-2 text-error text-center text-label-md bg-error-container">
+          {message}
+        </Text>
+      )}
+
+      <ScrollView
+        className="flex-1 w-full pt-4 pb-20"
+        refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
+      >
+        {/* Today's Overview */}
+        <View className="px-4 pb-6 flex-col gap-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Today's Overview
+            </Text>
+          </View>
+
+          <View className="flex-row flex-wrap justify-between">
+            <View className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-4 flex-col gap-2 mb-4">
+              <View className="flex-row items-center gap-2 text-on-surface-variant">
+                <MaterialIcons name="shopping-cart" size={18} color="#414844" />
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Today's Orders
+                </Text>
+              </View>
+              <Text className="font-display-lg text-display-lg text-primary font-bold">
+                {dashboard?.order_count || 0}
+              </Text>
+            </View>
+
+            <View className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-4 flex-col gap-2 mb-4">
+              <View className="flex-row items-center gap-2 text-on-surface-variant">
+                <MaterialIcons name="scale" size={18} color="#414844" />
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Ordered KG
+                </Text>
+              </View>
+              <Text className="font-display-lg text-display-lg text-primary font-bold">
+                {dashboard?.ordered_kg || 0}
+              </Text>
+            </View>
+
+            <View className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-4 flex-col gap-2 mb-4">
+              <View className="flex-row items-center gap-2 text-on-surface-variant">
+                <MaterialIcons name="local-shipping" size={18} color="#414844" />
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Delivered KG
+                </Text>
+              </View>
+              <Text className="font-display-lg text-display-lg text-on-surface font-bold">
+                {dashboard?.delivered_kg || 0}
+              </Text>
+            </View>
+
+            <View className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-4 flex-col gap-2 mb-4">
+              <View className="flex-row items-center gap-2 text-on-surface-variant">
+                <MaterialIcons name="pending-actions" size={18} color="#414844" />
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Pending KG
+                </Text>
+              </View>
+              <Text className="font-display-lg text-display-lg text-on-surface font-bold">
+                {pendingKg}
+              </Text>
+            </View>
+          </View>
+
+          {/* Today's Sales */}
+          <View className="bg-primary-container rounded-2xl p-4 flex-col gap-3 shadow-sm mt-2 relative overflow-hidden">
+            <View className="flex-col gap-1 relative z-10">
+              <Text className="font-label-md text-label-md text-on-primary-container font-semibold">
+                Today's Sales
+              </Text>
+              <Text className="font-display-lg text-display-lg text-on-primary font-bold">
+                ₹{dashboard?.total_sales || 0}
+              </Text>
+            </View>
+            <View className="flex-row justify-between gap-4 mt-3 relative z-10">
+              <View className="flex-col gap-1">
+                <Text className="font-label-md text-label-md text-on-primary-container font-semibold">
+                  Collection
+                </Text>
+                <Text className="font-headline-sm text-headline-sm text-on-primary font-semibold">
+                  ₹{dashboard?.total_collection || 0}
+                </Text>
+              </View>
+              <View className="flex-col gap-1">
+                <Text className="font-label-md text-label-md text-on-primary-container font-semibold">
+                  Outstanding
+                </Text>
+                <Text className="font-headline-sm text-headline-sm text-on-primary font-semibold">
+                  ₹{dashboard?.outstanding || 0}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Farm Metrics */}
+          <View className="bg-surface-container-lowest shadow-sm rounded-2xl p-4 mt-2 flex-col gap-4">
+            <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
+              Farm Metrics
+            </Text>
+            <View className="flex-row justify-between items-end">
+              <View className="flex-col gap-1">
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Loaded Weight
+                </Text>
+                <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                  {dashboard?.loaded_kg || 0} KG
+                </Text>
+              </View>
+              <View className="flex-col gap-1 items-end">
+                <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                  Weight Loss
+                </Text>
+                <Text className="font-headline-sm text-headline-sm text-error font-semibold">
+                  {dashboard?.loss_kg || 0} KG
+                </Text>
+              </View>
+            </View>
+            <View className="w-full bg-surface-variant h-2 rounded-full overflow-hidden">
+              <View
+                className="bg-error h-full rounded-full"
+                style={{ width: `${Math.min(100, Number(dashboard?.loss_pct || 0))}%` }}
+              />
+            </View>
+            <View className="flex-row justify-between items-center text-xs">
+              <Text className="font-body-md text-body-md text-on-surface-variant">
+                Status: {dashboard?.loss_status || "OK"}
+              </Text>
+              <Text className="font-label-md text-label-md text-error font-semibold">
+                {dashboard?.loss_pct || 0}% Loss
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View className="px-4 pb-6 flex-col gap-4">
+          <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+            Quick Actions
+          </Text>
+          <View className="flex-row flex-wrap justify-between">
+            <Pressable 
+              onPress={() => navigation.navigate("Retailers")}
+              className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-3 mb-4 flex-row items-center justify-center gap-2 active:scale-95"
+            >
+              <MaterialIcons name="person-add" size={20} color="#012d1d" />
+              <Text className="font-label-md text-label-md text-on-surface font-semibold">
+                Retailers
+              </Text>
+            </Pressable>
+            <Pressable className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-3 mb-4 flex-row items-center justify-center gap-2 active:scale-95">
+              <MaterialIcons name="add-shopping-cart" size={20} color="#012d1d" />
+              <Text className="font-label-md text-label-md text-on-surface font-semibold">
+                Add Order
+              </Text>
+            </Pressable>
+            <Pressable 
+              className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-3 mb-4 flex-row items-center justify-center gap-2 active:scale-95"
+              onPress={() => navigation.navigate("FarmPurchase")}
+            >
+              <MaterialIcons name="rv-hookup" size={20} color="#012d1d" />
+              <Text className="font-label-md text-label-md text-on-surface font-semibold">
+                Farm Purchase
+              </Text>
+            </Pressable>
+            <Pressable className="w-[48%] bg-surface-container-lowest shadow-sm rounded-2xl p-3 mb-4 flex-row items-center justify-center gap-2 active:scale-95">
+              <MaterialIcons name="payments" size={20} color="#012d1d" />
+              <Text className="font-label-md text-label-md text-on-surface font-semibold">
+                Payment
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Recent Orders */}
+        <View className="px-4 pb-20 flex-col gap-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Today's Orders ({orders.length})
+            </Text>
+            <Pressable className="px-2 py-1">
+              <Text className="font-label-md text-label-md text-primary font-semibold">
+                View All
+              </Text>
+            </Pressable>
+          </View>
+          <View className="flex-col gap-2">
+            {orders.slice(0, 5).map((order) => (
+              <View key={order.id} className="bg-surface-container-lowest shadow-sm rounded-2xl p-4 flex-col gap-3">
+                <View className="flex-row justify-between items-start">
+                  <View className="flex-col">
+                    <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                      {order.retailer_name}
+                    </Text>
+                    <Text className="font-body-md text-body-md text-on-surface-variant">
+                      Order • {formatIstDate(order.order_date)}
+                    </Text>
+                  </View>
+                  <View className="bg-surface-variant rounded-full px-3 py-1 flex-row items-center gap-1">
+                    <View className="w-1.5 h-1.5 rounded-full bg-on-surface-variant" />
+                    <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+                      {order.status}
+                    </Text>
+                  </View>
+                </View>
+                <View className="w-full h-px bg-surface-variant" />
+                <View className="flex-row justify-between items-center">
+                  <View className="flex-row items-center gap-2">
+                    <MaterialIcons name="scale" size={20} color="#414844" />
+                    <Text className="font-body-md text-body-md text-on-surface">
+                      {order.requested_kg} KG
+                    </Text>
+                  </View>
+                  <Pressable className="px-3 py-1 rounded-full active:bg-surface-container">
+                    <Text className="font-label-md text-label-md text-primary font-semibold">
+                      Details
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Navigation Bar */}
+      <View className="absolute bottom-0 inset-x-0 h-20 bg-surface/90 border-t border-outline-variant/20 flex-row justify-around items-center px-2 pb-2">
+        <Pressable className="flex-col items-center justify-center gap-1 w-20 h-full">
+          <MaterialIcons name="grid-view" size={24} color="#012d1d" />
+          <Text className="font-label-md text-label-md text-primary font-semibold">
+            Dashboard
+          </Text>
+        </Pressable>
+        <Pressable 
+          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          onPress={() => navigation.navigate("Retailers")}
+        >
+          <MaterialIcons name="group" size={24} color="#414844" />
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+            Retailers
+          </Text>
+        </Pressable>
+        <Pressable 
+          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          onPress={() => navigation.navigate("Farms")}
+        >
+          <MaterialIcons name="agriculture" size={24} color="#414844" />
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+            Farms
+          </Text>
+        </Pressable>
+        <Pressable 
+          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          onPress={() => navigation.navigate("Orders")}
+        >
+          <MaterialIcons name="shopping-cart" size={24} color="#414844" />
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+            Orders
+          </Text>
         </Pressable>
       </View>
-      {busy ? <ActivityIndicator className="mt-4" color="#2f6b3a" /> : null}
-      {message ? <Text className="px-4 pt-2 text-brand-clay">{message}</Text> : null}
-      <FlatList
-        refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
-        ListHeaderComponent={
-          <View className="p-4 gap-3">
-            <DatePickerField label="Ops / report date" value={reportDate} onChange={setReportDate} />
-            {dashboard ? (
-              <View className="bg-white rounded-xl p-3 border border-brand-leaf/20 gap-1">
-                <Text className="font-semibold text-brand-ink mb-1">
-                  Today ops · loss {dashboard.loss_status}
-                </Text>
-                <Text>
-                  Orders {dashboard.order_count} · {dashboard.ordered_kg} kg ordered
-                </Text>
-                <Text>
-                  Loaded {dashboard.loaded_kg} → delivered {dashboard.delivered_kg} kg
-                </Text>
-                <Text>
-                  Sales ₹{dashboard.total_sales} · collected ₹{dashboard.total_collection}
-                </Text>
-                <Text>Outstanding ₹{dashboard.outstanding}</Text>
-                <Text>
-                  Loss {dashboard.loss_kg} kg ({dashboard.loss_pct}%) · billed{" "}
-                  {dashboard.completed_deliveries} / pending {dashboard.pending_deliveries}
-                </Text>
-              </View>
-            ) : null}
-            <Text className="text-brand-ink text-lg font-semibold">
-              Today orders · {totalKg} kg
-            </Text>
-            {report ? (
-              <View className="bg-white rounded-xl p-3 border border-brand-leaf/20">
-                <Text className="font-semibold text-brand-ink mb-1">
-                  Report {report.period_start} – {report.period_end}
-                </Text>
-                <Text>Delivered {report.total_delivered_kg} kg</Text>
-                <Text>Sales ₹{report.total_sales_amount}</Text>
-                <Text>Collections ₹{report.total_collections}</Text>
-                <Text>Loss {report.total_loss_kg} kg</Text>
-              </View>
-            ) : null}
-            <Text className="text-brand-ink font-semibold mt-2">Default rate</Text>
-            <TextInput
-              className="bg-white border rounded-lg px-3 py-2"
-              value={rate}
-              onChangeText={setRate}
-              placeholder="₹ per kg"
-              keyboardType="decimal-pad"
-            />
-            <Pressable className="bg-brand-ink rounded-lg py-3 items-center" onPress={saveDefaultRate}>
-              <Text className="text-white font-semibold">Save default rate</Text>
-            </Pressable>
-            <Text className="text-brand-ink font-semibold mt-2">Vehicles</Text>
-            <TextInput
-              className="bg-white border rounded-lg px-3 py-2"
-              value={newVehicle}
-              onChangeText={setNewVehicle}
-              placeholder="New vehicle number"
-              autoCapitalize="characters"
-            />
-            <Pressable
-              className="border border-brand-ink rounded-lg py-3 items-center"
-              onPress={saveVehicle}
-            >
-              <Text className="text-brand-ink font-semibold">Add vehicle</Text>
-            </Pressable>
-            {vehicles.map((v) => (
-              <Text key={v.id} className="text-xs text-brand-ink">
-                {v.number} · {v.driver_name || "no driver"}
-              </Text>
-            ))}
-            <Text className="text-brand-ink font-semibold mt-2">Farm load</Text>
-            <DatePickerField label="Load date" value={loadDate} onChange={setLoadDate} />
-            <TextInput
-              className="bg-white border rounded-lg px-3 py-2"
-              value={loadKg}
-              onChangeText={setLoadKg}
-              placeholder="Loaded kg"
-              keyboardType="decimal-pad"
-            />
-            <TextInput
-              className="bg-white border rounded-lg px-3 py-2"
-              value={vehicle}
-              onChangeText={setVehicle}
-              placeholder={vehicles[0]?.number || "Vehicle number"}
-            />
-            <Pressable className="bg-brand-leaf rounded-lg py-3 items-center" onPress={createLoad}>
-              <Text className="text-white font-semibold">Save farm load</Text>
-            </Pressable>
-            <Pressable className="bg-brand-clay rounded-lg py-3 items-center" onPress={buildRun}>
-              <Text className="text-white font-semibold">Build run from today orders</Text>
-            </Pressable>
-            <Pressable
-              className="border border-brand-leaf rounded-lg py-3 items-center"
-              onPress={() => navigation.navigate("Retailers")}
-            >
-              <Text className="text-brand-leaf font-semibold">Retailers & ledger</Text>
-            </Pressable>
-            <Text className="text-brand-ink font-semibold mt-2">Orders</Text>
-          </View>
-        }
-        data={orders}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View className="mx-4 mb-2 bg-white rounded-lg p-3 border border-black/5">
-            <Text className="font-semibold">{item.retailer_name}</Text>
-            <Text>
-              {formatIstDate(item.order_date)} · {item.requested_kg} kg · {item.status}
-            </Text>
-          </View>
-        )}
-        ListFooterComponent={
-          <View className="p-4">
-            <Text className="font-semibold mb-2">Retailers ({retailers.length})</Text>
-            {retailers.map((r) => (
-              <Text key={r.id} className="mb-1">
-                {r.name} · due ₹{r.credit_balance}
-                {r.credit_limit && Number(r.credit_limit) > 0 ? ` / limit ₹${r.credit_limit}` : ""}
-              </Text>
-            ))}
-            {loads[0] ? (
-              <Text className="mt-2 text-xs text-brand-ink">
-                Latest load {formatIstDate(loads[0].load_date)} · {loads[0].loaded_weight_kg} kg
-              </Text>
-            ) : null}
-          </View>
-        }
-      />
-    </View>
+    </SafeAreaView>
   );
 }

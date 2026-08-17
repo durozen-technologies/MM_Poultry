@@ -8,15 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.errors import http_exception_handler
 from app.db.database import dispose_engine
-from app.routers.api import health_router, router as api_router
+from app.routers.api import health_router
+from app.routers.api import router as api_router
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
     await dispose_engine()
-
-
 
 
 def create_app() -> FastAPI:

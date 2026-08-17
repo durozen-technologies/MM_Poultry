@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,7 +114,6 @@ async def upsert_auth_index(
     schema_name: str,
     user_id,
 ) -> None:
-    from uuid import UUID
 
     username_lower = normalize_username(username)
     existing = await db.scalar(

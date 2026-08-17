@@ -9,22 +9,22 @@ Mobile-first broiler wholesale management (orders → farm load → BLE delivery
 | `caddy/` | Reverse proxy stub |
 | `test/` | Unit + API contract tests |
 | `.core/` | Architecture / models / session logs |
-| `Broiler_Wholesale_App_Proposal.md` | Product brief |
+| `MM_Poultry_Documentation.md` | Product brief and documentation |
 
 ## Quick start
 
 ```bash
-# API
+# Backend (API)
 cd backend
 uv sync
-uv run python migrate.py
-uv run python seed.py
-uv run uvicorn main:app --reload --port 8000
+python manage.py setup
+python manage.py createsuperadmin --username admin --password yourpassword
+uv run uvicorn app.main:app --reload --port 8000
 
-# App
+# Frontend (Mobile/Web)
 cd frontend
-npm install
-npm run web
+bun install
+bun run web
 ```
 
 Demo credentials: `.core/TEST_CREDENTIALS.md` (tenant users need `organization_slug=demo`).
@@ -41,12 +41,12 @@ Workflow: [`.github/workflows/apk-debug.yml`](.github/workflows/apk-debug.yml)
 ```bash
 cd frontend
 # frontend/.env already has EXPO_PUBLIC_API_BASE_URL=...
-npm run start:dev
+bun run start:dev
 ```
 
 Local APK build (JDK 17 + Android SDK):
 
 ```bash
 cd frontend
-npm run build:debug-apk
+bun run build:debug-apk
 ```

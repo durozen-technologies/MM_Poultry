@@ -23,25 +23,44 @@ export type Retailer = {
   shop_name: string | null;
   owner_name?: string | null;
   phone: string | null;
+  alternate_phone?: string | null;
   whatsapp?: string | null;
+  address?: string | null;
   area?: string | null;
   route_name?: string | null;
   category?: string | null;
+  notes?: string | null;
   opening_balance: string;
   credit_balance: string;
   credit_limit?: string;
   is_active: boolean;
 };
 
+export type OrderStatus = "PENDING" | "CONFIRMED" | "DISPATCHED" | "DELIVERED" | "CANCELLED";
+
 export type DailyOrder = {
   id: string;
   retailer_id: string;
   order_date: string;
   requested_kg: string;
+  bird_size?: string | null;
   notes: string | null;
-  status: string;
+  status: OrderStatus;
   retailer_name?: string | null;
   shop_name?: string | null;
+};
+
+export type DailyOrderOut = DailyOrder;
+
+export type FarmOut = {
+  id: string;
+  name: string;
+  owner_name?: string | null;
+  location: string | null;
+  address?: string | null;
+  contact_phone: string | null;
+  capacity?: number | null;
+  is_active: boolean;
 };
 
 export type FarmLoad = {

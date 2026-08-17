@@ -52,20 +52,25 @@ from app.schemas import (
     FarmOut,
     LedgerEntry,
     LedgerOut,
+    OpsDashboard,
     OrganizationCreate,
     OrganizationOut,
+    OrganizationRegisterRequest,
+    OrganizationUpdate,
     PaymentCreate,
     PaymentOut,
-    RateOut,
-    OpsDashboard,
     PrintStatusUpdate,
+    RateOut,
     RateUpsert,
     ReportSummary,
     RetailerCreate,
     RetailerOut,
     RetailerUpdate,
+    TenantAdminCreate,
+    TenantAdminUpdate,
     TodayOrdersResponse,
     TripWeightLossOut,
+    UserOut,
     VehicleCreate,
     VehicleOut,
     WeighRequest,
@@ -106,6 +111,166 @@ async def create_organization(db: AsyncSession, payload: OrganizationCreate) -> 
 async def list_organizations(db: AsyncSession) -> list[OrganizationOut]:
     rows = list(await db.scalars(select(Organization).order_by(Organization.name)))
     return [OrganizationOut.model_validate(r, from_attributes=True) for r in rows]
+
+
+async def register_tenant(db: AsyncSession, payload: OrganizationRegisterRequest) -> OrganizationOut:
+    from app.core.security import get_password_hash
+    from app.db.tenant_schema import (
+        derive_schema_name,
+        provision_tenant_schema_async,
+        set_search_path,
+    )
+    from app.services.auth import upsert_auth_index
+
+    slug = payload.slug.strip().lower()
+    existing = await db.scalar(select(Organization).where(Organization.slug == slug))
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization slug exists")
+    
+    schema_name = derive_schema_name(slug)
+    org = Organization(name=payload.name.strip(), slug=slug, schema_name=schema_name)
+    db.add(org)
+    await db.flush()
+    await provision_tenant_schema_async(schema_name)
+    
+    await set_search_path(db, schema_name)
+    user = User(
+        username=payload.admin_username,
+        password_hash=get_password_hash(payload.admin_password),
+        role=UserRole.ADMIN,
+        organization_id=org.id,
+    )
+    db.add(user)
+    await db.flush()
+    
+    await set_search_path(db, None)
+    await upsert_auth_index(
+        db,
+        username=user.username,
+        organization_id=org.id,
+        schema_name=schema_name,
+        user_id=user.id,
+    )
+    
+    return OrganizationOut.model_validate(org, from_attributes=True)
+
+
+async def update_organization(db: AsyncSession, org_id: UUID, payload: OrganizationUpdate) -> OrganizationOut:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    if payload.name is not None:
+        org.name = payload.name.strip()
+    if payload.is_active is not None:
+        org.is_active = payload.is_active
+    
+    await db.flush()
+    return OrganizationOut.model_validate(org, from_attributes=True)
+
+
+async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    org.is_active = False
+    await db.flush()
+
+
+async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    from app.db.tenant_schema import set_search_path
+    await set_search_path(db, org.schema_name)
+    
+    rows = list(await db.scalars(select(User).where(User.role == UserRole.ADMIN)))
+    
+    await set_search_path(db, None)
+    return [UserOut.model_validate(r, from_attributes=True) for r in rows]
+
+
+async def create_tenant_admin(db: AsyncSession, org_id: UUID, payload: TenantAdminCreate) -> UserOut:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    from app.core.security import get_password_hash
+    from app.db.tenant_schema import set_search_path
+    from app.services.auth import upsert_auth_index
+
+    await set_search_path(db, org.schema_name)
+    
+    existing = await db.scalar(select(User).where(User.username == payload.username))
+    if existing:
+        await set_search_path(db, None)
+        raise HTTPException(status_code=409, detail="Username exists in tenant")
+
+    user = User(
+        username=payload.username,
+        password_hash=get_password_hash(payload.password),
+        role=UserRole.ADMIN,
+        organization_id=org.id,
+    )
+    db.add(user)
+    await db.flush()
+    
+    await set_search_path(db, None)
+    await upsert_auth_index(
+        db,
+        username=user.username,
+        organization_id=org.id,
+        schema_name=org.schema_name,
+        user_id=user.id,
+    )
+    
+    return UserOut.model_validate(user, from_attributes=True)
+
+
+async def update_tenant_admin(db: AsyncSession, org_id: UUID, user_id: UUID, payload: TenantAdminUpdate) -> UserOut:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    from app.core.security import get_password_hash
+    from app.db.tenant_schema import set_search_path
+    
+    await set_search_path(db, org.schema_name)
+    
+    user = await db.scalar(select(User).where(User.id == user_id, User.role == UserRole.ADMIN))
+    if not user:
+        await set_search_path(db, None)
+        raise HTTPException(status_code=404, detail="Tenant admin not found")
+        
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    if payload.password is not None:
+        user.password_hash = get_password_hash(payload.password)
+        
+    await db.flush()
+    await set_search_path(db, None)
+    
+    return UserOut.model_validate(user, from_attributes=True)
+
+
+async def delete_tenant_admin(db: AsyncSession, org_id: UUID, user_id: UUID) -> None:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    from app.db.tenant_schema import set_search_path
+    await set_search_path(db, org.schema_name)
+    
+    user = await db.scalar(select(User).where(User.id == user_id, User.role == UserRole.ADMIN))
+    if not user:
+        await set_search_path(db, None)
+        raise HTTPException(status_code=404, detail="Tenant admin not found")
+        
+    user.is_active = False
+    await db.flush()
+    await set_search_path(db, None)
 
 
 # --- Rates ---
@@ -282,6 +447,7 @@ async def upsert_today_order(
             retailer_id=retailer_id,
             order_date=day,
             requested_kg=q_kg(payload.requested_kg),
+            bird_size=payload.bird_size,
             notes=payload.notes,
             status=OrderStatus.PLACED,
             created_by_user_id=user_id,
@@ -342,7 +508,14 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
 
 
 async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
-    farm = Farm(name=payload.name.strip(), location=payload.location, contact_phone=payload.contact_phone)
+    farm = Farm(
+        name=payload.name.strip(), 
+        owner_name=payload.owner_name,
+        location=payload.location, 
+        address=payload.address,
+        contact_phone=payload.contact_phone,
+        capacity=payload.capacity
+    )
     db.add(farm)
     await db.flush()
     return FarmOut.model_validate(farm, from_attributes=True)
@@ -398,6 +571,10 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
         driver_user_id=payload.driver_user_id,
         loaded_weight_kg=q_kg(payload.loaded_weight_kg),
         bird_count=payload.bird_count,
+        rate_per_kg=payload.rate_per_kg,
+        total_amount=payload.total_amount,
+        paid_amount=payload.paid_amount,
+        payment_method=payload.payment_method,
         remarks=payload.remarks,
         status=FarmLoadStatus.OPEN,
     )

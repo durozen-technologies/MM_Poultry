@@ -143,3 +143,75 @@
 - Applied the database migration to the local PostgreSQL database (`uv run alembic upgrade head`).
 - Ran `backend/seed.py` successfully injecting `admin` and `superadmin` credentials to resolve login errors.
 - Pushed these database migration artifacts to `main`.
+
+
+### [2026-08-17 14:12:17] Installed agent skills
+**User request:** Install agent skills, ponytail and impeccable in the project.
+
+**Actions:**
+- Cloned and installed addyosmani/agent-skills, ponytail, and pbakaus/impeccable into .agents/skills/.
+
+
+### [2026-08-17 14:17:44] Update rules to use bun
+**User request:** use bun insteadof npm, node. Update the agent md
+
+**Actions:**
+- Appended package manager rule to `.agents/AGENTS.md` to mandate using bun.
+- Updated `.core/RULES.md` to specify bun instead of npm, npx, or node under the Frontend section.
+
+
+### [2026-08-17 14:19:01] Run application
+**User request:** RUn the application
+
+**Actions:**
+- Ran `bun install` in `frontend`.
+- Started the FastAPI backend in a persistent terminal using `uv run uvicorn app.main:app --reload`.
+- Started the Expo frontend in a persistent terminal using `bun run web`.
+
+
+### [2026-08-17 14:21:52] Fixed CORS error and created DB
+**User request:** Fix CORS error on auth/login, create DB if not created.
+
+**Actions:**
+- Discovered that the database connection failure was the root cause of the CORS error (no headers on 500 response).
+- Created the PostgreSQL database `MM_Poultry` using `psql`.
+- Ran Alembic migrations (`uv run alembic upgrade head`).
+- Ran `seed.py` to populate initial data.
+- Verified CORS headers are now successfully returning for `http://localhost:8081`.
+
+
+### [2026-08-17 14:30:23] Fixed Login exception and created .env
+**User request:** CORS error returned, create .env
+
+**Actions:**
+- Created `.env` in backend with database and specific CORS settings.
+- Found out that the backend was crashing with `AttributeError: 'Settings' object has no attribute 'jwt_algorithm'` upon login, resulting in a 500 Server Error skipping CORS headers.
+- Fixed `app/core/security.py` to use `settings.algorithm` instead of `settings.jwt_algorithm`.
+- Restarted backend server.
+
+
+### [2026-08-17 14:32:06] Full .env creation
+**User request:** Create .env using variables from .env.example
+
+**Actions:**
+- Overwrote `backend/.env` mapping all the fields from `backend/.env.example`.
+- Kept `CORS_ORIGINS` as the explicit array containing `localhost:8081` to avoid breaking the frontend CORS policy again.
+- Restarted backend server to pick up the new environment configuration.
+
+
+### [2026-08-17 14:33:28] Generated secure keys
+**User request:** Create secure secret keys
+
+**Actions:**
+- Generated two 32-byte secure random hexadecimal strings using `openssl rand -hex 32`.
+- Replaced the placeholder `SECRET_KEY` and `BACKUP_SECRET_KEY` strings in `backend/.env` with the newly generated secure keys.
+- Restarted backend server to load the new keys.
+- [2026-08-17 09:35:00] Implemented AdminAddFarmScreen based on add_farm HTML mockup.
+- [2026-08-17 09:35:00] Implemented AdminFarmPurchaseScreen based on farm_purchase HTML mockup.
+- [2026-08-17 09:35:00] Implemented AdminOrdersScreen based on admin_orders_list HTML mockup.
+- [2026-08-17 09:35:00] Wired all newly implemented screens to the app navigation and dashboard / bottom navs.
+
+- **2026-08-17 15:57:40**: Fixed TypeScript errors related to missing and outdated backend schema models in frontend types. Added FarmOut, updated Retailer and DailyOrderOut models in frontend/src/types/api.ts to match FastAPI Pydantic models. Fixed component property accesses.
+- **2026-08-17 16:08:06**: Removed seed.py, created manage.py CLI, and implemented superadmin full CRUD capabilities for organizations and tenant admins, including a /super-admin/register-tenant endpoint as requested.
+- **2026-08-17 16:10:24**: Deleted unwanted files: Untitled (code file), Broiler_Wholesale_App_IDEA_Updated.md, and Broiler_Wholesale_App_Proposal.md.
+- **2026-08-17 16:14:27**: Created MM_Poultry_Documentation.md to replace the deleted proposal documents and updated .core/RULES.md and ADMIN_PLAN.md to point to it.
