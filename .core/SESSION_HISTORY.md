@@ -231,3 +231,62 @@
 ### [2026-08-18 15:16:00] Pushed Package-Lock Update
 - **Request**: User requested a git push.
 - **Action**: Committed the `package-lock.json` which was updated after fetching the missing `@react-navigation/bottom-tabs` package. Successfully pushed to `origin/main`.
+## [2026-08-18 15:52:44] Fix NativeWind TypeScript Errors
+- **Request**: Fix TypeScript error "Property 'className' does not exist on type 'IntrinsicAttributes...'" in `super-admin-home-screen.tsx`.
+- **Action**: Modified `frontend/nativewind-env.d.ts` to explicitly declare `className` types for core React Native components (`View`, `Text`, `TextInput`, `TouchableOpacity`, `Pressable`, `ScrollView`, `FlatList`, `Image`). This bypasses `react-native-css-interop` type resolution issues with Bun and React 19 types, ensuring the TypeScript compiler properly recognizes the `className` prop.
+- **Verification**: Ran `bun run typecheck` which completed successfully with no errors.
+### [2026-08-18 16:09:00] UI Redesign & Pull-To-Refresh for Super Admin
+- **Request**: "Do it, add refersh freature scroll down,"
+- **Action**: Applied the `impeccable` skill principles to redesign the `super-admin-home-screen.tsx` and `super-admin-org-admins-screen.tsx`. 
+  - Added `RefreshControl` to `FlatList` for pull-to-refresh on both screens.
+  - Improved typography and spacing utilizing the existing NativeWind Material 3 design tokens.
+  - Added `MaterialCommunityIcons` for better visual hierarchy and actions.
+  - Implemented rich `ListEmptyComponent` views.
+  - Wrapped screens in `KeyboardAvoidingView` for improved input experience.
+### [2026-08-18 16:13:00] Fix 409 Conflict on Organization Creation
+- **Request**: "fix it" regarding 409 Conflict when creating organizations after deleting them.
+- **Root Cause**: Organizations use soft-deletion (`is_active = False`). The `list_organizations` endpoint was filtering out inactive organizations, making them invisible to the frontend. When the user tried to recreate an organization with the same name, the backend rightfully returned a 409 Conflict due to `slug` and `schema_name` uniqueness constraints, but the user couldn't see the deleted organization to reactivate it.
+- **Action**: 
+  - Modified `backend/app/services/wholesale.py`: `list_organizations` now returns ALL organizations. The frontend already supports displaying and re-activating inactive organizations.
+  - Updated the 409 error message in `create_organization` to explicitly instruct the user to reactivate the organization if it was previously deleted.
+  - Reverted experimental slug appending, keeping the system's schema uniqueness guarantees intact.
+### [2026-08-18 16:15:00] Refactor wholesale.py into modular package
+- **Request**: "Split into modules." pointing to the 1200+ line `wholesale.py` file.
+- **Action**: 
+  - Extracted `backend/app/services/wholesale.py` into `backend/app/services/wholesale/` package.
+  - Created domain-specific modules: `common.py`, `organizations.py`, `rates.py`, `retailers.py`, `orders.py`, `farms.py`, `delivery_runs.py`, `billing.py`, `ledger.py`, and `reports.py`.
+  - Added `__init__.py` to re-export all methods, keeping backward compatibility with `routers/api.py`.
+  - Verified backend server successfully hot-reloaded and processes API requests.
+### [2026-08-18 16:25:00] Fix backend missing imports and frontend TS errors
+- **Request**: "Fix the both frontend and backend."
+- **Action**:
+  - In frontend, added `KeyboardAvoidingViewProps` to `nativewind-env.d.ts` so `className` is correctly typed, resolving the `No overload matches this call` TS error.
+  - In backend, resolved `F821 Undefined name` errors introduced during the `wholesale.py` modularization by adding missing cross-module imports (`_stop_out`, `get_delivery_run`, `DeliveryUserCreate`, `set_search_path`).
+  - Ran `ruff check` and verified all fatal errors are resolved.
+### [2026-08-18 16:30:00] Change soft delete to hard delete for Org and Tenant Admin
+- **Request**: "Change the soft delete into hard delete, of the organization and tenant admin."
+- **Action**: 
+  - Modified `delete_organization` in `backend/app/services/wholesale/organizations.py` to `await db.delete(org)` instead of setting `is_active = False`. Also added logic to delete all global `UserAuthIndex` records associated with the organization so usernames are released.
+  - Modified `delete_tenant_admin` to `await db.delete(user)` and explicitly delete their `UserAuthIndex` record.
+### [2026-08-18 16:35:00] Fix incorrect upsert_auth_index kwargs in create_delivery_user
+- **Request**: "Fix it." pointing to `upsert_auth_index` in `create_delivery_user`.
+- **Action**: 
+  - Identified that `upsert_auth_index` does not accept `role` or `password_hash` as arguments, but does require `user_id`.
+  - Removed the invalid kwargs and added `user_id=user.id` to the `upsert_auth_index` call in `create_delivery_user` inside `backend/app/services/wholesale/organizations.py`.
+### [2026-08-18 16:38:00] Fix Coroutine type and missing await
+- **Request**: User pasted `organizations.py` and `billing.py` full content asking to "Fix it".
+- **Action**:
+  - Found that `db.delete(obj)` returns a Coroutine in SQLAlchemy `ext.asyncio` 2.0+ which I had mistakenly removed the `await` from in my earlier edits. Restored `await db.delete(obj)` to fix the `[unused-coroutine]` MyPy error and potential unawaited Coroutine exception at runtime.
+  - Also resolved MyPy type errors in `api.py` routing layer due to `auth.user.organization_id` being `UUID | None`. Added a runtime assert check to enforce it before passing to the backend functions.
+### [2026-08-18 16:40:00] Debug and Error Recovery for Billing and Organizations
+- **Request**: User pasted `organizations.py` and `billing.py` full content asking to "Fix it" with the debugging-and-error-recovery skill invoked.
+- **Action**:
+  - Found a critical logical bug in `delete_tenant_admin` inside `organizations.py`: The `user` was deleted in the tenant schema, but the search path was changed to the global schema BEFORE calling `await db.flush()`. This caused PostgreSQL to crash looking for a `users` table globally. Added an `await db.flush()` to properly clear the tenant schema first.
+  - Refactored payment persistence in `commit_bill` inside `billing.py`: The original logic was doing an `db.add(Payment(...))` then immediately running a full SQL SELECT statement matching a raw string to fetch the payment back. Simplified this to directly retain the python object reference, skipping the inefficient query altogether and removing the risk of runtime crashes if multiple records matched.
+### [2026-08-18 11:18:00] Phase 6 UI and API Improvements
+- User Request: Plan and implement API/Interface design and performance optimizations for the next phase. Ensure admin creation is purely manual.
+- Actions:
+  - Rewrote `frontend/src/screens/admin/admin-add-retailer-screen.tsx` to include new fields (`owner_name`, `whatsapp`, `area`, `route_name`, `category`, `credit_limit`, `preferred_delivery_time`) with logical card groupings.
+  - Updated frontend `Retailer` type in `frontend/src/types/api.ts` to include `preferred_delivery_time`.
+  - Refactored `ops_dashboard` in `backend/app/services/wholesale/billing.py` to use database-level SQL aggregations (`func.sum()`) rather than fetching list of records to Python memory, dramatically boosting scale performance.
+  - Validated zero `tsc` and `ruff` regressions.

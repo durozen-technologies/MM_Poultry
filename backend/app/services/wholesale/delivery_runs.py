@@ -1,0 +1,128 @@
+from __future__ import annotations
+
+from uuid import UUID
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.timezone import now_ist, today_ist
+from app.models.domain import (
+    DeliveryRun,
+    DeliveryStop,
+    FarmLoad,
+    RetailerDailyOrder,
+)
+from app.models.enums import (
+    DeliveryRunStatus,
+    DeliveryStopStatus,
+    FarmLoadStatus,
+    OrderStatus,
+)
+from app.schemas import (
+    DeliveryRunCreate,
+    DeliveryRunOut,
+    DeliveryStopOut,
+)
+from app.services.wholesale.rates import resolve_rate
+from app.services.wholesale.retailers import get_retailer
+
+
+async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
+    retailer = await get_retailer(db, stop.retailer_id)
+    out = DeliveryStopOut.model_validate(stop, from_attributes=True)
+    out.retailer_name = retailer.name
+    out.shop_name = retailer.shop_name
+    return out
+
+
+async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> DeliveryRunOut:
+    load = await db.scalar(select(FarmLoad).where(FarmLoad.id == payload.farm_load_id))
+    if load is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
+    if not payload.order_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="order_ids required")
+
+    run = DeliveryRun(
+        farm_load_id=load.id,
+        run_date=payload.run_date or today_ist(),
+        status=DeliveryRunStatus.PLANNED,
+    )
+    db.add(run)
+    await db.flush()
+
+    for idx, order_id in enumerate(payload.order_ids, start=1):
+        order = await db.scalar(select(RetailerDailyOrder).where(RetailerDailyOrder.id == order_id))
+        if order is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+        rate = await resolve_rate(db, order.retailer_id, run.run_date)
+        stop = DeliveryStop(
+            delivery_run_id=run.id,
+            retailer_id=order.retailer_id,
+            daily_order_id=order.id,
+            sequence=idx,
+            ordered_kg=order.requested_kg,
+            rate_per_kg=rate,
+            status=DeliveryStopStatus.PENDING,
+        )
+        db.add(stop)
+        order.status = OrderStatus.ACKNOWLEDGED
+
+    load.status = FarmLoadStatus.IN_TRANSIT
+    await db.flush()
+    return await get_delivery_run(db, run.id)
+
+
+async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
+    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
+    stops = list(
+        await db.scalars(
+            select(DeliveryStop)
+            .where(DeliveryStop.delivery_run_id == run.id)
+            .order_by(DeliveryStop.sequence.asc())
+        )
+    )
+    out = DeliveryRunOut.model_validate(run, from_attributes=True)
+    out.stops = [await _stop_out(db, s) for s in stops]
+    return out
+
+
+async def get_active_run(db: AsyncSession) -> DeliveryRunOut | None:
+    run = await db.scalar(
+        select(DeliveryRun)
+        .where(
+            DeliveryRun.status.in_(
+                [DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS]
+            )
+        )
+        .order_by(DeliveryRun.created_at.desc())
+        .limit(1)
+    )
+    if run is None:
+        return None
+    return await get_delivery_run(db, run.id)
+
+
+async def start_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
+    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
+    run.status = DeliveryRunStatus.IN_PROGRESS
+    run.started_at = now_ist()
+    await db.flush()
+    return await get_delivery_run(db, run.id)
+
+
+async def skip_stop(db: AsyncSession, stop_id: UUID) -> DeliveryStopOut:
+    stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.id == stop_id))
+    if stop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
+    if stop.status == DeliveryStopStatus.BILLED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
+    stop.status = DeliveryStopStatus.SKIPPED
+    await db.flush()
+    return await _stop_out(db, stop)
+
+

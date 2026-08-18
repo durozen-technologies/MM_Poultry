@@ -52,6 +52,7 @@ from app.schemas import (
     VehicleOut,
     WeighRequest,
 )
+from app.schemas.auth import DeliveryUserCreate
 from app.services import wholesale as svc
 from app.services.auth import login_user
 
@@ -167,6 +168,8 @@ async def delete_tenant_admin(
 async def list_delivery_users(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> list[UserOut]:
+    if not auth.user.organization_id:
+        raise HTTPException(status_code=403, detail="Not an organization admin")
     return await svc.list_delivery_users(auth.db, auth.user.organization_id)
 
 
@@ -175,6 +178,8 @@ async def create_delivery_user(
     payload: DeliveryUserCreate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> UserOut:
+    if not auth.user.organization_id:
+        raise HTTPException(status_code=403, detail="Not an organization admin")
     return await svc.create_delivery_user(auth.db, auth.user.organization_id, payload)
 
 

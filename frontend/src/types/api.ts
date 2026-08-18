@@ -33,6 +33,7 @@ export type Retailer = {
   opening_balance: string;
   credit_balance: string;
   credit_limit?: string;
+  preferred_delivery_time?: string | null;
   is_active: boolean;
 };
 

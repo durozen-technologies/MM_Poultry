@@ -12,19 +12,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../api/client";
 
 export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
-  const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [mobile, setMobile] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [alternatePhone, setAlternatePhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [address, setAddress] = useState("");
+  const [area, setArea] = useState("");
+  const [routeName, setRouteName] = useState("");
+  const [category, setCategory] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
+  const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
-    if (!name.trim() || !contactName.trim() || !mobile.trim()) {
-      setError("Please fill required fields (Name, Owner, Mobile)");
+    if (!name.trim() || !phone.trim()) {
+      setError("Please fill required fields (Name, Primary Phone)");
       return;
     }
     setLoading(true);
@@ -32,11 +38,17 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
     try {
       await api.post("/admin/retailers", {
         name: name.trim(),
-        code: code.trim() || null,
-        contact_name: contactName.trim() || null,
-        mobile: mobile.trim() || null,
+        shop_name: shopName.trim() || null,
+        owner_name: ownerName.trim() || null,
+        phone: phone.trim() || null,
+        alternate_phone: alternatePhone.trim() || null,
+        whatsapp: whatsapp.trim() || null,
         address: address.trim() || null,
-        credit_limit: creditLimit ? parseFloat(creditLimit) : null,
+        area: area.trim() || null,
+        route_name: routeName.trim() || null,
+        category: category.trim() || null,
+        credit_limit: creditLimit ? parseFloat(creditLimit) : 0,
+        preferred_delivery_time: preferredDeliveryTime.trim() || null,
       });
       navigation.goBack();
     } catch (e) {
@@ -78,29 +90,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
           
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Retailer ID / Code
-            </Text>
-            <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="badge" size={18} color="#717973" />
-              </View>
-              <TextInput
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
-                placeholder="e.g. RET-1024"
-                placeholderTextColor="#717973"
-                value={code}
-                onChangeText={setCode}
-              />
-            </View>
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Shop Name <Text className="text-error">*</Text>
+              Company / Business Name <Text className="text-error">*</Text>
             </Text>
             <TextInput
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
-              placeholder="Enter shop name"
+              placeholder="Enter Retailer/Company Name"
               placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
@@ -109,7 +103,20 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
 
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Owner Name <Text className="text-error">*</Text>
+              Shop Name
+            </Text>
+            <TextInput
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              placeholder="e.g. SR Chicken Center"
+              placeholderTextColor="#717973"
+              value={shopName}
+              onChangeText={setShopName}
+            />
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Owner Name
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
@@ -119,10 +126,23 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
                 placeholder="Enter owner name"
                 placeholderTextColor="#717973"
-                value={contactName}
-                onChangeText={setContactName}
+                value={ownerName}
+                onChangeText={setOwnerName}
               />
             </View>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Category
+            </Text>
+            <TextInput
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              placeholder="e.g. Wholesale, Retail"
+              placeholderTextColor="#717973"
+              value={category}
+              onChangeText={setCategory}
+            />
           </View>
         </View>
 
@@ -137,7 +157,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
 
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Mobile Number <Text className="text-error">*</Text>
+              Primary Phone <Text className="text-error">*</Text>
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
@@ -145,13 +165,100 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               </View>
               <TextInput
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
-                placeholder="10-digit number"
+                placeholder="10-digit primary number"
                 placeholderTextColor="#717973"
                 keyboardType="phone-pad"
-                value={mobile}
-                onChangeText={setMobile}
+                value={phone}
+                onChangeText={setPhone}
               />
             </View>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              WhatsApp
+            </Text>
+            <View className="relative flex-row items-center">
+              <View className="absolute left-3 z-10">
+                <MaterialIcons name="chat" size={18} color="#717973" />
+              </View>
+              <TextInput
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                placeholder="WhatsApp number"
+                placeholderTextColor="#717973"
+                keyboardType="phone-pad"
+                value={whatsapp}
+                onChangeText={setWhatsapp}
+              />
+            </View>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Alternate Phone
+            </Text>
+            <View className="relative flex-row items-center">
+              <View className="absolute left-3 z-10">
+                <MaterialIcons name="phone" size={18} color="#717973" />
+              </View>
+              <TextInput
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                placeholder="Other phone number"
+                placeholderTextColor="#717973"
+                keyboardType="phone-pad"
+                value={alternatePhone}
+                onChangeText={setAlternatePhone}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Location & Delivery Card */}
+        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
+          <View className="flex-row items-center gap-2">
+            <MaterialIcons name="location-on" size={20} color="#012d1d" />
+            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Location & Delivery
+            </Text>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Area
+            </Text>
+            <TextInput
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              placeholder="e.g. Downtown"
+              placeholderTextColor="#717973"
+              value={area}
+              onChangeText={setArea}
+            />
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Route Name
+            </Text>
+            <TextInput
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              placeholder="e.g. Route A"
+              placeholderTextColor="#717973"
+              value={routeName}
+              onChangeText={setRouteName}
+            />
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Preferred Delivery Time
+            </Text>
+            <TextInput
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              placeholder="e.g. Morning 6 AM"
+              placeholderTextColor="#717973"
+              value={preferredDeliveryTime}
+              onChangeText={setPreferredDeliveryTime}
+            />
           </View>
 
           <View className="flex-col gap-2">

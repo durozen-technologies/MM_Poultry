@@ -74,3 +74,6 @@ Strict Indian Standard Time for DB/business dates; API/UI date wire format DD/MM
 
 ### [2026-08-09 01:00:00] Source: Broiler_Wholesale_App_IDEA_Updated.md
 Expanded blueprint beyond short proposal. Implementing IDEA MVP-1 slice: ops dashboard, vehicles master, richer retailers, bird counts, persist-first billing + checkout_id, credit limit, loss thresholds. Defer GPS/offline/SaaS/AI.
+
+### [2026-08-18 16:01:39] Explicit Separation of Organization and Admin Creation
+- **Thought**: The user explicitly requested to ensure that an admin user is *not* created automatically after an organization is created, and must be created manually. Although the system currently adheres to this separation, it is recorded here as a core invariant/design principle moving forward.
