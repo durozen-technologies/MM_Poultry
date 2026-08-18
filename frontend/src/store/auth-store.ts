@@ -77,3 +77,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null });
   },
 }));
+
+// Bind the store to the API client to avoid require cycles
+import { setAuthToken, setOnUnauthorized } from "../api/client";
+
+useAuthStore.subscribe((state) => {
+  setAuthToken(state.token);
+});
+
+setOnUnauthorized(() => {
+  useAuthStore.getState().logout();
+});
+
+// Initial binding
+setAuthToken(useAuthStore.getState().token);

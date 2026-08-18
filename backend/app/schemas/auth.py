@@ -392,12 +392,6 @@ class OrganizationCreate(BaseModel):
     slug: str
 
 
-class OrganizationRegisterRequest(BaseModel):
-    name: str
-    slug: str
-    admin_username: str
-    admin_password: str
-
 
 class OrganizationUpdate(BaseModel):
     name: str | None = None
@@ -407,6 +401,12 @@ class OrganizationUpdate(BaseModel):
 class TenantAdminCreate(BaseModel):
     username: str
     password: str
+
+class DeliveryUserCreate(BaseModel):
+    username: str
+    password: str
+    full_name: str | None = None
+    mobile_number: str | None = None
 
 
 class TenantAdminUpdate(BaseModel):

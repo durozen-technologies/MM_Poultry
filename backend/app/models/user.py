@@ -18,7 +18,7 @@ class User(Base, BaseModelMixin):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
-    username: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    username: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
         SqlEnum(UserRole, name="user_role", native_enum=False),

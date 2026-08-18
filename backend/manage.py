@@ -23,11 +23,10 @@ async def setup_db():
 async def create_superadmin(username: str, password: str | None = None):
     session = get_session_factory()()
     try:
+        from app.services.auth import check_global_username_available
         await set_search_path(session, None)
-        existing_sa = await session.scalar(
-            select(User).where(User.username == username, User.organization_id.is_(None))
-        )
-        if existing_sa:
+        
+        if not await check_global_username_available(session, username):
             print(f"Superadmin '{username}' already exists.")
             return
 

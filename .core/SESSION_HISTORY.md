@@ -222,3 +222,7 @@
 ### [2026-08-18 10:55:00] Added Add Retailer Button to Header
 - **Request**: User requested the add icon in the retailers page.
 - **Action**: Modified `AdminRetailersScreen` to include a header-level "Add Retailer" icon button for easier accessibility, and made the existing FAB respect the new dynamic `insets.bottom` to ensure it isn't overlapped by the taller bottom navigation bar.
+- **[2026-08-18 12:20:00]**: Fixed backend bug where global username check was improperly injected into `create_organization` instead of `register_tenant` causing crashes during org creation. Also updated frontend Axios interceptor in `client.ts` to properly extract FastAPI's `detail` field so users see the correct "Username is already taken globally" error message.
+- **[2026-08-18 12:38:00]**: Fixed 'Delete organization' bug. Soft-deleted organizations were still being returned by `list_organizations` because the `is_active=True` filter was missing in the backend query.
+- **[2026-08-18 14:35:00]**: Addressed a fatal error with Expo's React Native DevTools where `chrome-sandbox` fails due to incorrect SUID permissions on Linux. Also fixed a `Require cycle` warning between `auth-store.ts` and `client.ts` by lazily requiring the store inside the Axios interceptor.
+- **[2026-08-18 14:45:00]**: Completely refactored `client.ts` and `auth-store.ts` using Dependency Injection to permanently eliminate the Metro Bundler `Require cycle` warning.

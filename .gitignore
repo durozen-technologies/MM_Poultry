@@ -99,3 +99,4 @@ coverage/
 
 # Github Token
 .agents/github_token.txt
+stitch_ui/

@@ -271,3 +271,13 @@ Wrote a structured product brief into MM_Poultry_Documentation.md to serve as th
 ### [2026-08-18 10:52:31]
 **User:** Requested to add the add icon to the retailers page.
 **Assistant:** Found that while there was a Floating Action Button, it didn't have an add button in the top header (unlike the Farms screen). Added a `person-add` icon button to the header of `AdminRetailersScreen` and also adjusted the Floating Action Button to safely hover above the dynamic bottom navigation bar.
+- **[2026-08-18 12:20:00] User Request**: Fix both frontend and backend.
+- **Action**: Identified that the global username check was improperly placed in `create_organization` instead of `register_tenant`, causing an `AttributeError`. Fixed the backend service logic. On the frontend, the Axios interceptor in `client.ts` was capturing generic HTTP error messages instead of FastAPI's `detail` field. Updated `client.ts` to correctly parse and display the `detail` field from the API.
+- **[2026-08-18 12:38:00] User Request**: Delete organization is not working fix it.
+- **Action**: Identified that the `delete_organization` endpoint properly set `is_active=False`, but the `list_organizations` query failed to filter out inactive organizations. Fixed `wholesale.py` to only select where `is_active == True`.
+- **[2026-08-18 14:35:00] User Request**: Addressed Expo Metro crash (`chrome-sandbox` SUID sandbox helper binary was found, but is not configured correctly) and `Require cycle` warning.
+- **Action**: Fixed the `Require cycle` warning by removing the top-level import of `useAuthStore` in `client.ts` and lazily requiring it instead. Instructed the user to run `chown` and `chmod` via `sudo` in their terminal to fix the `chrome-sandbox` permission issue, as it requires root privileges.
+- **[2026-08-18 14:39:00] User Request**: Fix t (fixing typescript compilation error)
+- **Action**: Identified that removing the top-level import in `client.ts` caused a `TS2304` error in the response interceptor. Replaced the missing reference with an inline `require("../store/auth-store")`. Verified the fix using `bun run tsc --noEmit`.
+- **[2026-08-18 14:45:00] User Request**: Still there ,find the root cause and fix it
+- **Action**: Identified that Metro Bundler's AST parser still detects `require()` calls even if they are inside a function block (lazy evaluated). To completely break the cycle, I refactored `client.ts` to export setter functions (`setAuthToken`) instead of requiring the store. Then, I added bindings at the bottom of `auth-store.ts` using Zustand's `.subscribe` method. Verified successful compilation.

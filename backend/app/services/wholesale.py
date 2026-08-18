@@ -55,7 +55,6 @@ from app.schemas import (
     OpsDashboard,
     OrganizationCreate,
     OrganizationOut,
-    OrganizationRegisterRequest,
     OrganizationUpdate,
     PaymentCreate,
     PaymentOut,
@@ -109,50 +108,9 @@ async def create_organization(db: AsyncSession, payload: OrganizationCreate) -> 
 
 
 async def list_organizations(db: AsyncSession) -> list[OrganizationOut]:
-    rows = list(await db.scalars(select(Organization).order_by(Organization.name)))
+    rows = list(await db.scalars(select(Organization).where(Organization.is_active == True).order_by(Organization.name)))
     return [OrganizationOut.model_validate(r, from_attributes=True) for r in rows]
 
-
-async def register_tenant(db: AsyncSession, payload: OrganizationRegisterRequest) -> OrganizationOut:
-    from app.core.security import get_password_hash
-    from app.db.tenant_schema import (
-        derive_schema_name,
-        provision_tenant_schema_async,
-        set_search_path,
-    )
-    from app.services.auth import upsert_auth_index
-
-    slug = payload.slug.strip().lower()
-    existing = await db.scalar(select(Organization).where(Organization.slug == slug))
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization slug exists")
-    
-    schema_name = derive_schema_name(slug)
-    org = Organization(name=payload.name.strip(), slug=slug, schema_name=schema_name)
-    db.add(org)
-    await db.flush()
-    await provision_tenant_schema_async(schema_name)
-    
-    await set_search_path(db, schema_name)
-    user = User(
-        username=payload.admin_username,
-        password_hash=get_password_hash(payload.admin_password),
-        role=UserRole.ADMIN,
-        organization_id=org.id,
-    )
-    db.add(user)
-    await db.flush()
-    
-    await set_search_path(db, None)
-    await upsert_auth_index(
-        db,
-        username=user.username,
-        organization_id=org.id,
-        schema_name=schema_name,
-        user_id=user.id,
-    )
-    
-    return OrganizationOut.model_validate(org, from_attributes=True)
 
 
 async def update_organization(db: AsyncSession, org_id: UUID, payload: OrganizationUpdate) -> OrganizationOut:
@@ -199,14 +157,13 @@ async def create_tenant_admin(db: AsyncSession, org_id: UUID, payload: TenantAdm
     
     from app.core.security import get_password_hash
     from app.db.tenant_schema import set_search_path
-    from app.services.auth import upsert_auth_index
+    from app.services.auth import upsert_auth_index, check_global_username_available
+
+    await set_search_path(db, None)
+    if not await check_global_username_available(db, payload.username):
+        raise HTTPException(status_code=409, detail="Username is already taken globally")
 
     await set_search_path(db, org.schema_name)
-    
-    existing = await db.scalar(select(User).where(User.username == payload.username))
-    if existing:
-        await set_search_path(db, None)
-        raise HTTPException(status_code=409, detail="Username exists in tenant")
 
     user = User(
         username=payload.username,
@@ -227,6 +184,57 @@ async def create_tenant_admin(db: AsyncSession, org_id: UUID, payload: TenantAdm
     )
     
     return UserOut.model_validate(user, from_attributes=True)
+
+
+async def create_delivery_user(db: AsyncSession, org_id: UUID, payload: DeliveryUserCreate) -> UserOut:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+        
+    from app.core.security import get_password_hash
+    from app.db.tenant_schema import set_search_path
+    from app.services.auth import upsert_auth_index, check_global_username_available
+
+    await set_search_path(db, None)
+    if not await check_global_username_available(db, payload.username):
+        raise HTTPException(status_code=409, detail="Username is already taken globally")
+
+    await set_search_path(db, org.schema_name)
+
+    user = User(
+        username=payload.username,
+        password_hash=get_password_hash(payload.password),
+        role=UserRole.DELIVERY,
+        organization_id=org.id,
+    )
+    db.add(user)
+    await db.flush()
+    
+    await set_search_path(db, None)
+    await upsert_auth_index(
+        db,
+        username=user.username,
+        organization_id=org.id,
+        schema_name=org.schema_name,
+        role=UserRole.DELIVERY,
+        password_hash=user.password_hash,
+    )
+    return UserOut.model_validate(user, from_attributes=True)
+
+
+async def list_delivery_users(db: AsyncSession, org_id: UUID) -> list[UserOut]:
+    org = await db.scalar(select(Organization).where(Organization.id == org_id))
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+        
+    from app.db.tenant_schema import set_search_path
+    await set_search_path(db, org.schema_name)
+    
+    users = await db.scalars(select(User).where(User.role == UserRole.DELIVERY))
+    users_list = list(users.all())
+    
+    await set_search_path(db, None)
+    return [UserOut.model_validate(u, from_attributes=True) for u in users_list]
 
 
 async def update_tenant_admin(db: AsyncSession, org_id: UUID, user_id: UUID, payload: TenantAdminUpdate) -> UserOut:
@@ -356,8 +364,13 @@ async def create_retailer(
     )
     db.add(retailer)
     await db.flush()
-
     if payload.username and payload.password:
+        from app.services.auth import check_global_username_available
+        
+        await set_search_path(db, None)
+        if not await check_global_username_available(db, payload.username):
+            raise HTTPException(status_code=409, detail="Retailer username is already taken globally")
+        await set_search_path(db, schema_name)
         user = User(
             username=payload.username.strip(),
             password_hash=get_password_hash(payload.password),

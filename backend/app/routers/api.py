@@ -33,7 +33,6 @@ from app.schemas import (
     OpsDashboard,
     OrganizationCreate,
     OrganizationOut,
-    OrganizationRegisterRequest,
     OrganizationUpdate,
     PaymentCreate,
     PaymentOut,
@@ -109,17 +108,6 @@ async def create_org(
     return await svc.create_organization(auth.db, payload)
 
 
-@router.post("/super-admin/register-tenant", response_model=OrganizationOut)
-async def register_tenant(
-    payload: OrganizationRegisterRequest,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
-) -> OrganizationOut:
-    from app.db.tenant_schema import set_search_path
-
-    await set_search_path(auth.db, None)
-    return await svc.register_tenant(auth.db, payload)
-
-
 @router.patch("/super-admin/organizations/{org_id}", response_model=OrganizationOut)
 async def update_org(
     org_id: UUID,
@@ -171,6 +159,23 @@ async def delete_tenant_admin(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> None:
     await svc.delete_tenant_admin(auth.db, org_id, user_id)
+
+
+# --- Delivery Users ---
+
+@router.get("/admin/users/delivery", response_model=list[UserOut])
+async def list_delivery_users(
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> list[UserOut]:
+    return await svc.list_delivery_users(auth.db, auth.user.organization_id)
+
+
+@router.post("/admin/users/delivery", response_model=UserOut)
+async def create_delivery_user(
+    payload: DeliveryUserCreate,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> UserOut:
+    return await svc.create_delivery_user(auth.db, auth.user.organization_id, payload)
 
 
 # --- Admin retailers / rates / orders ---

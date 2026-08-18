@@ -44,7 +44,7 @@ export type DailyOrder = {
   order_date: string;
   requested_kg: string;
   bird_size?: string | null;
-  notes: string | null;
+  notes?: string | null;
   status: OrderStatus;
   retailer_name?: string | null;
   shop_name?: string | null;
@@ -72,6 +72,36 @@ export type FarmLoad = {
   driver_name: string | null;
   bird_count?: number | null;
   status: string;
+};
+
+export type OrganizationOut = {
+  id: string;
+  name: string;
+  slug: string;
+  schema_name: string;
+  is_active: boolean;
+};
+
+export type OrganizationUpdate = {
+  name?: string | null;
+  is_active?: boolean | null;
+};
+
+export type TenantAdminCreate = {
+  username: string;
+  password?: string;
+};
+
+export type TenantAdminUpdate = {
+  is_active?: boolean | null;
+  password?: string | null;
+};
+
+export type DeliveryUserCreate = {
+  username: string;
+  password?: string;
+  full_name?: string | null;
+  mobile_number?: string | null;
 };
 
 export type Vehicle = {

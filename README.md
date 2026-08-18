@@ -17,8 +17,8 @@ Mobile-first broiler wholesale management (orders → farm load → BLE delivery
 # Backend (API)
 cd backend
 uv sync
-python manage.py setup
-python manage.py createsuperadmin --username admin --password yourpassword
+uv run python manage.py setup
+uv run python manage.py createsuperadmin --username admin --password yourpassword
 uv run uvicorn app.main:app --reload --port 8000
 
 # Frontend (Mobile/Web)

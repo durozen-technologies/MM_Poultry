@@ -17,6 +17,30 @@ def normalize_username(username: str) -> str:
     return username.strip().lower()
 
 
+async def check_global_username_available(db: AsyncSession, username: str) -> bool:
+    """Check if a username is available globally across all tenants and superadmins."""
+    username_lower = normalize_username(username)
+    
+    # Check public.user_auth_index
+    existing_index = await db.scalar(
+        select(UserAuthIndex).where(UserAuthIndex.username_lower == username_lower)
+    )
+    if existing_index:
+        return False
+        
+    # Check public.users (superadmins who might not be in auth index)
+    existing_sa = await db.scalar(
+        select(User).where(
+            func.lower(User.username) == username_lower,
+            User.organization_id.is_(None)
+        )
+    )
+    if existing_sa:
+        return False
+        
+    return True
+
+
 async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
     username_lower = normalize_username(payload.username)
 
@@ -118,8 +142,7 @@ async def upsert_auth_index(
     username_lower = normalize_username(username)
     existing = await db.scalar(
         select(UserAuthIndex).where(
-            UserAuthIndex.username_lower == username_lower,
-            UserAuthIndex.organization_id == organization_id,
+            UserAuthIndex.username_lower == username_lower
         )
     )
     if existing:
