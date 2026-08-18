@@ -215,3 +215,10 @@
 - **2026-08-17 16:08:06**: Removed seed.py, created manage.py CLI, and implemented superadmin full CRUD capabilities for organizations and tenant admins, including a /super-admin/register-tenant endpoint as requested.
 - **2026-08-17 16:10:24**: Deleted unwanted files: Untitled (code file), Broiler_Wholesale_App_IDEA_Updated.md, and Broiler_Wholesale_App_Proposal.md.
 - **2026-08-17 16:14:27**: Created MM_Poultry_Documentation.md to replace the deleted proposal documents and updated .core/RULES.md and ADMIN_PLAN.md to point to it.
+### [2026-08-18 10:48:30] Added Safe Area Insets to Bottom Navigation
+- **Request**: User requested the hand-rolled bottom navigation bar be optimized to avoid overlapping with Android system navigation (button and swipe).
+- **Action**: Wrote a Python script to batch update `admin-home-screen.tsx`, `admin-orders-screen.tsx`, `admin-farms-screen.tsx`, and `admin-retailers-screen.tsx`. Replaced fixed heights and padding with `useSafeAreaInsets().bottom` from `react-native-safe-area-context` so the navigation dynamically clears the OS insets.
+
+### [2026-08-18 10:55:00] Added Add Retailer Button to Header
+- **Request**: User requested the add icon in the retailers page.
+- **Action**: Modified `AdminRetailersScreen` to include a header-level "Add Retailer" icon button for easier accessibility, and made the existing FAB respect the new dynamic `insets.bottom` to ensure it isn't overlapped by the taller bottom navigation bar.

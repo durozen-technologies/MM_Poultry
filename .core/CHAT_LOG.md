@@ -240,3 +240,34 @@ Removed backend/seed.py, created backend/manage.py CLI with setup and createsupe
 Deleted Untitled, Broiler_Wholesale_App_IDEA_Updated.md, and Broiler_Wholesale_App_Proposal.md as requested.
 ## [2026-08-17 16:14:27] Created Proper Documentation
 Wrote a structured product brief into MM_Poultry_Documentation.md to serve as the single source of truth for the project vision, replacing the deleted markdown files.
+### [2026-08-18 10:06:19]
+**User:** PULL
+**Assistant:** Ran `git pull` which successfully fetched a large number of updates from `main`, including new frontend admin screens, a transition from `npm` to `bun`, and a massive installation of new agent skills and `.agents` configurations.
+
+### [2026-08-18 10:11:06]
+**User:** TERMINAL COMMAND TO RUN THE CODE (while viewing `migrations/env.py`)
+**Assistant:** Provided the terminal commands to run the backend and frontend, as well as the commands for generating and applying multi-tenant Alembic migrations.
+
+### [2026-08-18 10:23:04]
+**User:** PS D:\MM_Poultry\frontend> npx expo start -c
+**Assistant:** Acknowledged the user started the frontend using `npx expo start -c` (since `bun run start` exited immediately).
+
+### [2026-08-18 10:28:06]
+**User:** (Pasted terminal trace showing Expo app crashing with `Unable to resolve "@expo/vector-icons"`)
+**Assistant:** Identified that the recent `git pull` introduced new dependencies (like `@expo/vector-icons`) that weren't installed locally. Also noticed `bun` is not installed on the system, so triggered `npm install` in the frontend directory to resolve the missing packages.
+
+### [2026-08-18 10:28:06]
+**User:** (Pasted terminal trace showing backend crashing with `UndefinedColumnError: column retailer_daily_orders.bird_size does not exist`)
+**Assistant:** Found that while the public schema was upgraded correctly, the tenant migrations are no longer handled by standard Alembic migrations but rather by `repair_tenant_schema_async` in `tenant_schema.py`. Generated a small script to execute the repair function on the `tenant_demo` schema, successfully adding the missing `bird_size` and other newly introduced columns.
+
+### [2026-08-18 10:42:07]
+**User:** (Pasted frontend terminal showing `500` errors for `/farms` and `/orders`)
+**Assistant:** Noticed that the frontend booted successfully thanks to the `npm install`, but the backend is now throwing 500 Internal Server Errors when the app tries to fetch data. Prompted the user to paste the backend terminal trace so we can see what's crashing it.
+
+### [2026-08-18 10:45:19]
+**User:** (Provided a screenshot of the app's bottom navigation bar overlapping with the Android system navigation bar, asking for it to be optimized for button and swipe navigation).
+**Assistant:** Fixed the issue across all 4 admin screens (`admin-home-screen`, `admin-orders-screen`, `admin-farms-screen`, `admin-retailers-screen`) by importing `useSafeAreaInsets` from `react-native-safe-area-context` and applying dynamic padding and height to the bottom navigation bar view to respect the system insets.
+
+### [2026-08-18 10:52:31]
+**User:** Requested to add the add icon to the retailers page.
+**Assistant:** Found that while there was a Floating Action Button, it didn't have an add button in the top header (unlike the Farms screen). Added a `person-add` icon button to the header of `AdminRetailersScreen` and also adjusted the Floating Action Button to safely hover above the dynamic bottom navigation bar.

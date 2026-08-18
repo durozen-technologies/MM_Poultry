@@ -9,13 +9,14 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "../../api/client";
 import type { DailyOrderOut, OrderStatus } from "../../types/api";
 
 
 
 export function AdminOrdersScreen({ navigation }: { navigation: any }) {
+  const insets = useSafeAreaInsets();
   const [orders, setOrders] = useState<DailyOrderOut[]>([]);
   const [totalKg, setTotalKg] = useState("0");
   const [searchQuery, setSearchQuery] = useState("");
@@ -223,9 +224,9 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
       </ScrollView>
 
       {/* Bottom Navigation Bar */}
-      <View className="absolute bottom-0 inset-x-0 h-20 bg-surface/90 border-t border-outline-variant/20 flex-row justify-around items-center px-2 pb-2 z-40">
+      <View className="absolute bottom-0 inset-x-0 bg-surface/90 border-t border-outline-variant/20 flex-row justify-around items-center px-2 z-40 px-2 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12), height: 60 + Math.max(insets.bottom, 12) }}>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("AdminHome")}
         >
           <MaterialIcons name="grid-view" size={24} color="#414844" />
@@ -234,7 +235,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           </Text>
         </Pressable>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("Retailers")}
         >
           <MaterialIcons name="group" size={24} color="#414844" />
@@ -243,7 +244,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           </Text>
         </Pressable>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("Farms")}
         >
           <MaterialIcons name="agriculture" size={24} color="#414844" />
@@ -251,7 +252,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
             Farms
           </Text>
         </Pressable>
-        <Pressable className="flex-col items-center justify-center gap-1 w-20 h-full">
+        <Pressable className="flex-col items-center justify-center gap-1 w-20">
           <View className="bg-primary-container/30 px-4 py-1 rounded-full mb-1">
             <MaterialIcons name="receipt-long" size={24} color="#012d1d" />
           </View>

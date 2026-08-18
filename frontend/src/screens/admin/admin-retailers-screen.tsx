@@ -10,13 +10,14 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "../../api/client";
 import { DatePickerField } from "../../components/date-picker-field";
 import type { LedgerOut, Retailer } from "../../types/api";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 
 export function AdminRetailersScreen({ navigation }: { navigation: any }) {
+  const insets = useSafeAreaInsets();
   const [retailers, setRetailers] = useState<Retailer[]>([]);
   const [selected, setSelected] = useState<LedgerOut | null>(null);
   const [cash, setCash] = useState("0");
@@ -89,6 +90,12 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
             Retailers
           </Text>
         </View>
+        <Pressable
+          className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
+          onPress={() => navigation.navigate("AddRetailer")}
+        >
+          <MaterialIcons name="person-add" size={24} color="#414844" />
+        </Pressable>
       </View>
 
       {/* Search & Filters */}
@@ -245,7 +252,8 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
 
       {/* FAB */}
       <Pressable
-        className="absolute bottom-24 right-4 w-14 h-14 bg-primary rounded-2xl shadow-lg flex items-center justify-center active:bg-primary/90 z-50"
+        className="absolute right-4 w-14 h-14 bg-primary rounded-2xl shadow-lg flex items-center justify-center active:bg-primary/90 z-50"
+        style={{ bottom: 80 + Math.max(insets.bottom, 12) }}
         onPress={() => navigation.navigate("AddRetailer")}
       >
         <MaterialIcons name="add" size={28} color="#ffffff" />
@@ -320,9 +328,9 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       </Modal>
 
       {/* Bottom Navigation Bar */}
-      <View className="absolute bottom-0 inset-x-0 h-20 bg-surface/90 border-t border-outline-variant/20 flex-row justify-around items-center px-2 pb-2 z-40">
+      <View className="absolute bottom-0 inset-x-0 bg-surface/90 border-t border-outline-variant/20 flex-row justify-around items-center px-2 z-40 px-2 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12), height: 60 + Math.max(insets.bottom, 12) }}>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("AdminHome")}
         >
           <MaterialIcons name="grid-view" size={24} color="#414844" />
@@ -330,7 +338,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
             Dashboard
           </Text>
         </Pressable>
-        <Pressable className="flex-col items-center justify-center gap-1 w-20 h-full">
+        <Pressable className="flex-col items-center justify-center gap-1 w-20">
           <View className="bg-primary-container/30 px-4 py-1 rounded-full mb-1">
             <MaterialIcons name="group" size={24} color="#012d1d" />
           </View>
@@ -339,7 +347,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
           </Text>
         </Pressable>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("Farms")}
         >
           <MaterialIcons name="agriculture" size={24} color="#414844" />
@@ -348,7 +356,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
           </Text>
         </Pressable>
         <Pressable 
-          className="flex-col items-center justify-center gap-1 w-20 h-full"
+          className="flex-col items-center justify-center gap-1 w-20"
           onPress={() => navigation.navigate("Orders")}
         >
           <MaterialIcons name="shopping-cart" size={24} color="#414844" />
