@@ -15,9 +15,9 @@
 6. Logged pivot idea in `IDEA.md`.
 7. Created this `SESSION_HISTORY.md` and `CHAT_LOG.md`.
 
-**Outcome:** `.core` now defines the implementation target. App scaffold (`backend/` / `frontend/`) not started yet — Phase 0 next per `ADMIN_PLAN.md`.
+**Outcome:** `.core` now defines the implementation target. App scaffold (`backend/` / `frontend/`) not started yet â€” Phase 0 next per `ADMIN_PLAN.md`.
 
-### [2026-08-09 00:55:00] Full plan implementation Phases 0–5
+### [2026-08-09 00:55:00] Full plan implementation Phases 0â€“5
 
 **User request:** Implement the Broiler Wholesale detailed plan (all todos); do not edit the plan file.
 
@@ -36,7 +36,7 @@
 
 **Actions taken:**
 1. DB connect + session: `SET TIME ZONE 'Asia/Kolkata'`; model defaults use `now_ist()`.
-2. API `IstDate` / `IstDateTime` serializers — wire format DD/MM/YYYY (and datetime DD/MM/YYYY HH:MM:SS).
+2. API `IstDate` / `IstDateTime` serializers â€” wire format DD/MM/YYYY (and datetime DD/MM/YYYY HH:MM:SS).
 3. Frontend `DatePickerField` (`@react-native-community/datetimepicker`) on load/report/payment dates; display via `formatIstDate`.
 4. RULES updated; `test_ist_dates.py` added (9 tests total passing).
 
@@ -46,7 +46,7 @@
 
 **User request:** install expo go SDK 57
 
-**Actions:** Ran `npx expo install expo@^57.0.0 --fix` in `frontend/` — now Expo 57 / RN 0.86.2 / React 19.2.3 for current Expo Go.
+**Actions:** Ran `npx expo install expo@^57.0.0 --fix` in `frontend/` â€” now Expo 57 / RN 0.86.2 / React 19.2.3 for current Expo Go.
 
 **Outcome:** Project aligned with Expo Go SDK 57.
 
@@ -60,7 +60,7 @@
 
 ### [2026-08-09 01:00:00] IDEA_Updated implementation slice
 
-**User request:** What updates does IDEA_Updated have � try to implement them.
+**User request:** What updates does IDEA_Updated have — try to implement them.
 
 **Actions:**
 1. Compared IDEA_Updated vs built MVP; implemented persist-first billing, checkout_id, credit limit, vehicles, org_settings, retailer extras, bird counts, ops dashboard API + admin/delivery UI hooks.
@@ -227,3 +227,7 @@
 - **[2026-08-18 14:35:00]**: Addressed a fatal error with Expo's React Native DevTools where `chrome-sandbox` fails due to incorrect SUID permissions on Linux. Also fixed a `Require cycle` warning between `auth-store.ts` and `client.ts` by lazily requiring the store inside the Axios interceptor.
 - **[2026-08-18 14:45:00]**: Completely refactored `client.ts` and `auth-store.ts` using Dependency Injection to permanently eliminate the Metro Bundler `Require cycle` warning.
 - **[2026-08-18 15:13:00]**: Permanently bypassed the `chrome-sandbox` SUID crash for React Native DevTools on Linux by wrapping the cached executable with a script that injects `--no-sandbox`. Enabled the Hermes JS engine in `app.json` for DevTools compatibility.
+
+### [2026-08-18 15:16:00] Pushed Package-Lock Update
+- **Request**: User requested a git push.
+- **Action**: Committed the `package-lock.json` which was updated after fetching the missing `@react-navigation/bottom-tabs` package. Successfully pushed to `origin/main`.
