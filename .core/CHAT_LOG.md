@@ -281,3 +281,11 @@ Wrote a structured product brief into MM_Poultry_Documentation.md to serve as th
 - **Action**: Identified that removing the top-level import in `client.ts` caused a `TS2304` error in the response interceptor. Replaced the missing reference with an inline `require("../store/auth-store")`. Verified the fix using `bun run tsc --noEmit`.
 - **[2026-08-18 14:45:00] User Request**: Still there ,find the root cause and fix it
 - **Action**: Identified that Metro Bundler's AST parser still detects `require()` calls even if they are inside a function block (lazy evaluated). To completely break the cycle, I refactored `client.ts` to export setter functions (`setAuthToken`) instead of requiring the store. Then, I added bindings at the bottom of `auth-store.ts` using Zustand's `.subscribe` method. Verified successful compilation.
+
+### [2026-08-18 15:04:03]
+**User:** Requested to configure the frontend IP.
+**Assistant:** Verified `ipconfig` and checked `frontend/.env`. The file already has the correct IP configured (`192.168.1.8:8000`). Informed the user that no changes are necessary and to just restart the Expo server to ensure the environment variables are fresh.
+
+### [2026-08-18 15:05:15]
+**User:** (Pasted Expo terminal log showing `Unable to resolve "@react-navigation/bottom-tabs"`)
+**Assistant:** Noticed that the recent `git pull` (hard reset) brought in new frontend architectural changes from `main` that utilize `@react-navigation/bottom-tabs` instead of the custom bottom bar. Triggered `npm install` in the background to fetch the newly added dependencies from `package.json`.
