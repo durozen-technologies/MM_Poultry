@@ -9,6 +9,7 @@
     "android",
     "web"
   ],
+  "jsEngine": "hermes",
   "android": {
     "package": "com.durozen.mmbroilers",
     "permissions": [

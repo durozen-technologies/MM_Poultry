@@ -226,3 +226,4 @@
 - **[2026-08-18 12:38:00]**: Fixed 'Delete organization' bug. Soft-deleted organizations were still being returned by `list_organizations` because the `is_active=True` filter was missing in the backend query.
 - **[2026-08-18 14:35:00]**: Addressed a fatal error with Expo's React Native DevTools where `chrome-sandbox` fails due to incorrect SUID permissions on Linux. Also fixed a `Require cycle` warning between `auth-store.ts` and `client.ts` by lazily requiring the store inside the Axios interceptor.
 - **[2026-08-18 14:45:00]**: Completely refactored `client.ts` and `auth-store.ts` using Dependency Injection to permanently eliminate the Metro Bundler `Require cycle` warning.
+- **[2026-08-18 15:13:00]**: Permanently bypassed the `chrome-sandbox` SUID crash for React Native DevTools on Linux by wrapping the cached executable with a script that injects `--no-sandbox`. Enabled the Hermes JS engine in `app.json` for DevTools compatibility.

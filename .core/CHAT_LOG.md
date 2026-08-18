@@ -289,3 +289,5 @@ Wrote a structured product brief into MM_Poultry_Documentation.md to serve as th
 ### [2026-08-18 15:05:15]
 **User:** (Pasted Expo terminal log showing `Unable to resolve "@react-navigation/bottom-tabs"`)
 **Assistant:** Noticed that the recent `git pull` (hard reset) brought in new frontend architectural changes from `main` that utilize `@react-navigation/bottom-tabs` instead of the custom bottom bar. Triggered `npm install` in the background to fetch the newly added dependencies from `package.json`.
+- **[2026-08-18 15:13:00] User Request**: Fix it (React Native DevTools FATAL sandbox crash)
+- **Action**: The user ran `npm i` instead of `bun` and the DevTools fatal crash persisted because they could not run the `sudo` fix. I implemented a permanent workaround without root privileges by wrapping the `React Native DevTools` binary in the `~/.cache` directory with a bash script that automatically passes the `--no-sandbox` flag to Chromium. I also added `"jsEngine": "hermes"` to `app.json` so that the DevTools can successfully connect to the app.
