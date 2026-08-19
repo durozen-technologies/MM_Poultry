@@ -387,3 +387,9 @@ User requested a plan for API/Interface design and performance optimization, and
 uv run pytest
 uv run ruff check --fix && uv run ruff format
 ```
+
+### [2026-08-19 11:53:00]
+**User:** Provided GitHub PAT and Keystore details and requested them to be mapped to GitHub Secrets for a Play Store app release.
+**Assistant:** Created `.github/workflows/build-android-release.yml` and provided the exact keys to configure in GitHub.
+**User:** Requested to generate fresh keys specifically for this project instead of reusing the example ones.
+**Assistant:** Generated a new RSA-2048 Android Keystore using `keytool` and stored the raw binary in `secrets/upload.keystore` and the Base64 representation in `secrets/base64_keystore.txt`. Provided a safe text file `.github/workflows/github_secrets_keys.txt` with the exact keys for GitHub. Fixed `.gitignore` encoding issues to ensure keys are ignored, and committed the changes.

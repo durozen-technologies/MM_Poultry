@@ -298,3 +298,7 @@
   - Identified inefficient in-memory filtering and N+1 looping in `backend/app/services/wholesale/reports.py`'s `report_summary` for `TripWeightLoss` calculation. Replaced with a single SQL `func.sum()` aggregated join query on `DeliveryRun` and `TripWeightLoss`.
   - Identified N+1 query in `backend/app/services/wholesale/orders.py` inside `list_today_orders` that was retrieving `Retailer` per daily order individually. Refactored into a `select().join()` on `Retailer`.
   - Ran `ruff check --fix` and `ruff format`.
+
+### [2026-08-19 11:53:00] Play Store Release Workflow Created
+- **Request**: User provided a GitHub PAT, API URL, and Keystore details, requesting them to be mapped to GitHub Secrets for a Play Store app release.
+- **Action**: Created `.github/workflows/build-android-release.yml` to automatically build an Android App Bundle (`.aab`) and sign it using `r0adkll/sign-android-release@v1` utilizing the provided GitHub Secrets. 
