@@ -4,8 +4,6 @@ import asyncio
 import sys
 from getpass import getpass
 
-from sqlalchemy import select
-
 from app.core.security import get_password_hash
 from app.db.database import get_session_factory
 from app.db.tenant_schema import set_search_path

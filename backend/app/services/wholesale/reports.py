@@ -122,17 +122,15 @@ async def report_summary(db: AsyncSession, start: date, end: date) -> ReportSumm
             Payment.type == PaymentType.RECEIVED,
         )
     )
-    loss_rows = list(await db.scalars(select(TripWeightLoss)))
-    run_ids = {row.delivery_run_id for row in loss_rows}
-    runs = {}
-    if run_ids:
-        for r in await db.scalars(select(DeliveryRun).where(DeliveryRun.id.in_(run_ids))):
-            runs[r.id] = r
-    total_loss = Decimal("0.000")
-    for row in loss_rows:
-        run = runs.get(row.delivery_run_id)
-        if run and start <= run.run_date <= end:
-            total_loss += row.loss_kg
+    total_loss_val = await db.scalar(
+        select(func.coalesce(func.sum(TripWeightLoss.loss_kg), 0))
+        .join(DeliveryRun, DeliveryRun.id == TripWeightLoss.delivery_run_id)
+        .where(
+            DeliveryRun.run_date >= start,
+            DeliveryRun.run_date <= end,
+        )
+    )
+    total_loss = q_kg(Decimal(str(total_loss_val or 0)))
 
     return ReportSummary(
         period_start=start,

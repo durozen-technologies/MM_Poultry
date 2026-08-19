@@ -1,10 +1,8 @@
-import asyncio
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -148,9 +146,9 @@ def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None
 
 
 def run_migrations_online() -> None:
-    from sqlalchemy import text, engine_from_config
     from app.core.config import Settings
     from app.db.tenant_schema import derive_schema_name
+    from sqlalchemy import engine_from_config, text
     
     settings = Settings()
     

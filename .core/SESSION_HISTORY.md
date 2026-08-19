@@ -290,3 +290,11 @@
   - Updated frontend `Retailer` type in `frontend/src/types/api.ts` to include `preferred_delivery_time`.
   - Refactored `ops_dashboard` in `backend/app/services/wholesale/billing.py` to use database-level SQL aggregations (`func.sum()`) rather than fetching list of records to Python memory, dramatically boosting scale performance.
   - Validated zero `tsc` and `ruff` regressions.
+
+### [2026-08-19 11:15:00] Fixed N+1 Performance Issues in Wholesale Services
+- **Request**: User requested performance optimization via `/performance-optimization`.
+- **Action**:
+  - Identified N+1 query patterns in `backend/app/services/wholesale/delivery_runs.py` where `get_delivery_run` looped over `DeliveryStop` and queried `Retailer` individually. Replaced with `select().join()`.
+  - Identified inefficient in-memory filtering and N+1 looping in `backend/app/services/wholesale/reports.py`'s `report_summary` for `TripWeightLoss` calculation. Replaced with a single SQL `func.sum()` aggregated join query on `DeliveryRun` and `TripWeightLoss`.
+  - Identified N+1 query in `backend/app/services/wholesale/orders.py` inside `list_today_orders` that was retrieving `Retailer` per daily order individually. Refactored into a `select().join()` on `Retailer`.
+  - Ran `ruff check --fix` and `ruff format`.

@@ -82,25 +82,28 @@ async def get_today_order_for_retailer(
 
 async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
     day = today_ist()
-    orders = list(
-        await db.scalars(
-            select(RetailerDailyOrder)
-            .where(
-                RetailerDailyOrder.order_date == day,
-                RetailerDailyOrder.status != OrderStatus.CANCELLED,
-            )
-            .order_by(RetailerDailyOrder.created_at.asc())
+    
+    from app.models.domain import Retailer
+    
+    res = await db.execute(
+        select(RetailerDailyOrder, Retailer.name, Retailer.shop_name)
+        .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
+        .where(
+            RetailerDailyOrder.order_date == day,
+            RetailerDailyOrder.status != OrderStatus.CANCELLED,
         )
+        .order_by(RetailerDailyOrder.created_at.asc())
     )
+    
     items: list[DailyOrderOut] = []
     total = Decimal("0.000")
-    for order in orders:
-        retailer = await get_retailer(db, order.retailer_id)
+    for order, r_name, r_shop in res:
         out = DailyOrderOut.model_validate(order, from_attributes=True)
-        out.retailer_name = retailer.name
-        out.shop_name = retailer.shop_name
+        out.retailer_name = r_name
+        out.shop_name = r_shop
         items.append(out)
         total += order.requested_kg
+        
     return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total))
 
 

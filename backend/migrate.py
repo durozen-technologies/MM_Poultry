@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 
-from sqlalchemy import select
-
 from app.db.database import get_session_factory
 from app.db.tenant_schema import (
     create_platform_tables,
@@ -13,6 +11,7 @@ from app.db.tenant_schema import (
     set_search_path,
 )
 from app.models.organization import Organization
+from sqlalchemy import select
 
 
 async def main() -> None:

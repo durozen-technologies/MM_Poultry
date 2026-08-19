@@ -370,3 +370,20 @@ User requested a plan for API/Interface design and performance optimization, and
 - The `Retailer` schemas had been expanded in the backend, but the Add Retailer UI wasn't updated. Completely rewrote `frontend/src/screens/admin/admin-add-retailer-screen.tsx` to include fields like owner_name, whatsapp, area, category, etc., matching the `RetailerCreate` payload exactly.
 - Fixed TS type errors by modifying `frontend/src/types/api.ts`.
 - Verified backend using `ruff` and frontend using `tsc`.
+
+### [2026-08-19 11:15:00] Fixed N+1 Performance Issues in Wholesale Services
+**User:** `@[TerminalName: uv, ProcessId: 10969] Fix it` and `/performance-optimization`. (User started database services and resolved the connection refused error, seeking performance optimization).
+
+**Assistant:** Investigated potential performance bottlenecks using the `performance-optimization` skill principles, focusing on backend database queries. Discovered and fixed three N+1 query patterns that were severely impacting performance.
+
+**Actions Taken:**
+1. Replaced loop-based individual `Retailer` queries in `delivery_runs.py` (`get_delivery_run`) with a single SQL `JOIN` on `Retailer`.
+2. Refactored `reports.py` (`report_summary`) to use a single SQL `func.sum()` aggregation with a `JOIN` on `DeliveryRun` instead of fetching all `TripWeightLoss` records and filtering in Python memory.
+3. Updated `orders.py` (`list_today_orders`) to use a SQL `JOIN` on `Retailer` instead of executing a new query for each order in the list.
+4. Updated `.core/SESSION_HISTORY.md` and `.core/CHAT_LOG.md`.
+
+**Commands Run:**
+```bash
+uv run pytest
+uv run ruff check --fix && uv run ruff format
+```

@@ -11,6 +11,7 @@ from app.models.domain import (
     DeliveryRun,
     DeliveryStop,
     FarmLoad,
+    Retailer,
     RetailerDailyOrder,
 )
 from app.models.enums import (
@@ -77,15 +78,23 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
-    stops = list(
-        await db.scalars(
-            select(DeliveryStop)
-            .where(DeliveryStop.delivery_run_id == run.id)
-            .order_by(DeliveryStop.sequence.asc())
-        )
+        
+    stops_res = await db.execute(
+        select(DeliveryStop, Retailer.name, Retailer.shop_name)
+        .join(Retailer, Retailer.id == DeliveryStop.retailer_id)
+        .where(DeliveryStop.delivery_run_id == run.id)
+        .order_by(DeliveryStop.sequence.asc())
     )
+    
     out = DeliveryRunOut.model_validate(run, from_attributes=True)
-    out.stops = [await _stop_out(db, s) for s in stops]
+    stops_out = []
+    for stop, r_name, r_shop in stops_res:
+        s_out = DeliveryStopOut.model_validate(stop, from_attributes=True)
+        s_out.retailer_name = r_name
+        s_out.shop_name = r_shop
+        stops_out.append(s_out)
+        
+    out.stops = stops_out
     return out
 
 
