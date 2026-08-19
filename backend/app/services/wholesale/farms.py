@@ -20,8 +20,10 @@ from app.schemas import (
     FarmLoadCreate,
     FarmLoadOut,
     FarmOut,
+    FarmUpdate,
     VehicleCreate,
     VehicleOut,
+    VehicleUpdate,
 )
 from app.services.wholesale.common import q_kg
 
@@ -41,8 +43,26 @@ async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
 
 
 async def list_farms(db: AsyncSession) -> list[FarmOut]:
-    rows = list(await db.scalars(select(Farm).where(Farm.is_active.is_(True)).order_by(Farm.name)))
+    rows = list(await db.scalars(select(Farm).order_by(Farm.name)))
     return [FarmOut.model_validate(r, from_attributes=True) for r in rows]
+
+
+async def update_farm(db: AsyncSession, farm_id: UUID, payload: FarmUpdate) -> FarmOut:
+    farm = await db.scalar(select(Farm).where(Farm.id == farm_id))
+    if farm is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm not found")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(farm, key, value)
+    await db.flush()
+    return FarmOut.model_validate(farm, from_attributes=True)
+
+
+async def deactivate_farm(db: AsyncSession, farm_id: UUID) -> None:
+    farm = await db.scalar(select(Farm).where(Farm.id == farm_id))
+    if farm is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm not found")
+    farm.is_active = False
+    await db.flush()
 
 
 async def create_vehicle(db: AsyncSession, payload: VehicleCreate) -> VehicleOut:
@@ -57,10 +77,31 @@ async def create_vehicle(db: AsyncSession, payload: VehicleCreate) -> VehicleOut
 
 
 async def list_vehicles(db: AsyncSession) -> list[VehicleOut]:
-    rows = list(
-        await db.scalars(select(Vehicle).where(Vehicle.is_active.is_(True)).order_by(Vehicle.number))
-    )
+    rows = list(await db.scalars(select(Vehicle).order_by(Vehicle.number)))
     return [VehicleOut.model_validate(r, from_attributes=True) for r in rows]
+
+
+async def update_vehicle(db: AsyncSession, vehicle_id: UUID, payload: VehicleUpdate) -> VehicleOut:
+    vehicle = await db.scalar(select(Vehicle).where(Vehicle.id == vehicle_id))
+    if vehicle is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
+    data = payload.model_dump(exclude_unset=True)
+    if "number" in data and data["number"]:
+        data["number"] = data["number"].strip().upper()
+    if "capacity_kg" in data and data["capacity_kg"] is not None:
+        data["capacity_kg"] = q_kg(data["capacity_kg"])
+    for key, value in data.items():
+        setattr(vehicle, key, value)
+    await db.flush()
+    return VehicleOut.model_validate(vehicle, from_attributes=True)
+
+
+async def deactivate_vehicle(db: AsyncSession, vehicle_id: UUID) -> None:
+    vehicle = await db.scalar(select(Vehicle).where(Vehicle.id == vehicle_id))
+    if vehicle is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
+    vehicle.is_active = False
+    await db.flush()
 
 
 async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoadOut:

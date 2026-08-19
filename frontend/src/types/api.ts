@@ -37,7 +37,12 @@ export type Retailer = {
   is_active: boolean;
 };
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "DISPATCHED" | "DELIVERED" | "CANCELLED";
+export type OrderStatus =
+  | "PLACED"
+  | "ACKNOWLEDGED"
+  | "PARTIAL"
+  | "FULFILLED"
+  | "CANCELLED";
 
 export type DailyOrder = {
   id: string;
@@ -67,12 +72,26 @@ export type FarmOut = {
 export type FarmLoad = {
   id: string;
   load_date: string;
+  farm_id?: string | null;
   loaded_weight_kg: string;
   vehicle_id?: string | null;
   vehicle_number: string | null;
   driver_name: string | null;
   bird_count?: number | null;
+  rate_per_kg?: string | null;
+  total_amount?: string | null;
+  paid_amount?: string | null;
+  payment_method?: string | null;
+  remarks?: string | null;
   status: string;
+};
+
+export type Rate = {
+  id: string;
+  retailer_id: string | null;
+  rate_per_kg: string;
+  effective_from: string;
+  effective_to?: string | null;
 };
 
 export type OrganizationOut = {
@@ -140,6 +159,9 @@ export type DeliveryBill = {
   id: string;
   bill_number: string;
   checkout_id: string;
+  delivery_stop_id?: string;
+  retailer_id?: string;
+  bill_date?: string;
   weight_kg: string;
   rate_per_kg: string;
   total_amount: string;
@@ -183,6 +205,63 @@ export type LedgerOut = {
     balance_after?: string | null;
     notes?: string | null;
   }>;
+};
+
+export type OrderTrackingStage = {
+  key: string;
+  label: string;
+  completed: boolean;
+  active: boolean;
+};
+
+export type RetailerOrderDetail = DailyOrder & {
+  estimated_delivery_date: string;
+  tracking_stages: OrderTrackingStage[];
+};
+
+export type RetailerOrdersPage = {
+  items: DailyOrder[];
+  has_more: boolean;
+  next_cursor: string | null;
+};
+
+export type RetailerBillsSummary = {
+  count: number;
+  total_amount: string;
+  total_paid: string;
+  outstanding: string;
+};
+
+export type RetailerBillsPage = {
+  items: DeliveryBill[];
+  summary: RetailerBillsSummary;
+  has_more: boolean;
+  next_cursor: string | null;
+};
+
+export type RetailerLastPayment = {
+  amount: string;
+  payment_date: string;
+  method: string | null;
+};
+
+export type RetailerDashboard = {
+  today_order: DailyOrder | null;
+  outstanding: string;
+  last_payment: RetailerLastPayment | null;
+  month_purchase_total: string;
+  month_payment_total: string;
+};
+
+export type RetailerProfile = {
+  retailer: Retailer;
+  username: string;
+};
+
+export type DailyOrderCreate = {
+  requested_kg: string;
+  bird_size?: string | null;
+  notes?: string | null;
 };
 
 export type TripWeightLoss = {

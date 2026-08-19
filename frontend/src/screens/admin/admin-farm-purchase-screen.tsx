@@ -84,14 +84,14 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const selectedFarmName = farms.find(f => f.id === selectedFarm)?.name || "Select Farm";
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       {/* Header */}
       <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-surface-variant/30">
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-container"
           onPress={() => navigation.goBack()}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#181c20" />
+          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
         </Pressable>
         <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold ml-2">
           Farm Purchase
@@ -114,7 +114,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           <View className="flex-col gap-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
             <View className="relative z-10">
-              <Pressable 
+              <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                 className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
                 onPress={() => setShowFarmDropdown(!showFarmDropdown)}
               >
@@ -124,14 +124,14 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
                     {selectedFarmName}
                   </Text>
                 </View>
-                <MaterialIcons name={showFarmDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} color="#414844" />
+                <MaterialIcons name={showFarmDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
               </Pressable>
               
               {showFarmDropdown && (
                 <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
                   <ScrollView nestedScrollEnabled>
                     {farms.map((farm) => (
-                      <Pressable 
+                      <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                         key={farm.id}
                         className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
                         onPress={() => {
@@ -167,13 +167,12 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
               <Text className="font-body-md text-body-md text-on-surface-variant">Quantity (Birds)</Text>
               <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
                 <TextInput
-                  className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full"
+                  className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                   placeholder="0"
-                  placeholderTextColor="#c5c7c8"
                   keyboardType="number-pad"
                   value={quantity}
                   onChangeText={setQuantity}
-                />
+ />
               </View>
             </View>
             
@@ -181,13 +180,12 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
               <Text className="font-body-md text-body-md text-primary font-semibold">Total Weight (KG)</Text>
               <View className="bg-primary/5 rounded-2xl px-4 py-2 border border-primary/20 shadow-sm">
                 <TextInput
-                  className="bg-transparent font-display-lg text-[24px] font-bold text-primary h-10 w-full"
+                  className="bg-transparent font-display-lg text-[24px] font-bold text-primary h-10 w-full placeholder:text-on-surface-variant"
                   placeholder="0.00"
-                  placeholderTextColor="#a5d0b9"
                   keyboardType="decimal-pad"
                   value={weight}
                   onChangeText={setWeight}
-                />
+ />
               </View>
             </View>
           </View>
@@ -195,13 +193,12 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             <Text className="font-body-md text-body-md text-on-surface-variant">Rate (₹ per KG)</Text>
             <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
               <TextInput
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full"
+                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
-                placeholderTextColor="#c5c7c8"
                 keyboardType="decimal-pad"
                 value={rate}
                 onChangeText={setRate}
-              />
+ />
             </View>
           </View>
         </View>
@@ -213,7 +210,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pb-2 -mx-4 px-4 snap-x">
             {["Bank Transfer", "UPI", "Cash", "Credit"].map((method) => (
-              <Pressable
+              <Pressable accessibilityRole="button" accessibilityLabel="Button"
                 key={method}
                 className={`snap-start shrink-0 rounded-full px-5 py-2 mr-2 shadow-sm ${paymentMethod === method ? "bg-primary" : "bg-surface-container"}`}
                 onPress={() => setPaymentMethod(method)}
@@ -229,13 +226,12 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             <Text className="font-body-md text-body-md text-on-surface-variant">Paid Amount (₹)</Text>
             <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
               <TextInput
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full"
+                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
-                placeholderTextColor="#c5c7c8"
                 keyboardType="decimal-pad"
                 value={paidAmount}
                 onChangeText={setPaidAmount}
-              />
+ />
             </View>
           </View>
 
@@ -253,14 +249,13 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             Remarks
           </Text>
           <TextInput
-            className="w-full bg-surface-container-lowest rounded-2xl p-4 min-h-[100px] border border-outline-variant/30 font-body-md text-body-md text-on-surface"
+            className="w-full bg-surface-container-lowest rounded-2xl p-4 min-h-[100px] border border-outline-variant/30 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
             placeholder="Add any notes here..."
-            placeholderTextColor="#717973"
             multiline
             textAlignVertical="top"
             value={remarks}
             onChangeText={setRemarks}
-          />
+ />
         </View>
 
         {/* Summary Card */}
@@ -292,19 +287,19 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
 
       {/* Sticky Bottom Actions */}
       <View className="absolute bottom-0 left-0 right-0 bg-surface/90 border-t border-surface-variant/30 p-4 flex-row gap-4 z-40">
-        <Pressable 
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
           className="flex-1 bg-transparent border-2 border-primary rounded-2xl py-3 items-center justify-center active:bg-primary/5"
           onPress={() => navigation.goBack()}
         >
           <Text className="font-headline-sm text-headline-sm text-primary font-semibold">Cancel</Text>
         </Pressable>
-        <Pressable 
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
           className="flex-[2] bg-primary rounded-2xl py-3 items-center justify-center active:scale-95 shadow-md shadow-primary/20"
           onPress={onSubmit}
           disabled={loading}
         >
           {loading ? (
-             <ActivityIndicator color="#ffffff" />
+             <ActivityIndicator className="text-white" />
           ) : (
             <Text className="font-headline-sm text-headline-sm text-on-primary font-semibold">Save Purchase</Text>
           )}

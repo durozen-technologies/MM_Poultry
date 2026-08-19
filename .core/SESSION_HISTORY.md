@@ -302,3 +302,44 @@
 ### [2026-08-19 11:53:00] Play Store Release Workflow Created
 - **Request**: User provided a GitHub PAT, API URL, and Keystore details, requesting them to be mapped to GitHub Secrets for a Play Store app release.
 - **Action**: Created `.github/workflows/build-android-release.yml` to automatically build an Android App Bundle (`.aab`) and sign it using `r0adkll/sign-android-release@v1` utilizing the provided GitHub Secrets. 
+
+### [2026-08-20 00:23:02] Fixed Backend CI workflow issues
+- **Request**: User requested fixing `.github/workflows/backend-ci.yml` and invoked `/ci-cd-and-automation` skill.
+- **Action**:
+  - Replaced error-prone `--health-cmd "pg_isready -U postgres"` with the standard `--health-cmd pg_isready` for Postgres service options.
+  - Quoted the postgres port mapping `"5432:5432"` to ensure YAML parses it as a string.
+  - Implemented CI cache optimization by adding `enable-cache: true` to the `astral-sh/setup-uv@v5` action.
+
+### [2026-08-20 00:33:42] Fixed duplicate bottom navigation bars
+- **Request**: User reported duplicate bottom navigation bars on Farm and Orders screens and invoked `/ponytail` and `/impeccable`.
+- **Action**: Removed the legacy hard-coded `Bottom Navigation Bar` components from `admin-farms-screen.tsx`, `admin-orders-screen.tsx`, and `admin-retailers-screen.tsx`. Routing is now fully driven by `@react-navigation/bottom-tabs` added previously.
+### [2026-08-19 19:24:00] Phase 1: FlatList Refactor (Performance)
+- Executed Phase 1 of `implementation_plan.md`.
+- Refactored `admin-farms-screen.tsx`, `admin-orders-screen.tsx`, `retailer-ledger-screen.tsx`, `retailer-bills-screen.tsx`, `retailer-orders-screen.tsx`, and `admin-delivery-runs-screen.tsx`.
+- Converted `ScrollView` + `.map()` list renders to `FlatList` with `ListHeaderComponent` and `ListEmptyComponent` for improved virtualized performance.
+- Skipped `admin-home-screen` and `retailer-dashboard-screen` because they only render 3 items max (false positives).
+- Updated `task.md` and created `walkthrough.md`.
+### [2026-08-19 19:30:00] Phase 2-4: Theming, Adaptivity, and Secondary Lists
+- Executed Phases 2, 3, and 4 of `implementation_plan.md`.
+- Stripped 122+ hardcoded hex colors from icons and injected NativeWind Tailwind classes.
+- Added NativeWind `cssInterop` configuration for `@expo/vector-icons` in `App.tsx`.
+- Applied `max-w-3xl mx-auto w-full` to `SafeAreaView` in all screens for tablet adaptivity.
+- Added basic `accessibilityRole` and `accessibilityLabel` to icon-only `Pressable`s across the app.
+- Converted `admin-rates-screen.tsx`, `admin-vehicles-screen.tsx`, and `admin-delivery-users-screen.tsx` to `FlatList`.
+- Updated `task.md` and `walkthrough.md`.
+### [2026-08-19 19:34:00] Debugging and Error Fixes
+- Identified and fixed 48 TypeScript regressions caused by bulk regex operations.
+- Fixed `FlatList` missing imports in 9 screens.
+- Fixed duplicate `className` JSX prop errors across 14 screens.
+- Fixed `contentContainerStyle` duplicate prop in `admin-orders-screen.tsx`.
+- Successfully ran `bun run typecheck` returning zero errors.
+
+### [2026-08-19 19:42:00] Phase 5 Batch 2/3: Admin Screens Migration to TanStack Query
+- **Request:** Migrate all admin screens to use TanStack Query hooks.
+- **Action:** Refactored `admin-orders-screen.tsx`, `admin-farms-screen.tsx`, `admin-retailers-screen.tsx`, `admin-delivery-runs-screen.tsx`, and `admin-home-screen.tsx` to remove `useFocusEffect` and manual `api.get` fetching. Used `useAdminTodayOrders`, `useAdminFarms`, `useAdminRetailers`, and `useAdminDashboard` hooks.
+- **Outcome:** The Admin module now enjoys automatic caching, deduplication, and stale-while-revalidate fetching patterns. Resolved a TS error regarding the response payload shape of `/admin/orders/today`. Verified with `bun run tsc`.
+
+### [2026-08-20 01:22:13] Fix Placeholder Colors
+- **Request:** Fix placeholders not being visible (shown in white color).
+- **Action:** Used a Node script to replace  with  in 11 files.
+- **Outcome:** Placeholders now dynamically adapt to the active theme via NativeWind v4.

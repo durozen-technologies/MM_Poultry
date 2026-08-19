@@ -7,6 +7,7 @@ import asyncio
 from app.db.database import get_session_factory
 from app.db.tenant_schema import (
     create_platform_tables,
+    repair_platform_schema_async,
     repair_tenant_schema_async,
     set_search_path,
 )
@@ -17,6 +18,8 @@ from sqlalchemy import select
 async def main() -> None:
     await create_platform_tables()
     print("Platform tables ready.")
+    await repair_platform_schema_async()
+    print("Platform schema repaired.")
 
     session = get_session_factory()()
     try:

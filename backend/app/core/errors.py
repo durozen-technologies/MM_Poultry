@@ -32,6 +32,8 @@ _MESSAGE_CODES: dict[str, str] = {
     "User account is inactive": "USER_INACTIVE",
     "Insufficient permissions": "FORBIDDEN",
     "Organization required": "ORGANIZATION_REQUIRED",
+    "Username is already taken globally": "USERNAME_TAKEN",
+    "Retailer username is already taken globally": "USERNAME_TAKEN",
 }
 
 

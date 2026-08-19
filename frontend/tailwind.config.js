@@ -5,6 +5,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        "brand-sand": "#f7f9ff",
+        "brand-ink": "#012d1d",
+        "brand-leaf": "#1b4332",
+        "brand-clay": "#ba1a1a",
         "tertiary-fixed": "#b1f0ce",
         "secondary-fixed-dim": "#c5c7c8",
         "inverse-surface": "#2d3135",

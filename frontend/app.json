@@ -12,6 +12,7 @@
   "jsEngine": "hermes",
   "android": {
     "package": "com.durozen.mmbroilers",
+    "usesCleartextTraffic": true,
     "permissions": [
       "android.permission.BLUETOOTH",
       "android.permission.BLUETOOTH_ADMIN",

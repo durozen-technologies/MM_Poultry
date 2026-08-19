@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,46 +7,27 @@ import {
   View,
   ScrollView,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../../api/client";
 import { useAuthStore } from "../../store/auth-store";
-import type { DailyOrder, OpsDashboard } from "../../types/api";
+import { useAdminTodayOrders, useAdminDashboard } from "../../hooks/use-queries";
 import { toApiDate, todayIstDate } from "../../utils/ist-date";
 
 export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const logout = useAuthStore((s) => s.logout);
-  const [orders, setOrders] = useState<DailyOrder[]>([]);
-  const [dashboard, setDashboard] = useState<OpsDashboard | null>(null);
   const [reportDate] = useState(todayIstDate());
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setBusy(true);
-    try {
-      const [o, dash] = await Promise.all([
-        api.get("/admin/orders/today"),
-        api.get("/admin/dashboard", {
-          params: { on_date: toApiDate(reportDate) },
-        }),
-      ]);
-      setOrders(o.data.items || []);
-      setDashboard(dash.data);
-      setMessage(null);
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setBusy(false);
-    }
-  }, [reportDate]);
+  const { data: todayOrders, isLoading: isLoadingOrders, isRefetching: isRefetchingOrders, refetch: refetchOrders, error: errorOrders } = useAdminTodayOrders();
+  const { data: dashboard, isLoading: isLoadingDashboard, isRefetching: isRefetchingDashboard, refetch: refetchDashboard, error: errorDashboard } = useAdminDashboard(toApiDate(reportDate));
 
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh])
-  );
+  const orders = todayOrders?.items || [];
+  const busy = isLoadingOrders || isLoadingDashboard || isRefetchingOrders || isRefetchingDashboard;
+  const errorMsg = errorOrders ? errorOrders.message : (errorDashboard ? errorDashboard.message : null);
+
+  function refresh() {
+    refetchOrders();
+    refetchDashboard();
+  }
 
   const pendingKg = dashboard?.pending_kg || "0";
   
@@ -62,22 +43,22 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const lossPercent = dashboard?.loss_pct || "0";
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
       {/* Header */}
       <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
         <Text className="font-headline-sm text-headline-sm text-on-surface">Dashboard</Text>
         <View className="flex-row items-center gap-3">
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Button"
             className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
             onPress={refresh}
           >
-            <MaterialIcons name="refresh" size={24} color="#414844" />
+            <MaterialIcons name="refresh" size={24} className="text-on-surface" />
           </Pressable>
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Button"
             className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
             onPress={logout}
           >
-            <MaterialIcons name="logout" size={24} color="#414844" />
+            <MaterialIcons name="logout" size={24} className="text-on-surface" />
           </Pressable>
         </View>
       </View>
@@ -87,9 +68,9 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
       >
-        {message && (
+        {errorMsg && (
           <View className="px-4 py-2 mb-4 bg-error-container mx-4 rounded-lg">
-            <Text className="text-error text-center text-label-md">{message}</Text>
+            <Text className="text-error text-center text-label-md">{errorMsg}</Text>
           </View>
         )}
 
@@ -100,28 +81,28 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
           <View className="flex-row flex-wrap justify-between gap-y-3">
             <View className="w-[48%] bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/30">
               <View className="flex-row items-center gap-2 mb-2">
-                <MaterialIcons name="shopping-cart" size={18} color="#414844" />
+                <MaterialIcons name="shopping-cart" size={18} className="text-on-surface" />
                 <Text className="font-label-md text-label-md text-on-surface-variant">Today's Orders</Text>
               </View>
               <Text className="font-display-lg text-display-lg text-primary">{dashboard?.order_count || 0}</Text>
             </View>
             <View className="w-[48%] bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/30">
               <View className="flex-row items-center gap-2 mb-2">
-                <MaterialIcons name="scale" size={18} color="#414844" />
+                <MaterialIcons name="scale" size={18} className="text-on-surface" />
                 <Text className="font-label-md text-label-md text-on-surface-variant">Total Ordered</Text>
               </View>
               <Text className="font-display-lg text-display-lg text-primary">{orderedKg}</Text>
             </View>
             <View className="w-[48%] bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/30">
               <View className="flex-row items-center gap-2 mb-2">
-                <MaterialIcons name="local-shipping" size={18} color="#414844" />
+                <MaterialIcons name="local-shipping" size={18} className="text-on-surface" />
                 <Text className="font-label-md text-label-md text-on-surface-variant">Delivered KG</Text>
               </View>
               <Text className="font-display-lg text-display-lg text-on-surface">{deliveredKg}</Text>
             </View>
             <View className="w-[48%] bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/30">
               <View className="flex-row items-center gap-2 mb-2">
-                <MaterialIcons name="pending-actions" size={18} color="#414844" />
+                <MaterialIcons name="pending-actions" size={18} className="text-on-surface" />
                 <Text className="font-label-md text-label-md text-on-surface-variant">Pending KG</Text>
               </View>
               <Text className="font-display-lg text-display-lg text-on-surface">{pendingKg}</Text>
@@ -132,16 +113,16 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
           <View className="bg-primary-container rounded-2xl p-4 mt-2 shadow-sm overflow-hidden relative">
             <View className="absolute -right-8 -top-8 w-32 h-32 bg-primary rounded-full opacity-20" />
             <Text className="font-label-md text-label-md text-on-primary-container">Today's Sales</Text>
-            <Text className="font-display-lg text-display-lg text-on-primary">${totalSales.toLocaleString()}</Text>
+            <Text className="font-display-lg text-display-lg text-on-primary">₹{totalSales.toLocaleString("en-IN")}</Text>
             
             <View className="flex-row justify-between mt-4 z-10">
               <View>
                 <Text className="font-label-md text-label-md text-on-primary-container">Collection</Text>
-                <Text className="font-headline-sm text-headline-sm text-on-primary">${collection.toLocaleString()}</Text>
+                <Text className="font-headline-sm text-headline-sm text-on-primary">₹{collection.toLocaleString("en-IN")}</Text>
               </View>
               <View>
                 <Text className="font-label-md text-label-md text-on-primary-container">Outstanding</Text>
-                <Text className="font-headline-sm text-headline-sm text-on-primary">${outstanding.toLocaleString()}</Text>
+                <Text className="font-headline-sm text-headline-sm text-on-primary">₹{outstanding.toLocaleString("en-IN")}</Text>
               </View>
             </View>
           </View>
@@ -171,30 +152,32 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
           {/* Quick Actions */}
           <Text className="font-headline-sm text-headline-sm text-on-surface mt-4 mb-2">Quick Actions</Text>
           <View className="flex-row flex-wrap justify-between gap-y-3">
-            <Pressable 
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" 
               className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 flex-row items-center justify-center gap-2 shadow-sm active:scale-95 border border-outline-variant/30"
               onPress={() => navigation.navigate("AddRetailer")}
             >
-              <MaterialIcons name="person-add" size={20} color="#012d1d" />
+              <MaterialIcons name="person-add" size={20} className="text-primary" />
               <Text className="font-label-md text-label-md text-on-surface">Add Retailer</Text>
             </Pressable>
-            <Pressable 
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" 
               className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 flex-row items-center justify-center gap-2 shadow-sm active:scale-95 border border-outline-variant/30"
+              onPress={() => navigation.navigate("Orders")}
             >
-              <MaterialIcons name="add-shopping-cart" size={20} color="#012d1d" />
+              <MaterialIcons name="add-shopping-cart" size={20} className="text-primary" />
               <Text className="font-label-md text-label-md text-on-surface">Add Order</Text>
             </Pressable>
-            <Pressable 
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" 
               className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 flex-row items-center justify-center gap-2 shadow-sm active:scale-95 border border-outline-variant/30"
-              onPress={() => navigation.navigate("AddFarm")}
+              onPress={() => navigation.navigate("FarmPurchase")}
             >
-              <MaterialIcons name="rv-hookup" size={20} color="#012d1d" />
+              <MaterialIcons name="rv-hookup" size={20} className="text-primary" />
               <Text className="font-label-md text-label-md text-on-surface">Start Loading</Text>
             </Pressable>
-            <Pressable 
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" 
               className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 flex-row items-center justify-center gap-2 shadow-sm active:scale-95 border border-outline-variant/30"
+              onPress={() => navigation.navigate("Retailers")}
             >
-              <MaterialIcons name="payments" size={20} color="#012d1d" />
+              <MaterialIcons name="payments" size={20} className="text-primary" />
               <Text className="font-label-md text-label-md text-on-surface">Payment</Text>
             </Pressable>
           </View>
@@ -202,7 +185,7 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
           {/* Recent Orders */}
           <View className="flex-row items-center justify-between mt-4">
             <Text className="font-headline-sm text-headline-sm text-on-surface">Recent Orders</Text>
-            <Pressable onPress={() => navigation.navigate("Orders")}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => navigation.navigate("Orders")}>
               <Text className="font-label-md text-label-md text-primary px-2 py-1">View All</Text>
             </Pressable>
           </View>
@@ -221,10 +204,13 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
               <View className="h-[1px] bg-surface-variant w-full mb-3" />
               <View className="flex-row justify-between items-center">
                 <View className="flex-row items-center gap-1">
-                  <MaterialIcons name="scale" size={20} color="#414844" />
+                  <MaterialIcons name="scale" size={20} className="text-on-surface" />
                   <Text className="font-body-md text-body-md text-on-surface">{order.requested_kg} KG</Text>
                 </View>
-                <Pressable className="px-3 py-1 bg-surface-container rounded-full">
+                <Pressable accessibilityRole="button" accessibilityLabel="Button"
+                  className="px-3 py-1 bg-surface-container rounded-full"
+                  onPress={() => navigation.navigate("OrderDetail", { order })}
+                >
                   <Text className="font-label-md text-label-md text-primary">Details</Text>
                 </Pressable>
               </View>

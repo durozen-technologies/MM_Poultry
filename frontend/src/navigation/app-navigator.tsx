@@ -10,14 +10,28 @@ import { AdminHomeScreen } from "../screens/admin/admin-home-screen";
 import { AdminRetailersScreen } from "../screens/admin/admin-retailers-screen";
 import { AdminAddRetailerScreen } from "../screens/admin/admin-add-retailer-screen";
 import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-profile-screen";
+import { AdminRetailerEditScreen } from "../screens/admin/admin-retailer-edit-screen";
 import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
 import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
 import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-screen";
 import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
+import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
 import { AdminSettingsScreen } from "../screens/admin/admin-settings-screen";
+import { AdminRatesScreen } from "../screens/admin/admin-rates-screen";
+import { AdminVehiclesScreen } from "../screens/admin/admin-vehicles-screen";
+import { AdminDeliveryUsersScreen } from "../screens/admin/admin-delivery-users-screen";
+import { AdminDeliveryRunsScreen } from "../screens/admin/admin-delivery-runs-screen";
+import { AdminReportsScreen } from "../screens/admin/admin-reports-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
-import { RetailerHomeScreen } from "../screens/retailer/retailer-home-screen";
+import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
+import { RetailerOrdersScreen } from "../screens/retailer/retailer-orders-screen";
+import { RetailerBillsScreen } from "../screens/retailer/retailer-bills-screen";
+import { RetailerLedgerScreen } from "../screens/retailer/retailer-ledger-screen";
+import { RetailerProfileScreen } from "../screens/retailer/retailer-profile-screen";
+import { RetailerPlaceOrderScreen } from "../screens/retailer/retailer-place-order-screen";
+import { RetailerOrderDetailScreen } from "../screens/retailer/retailer-order-detail-screen";
+import { RetailerBillDetailScreen } from "../screens/retailer/retailer-bill-detail-screen";
 import { SuperAdminHomeScreen } from "../screens/super-admin/super-admin-home-screen";
 import { SuperAdminOrgAdminsScreen } from "../screens/super-admin/super-admin-org-admins-screen";
 
@@ -39,10 +53,10 @@ function AdminTabNavigator() {
 
           return <MaterialIcons name={iconName} size={24} color={color} />;
         },
-        tabBarActiveTintColor: "#012d1d", // primary
-        tabBarInactiveTintColor: "#414844", // on-surface-variant
+        tabBarActiveTintColor: "#012d1d",
+        tabBarInactiveTintColor: "#414844",
         tabBarStyle: {
-          backgroundColor: "rgba(247, 249, 255, 0.9)", // surface/90
+          backgroundColor: "rgba(247, 249, 255, 0.9)",
           borderTopColor: "rgba(0,0,0,0.04)",
           elevation: 0,
         },
@@ -62,14 +76,52 @@ function AdminTabNavigator() {
   );
 }
 
+function RetailerTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => {
+          let iconName: keyof typeof MaterialIcons.glyphMap = "home";
+          if (route.name === "Home") iconName = "home";
+          else if (route.name === "Orders") iconName = "receipt-long";
+          else if (route.name === "Bills") iconName = "description";
+          else if (route.name === "Ledger") iconName = "account-balance-wallet";
+          else if (route.name === "Profile") iconName = "person";
+
+          return <MaterialIcons name={iconName} size={24} color={color} />;
+        },
+        tabBarActiveTintColor: "#012d1d",
+        tabBarInactiveTintColor: "#414844",
+        tabBarStyle: {
+          backgroundColor: "rgba(247, 249, 255, 0.9)",
+          borderTopColor: "rgba(0,0,0,0.04)",
+          elevation: 0,
+        },
+        tabBarLabelStyle: {
+          fontFamily: "System",
+          fontWeight: "600",
+          fontSize: 12,
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={RetailerDashboardScreen} />
+      <Tab.Screen name="Orders" component={RetailerOrdersScreen} />
+      <Tab.Screen name="Bills" component={RetailerBillsScreen} />
+      <Tab.Screen name="Ledger" component={RetailerLedgerScreen} />
+      <Tab.Screen name="Profile" component={RetailerProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
 export function AppNavigator() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const user = useAuthStore((s) => s.user);
 
   if (!hydrated) {
     return (
-      <View className="flex-1 items-center justify-center bg-brand-sand">
-        <ActivityIndicator color="#2f6b3a" />
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator className="text-primary" />
       </View>
     );
   }
@@ -89,13 +141,25 @@ export function AppNavigator() {
             <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
             <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
             <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
+            <Stack.Screen name="RetailerEdit" component={AdminRetailerEditScreen} />
             <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
             <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
+            <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
+            <Stack.Screen name="DeliveryRuns" component={AdminDeliveryRunsScreen} />
+            <Stack.Screen name="Reports" component={AdminReportsScreen} />
+            <Stack.Screen name="Rates" component={AdminRatesScreen} />
+            <Stack.Screen name="Vehicles" component={AdminVehiclesScreen} />
+            <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
           </>
         ) : user.role === "DELIVERY" ? (
           <Stack.Screen name="DeliveryHome" component={DeliveryHomeScreen} />
         ) : (
-          <Stack.Screen name="RetailerHome" component={RetailerHomeScreen} />
+          <>
+            <Stack.Screen name="RetailerTabs" component={RetailerTabNavigator} />
+            <Stack.Screen name="PlaceOrder" component={RetailerPlaceOrderScreen} />
+            <Stack.Screen name="OrderDetail" component={RetailerOrderDetailScreen} />
+            <Stack.Screen name="BillDetail" component={RetailerBillDetailScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

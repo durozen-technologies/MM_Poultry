@@ -58,14 +58,14 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       {/* Header */}
       <View className="h-16 px-4 flex-row items-center bg-surface/80">
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-variant/50 mr-2"
           onPress={() => navigation.goBack()}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#181c20" />
+          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
         </Pressable>
         <Text className="font-headline-sm text-headline-sm text-primary font-semibold">
           Add Retailer
@@ -82,7 +82,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         {/* Basic Details Card */}
         <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-row items-center gap-2">
-            <MaterialIcons name="storefront" size={20} color="#012d1d" />
+            <MaterialIcons name="storefront" size={20} className="text-primary" />
             <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
               Basic Details
             </Text>
@@ -93,12 +93,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Company / Business Name <Text className="text-error">*</Text>
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter Retailer/Company Name"
-              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
-            />
+ />
           </View>
 
           <View className="flex-col gap-2">
@@ -106,12 +105,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Shop Name
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. SR Chicken Center"
-              placeholderTextColor="#717973"
               value={shopName}
               onChangeText={setShopName}
-            />
+ />
           </View>
 
           <View className="flex-col gap-2">
@@ -120,15 +118,14 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="person" size={18} color="#717973" />
+                <MaterialIcons name="person" size={18} className="text-on-surface-variant" />
               </View>
               <TextInput
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="Enter owner name"
-                placeholderTextColor="#717973"
                 value={ownerName}
                 onChangeText={setOwnerName}
-              />
+ />
             </View>
           </View>
 
@@ -137,19 +134,18 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Category
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Wholesale, Retail"
-              placeholderTextColor="#717973"
               value={category}
               onChangeText={setCategory}
-            />
+ />
           </View>
         </View>
 
         {/* Contact Details Card */}
         <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-row items-center gap-2">
-            <MaterialIcons name="contacts" size={20} color="#012d1d" />
+            <MaterialIcons name="contacts" size={20} className="text-primary" />
             <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
               Contact Details
             </Text>
@@ -161,16 +157,15 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="phone-iphone" size={18} color="#717973" />
+                <MaterialIcons name="phone-iphone" size={18} className="text-on-surface-variant" />
               </View>
               <TextInput
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="10-digit primary number"
-                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={setPhone}
-              />
+ />
             </View>
           </View>
 
@@ -180,16 +175,15 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="chat" size={18} color="#717973" />
+                <MaterialIcons name="chat" size={18} className="text-on-surface-variant" />
               </View>
               <TextInput
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="WhatsApp number"
-                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={whatsapp}
                 onChangeText={setWhatsapp}
-              />
+ />
             </View>
           </View>
 
@@ -199,16 +193,15 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             </Text>
             <View className="relative flex-row items-center">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="phone" size={18} color="#717973" />
+                <MaterialIcons name="phone" size={18} className="text-on-surface-variant" />
               </View>
               <TextInput
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="Other phone number"
-                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={alternatePhone}
                 onChangeText={setAlternatePhone}
-              />
+ />
             </View>
           </View>
         </View>
@@ -216,7 +209,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         {/* Location & Delivery Card */}
         <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-row items-center gap-2">
-            <MaterialIcons name="location-on" size={20} color="#012d1d" />
+            <MaterialIcons name="location-on" size={20} className="text-primary" />
             <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
               Location & Delivery
             </Text>
@@ -227,12 +220,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Area
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Downtown"
-              placeholderTextColor="#717973"
               value={area}
               onChangeText={setArea}
-            />
+ />
           </View>
 
           <View className="flex-col gap-2">
@@ -240,12 +232,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Route Name
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Route A"
-              placeholderTextColor="#717973"
               value={routeName}
               onChangeText={setRouteName}
-            />
+ />
           </View>
 
           <View className="flex-col gap-2">
@@ -253,12 +244,11 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Preferred Delivery Time
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Morning 6 AM"
-              placeholderTextColor="#717973"
               value={preferredDeliveryTime}
               onChangeText={setPreferredDeliveryTime}
-            />
+ />
           </View>
 
           <View className="flex-col gap-2">
@@ -266,21 +256,20 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Full Address
             </Text>
             <TextInput
-              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px]"
+              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
               placeholder="Enter complete address"
-              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={address}
               onChangeText={setAddress}
-            />
+ />
           </View>
         </View>
 
         {/* Financial Details Card */}
         <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-row items-center gap-2">
-            <MaterialIcons name="payments" size={20} color="#012d1d" />
+            <MaterialIcons name="payments" size={20} className="text-primary" />
             <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
               Financial Details
             </Text>
@@ -291,26 +280,25 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               Credit Limit (₹)
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. 50000"
-              placeholderTextColor="#717973"
               keyboardType="decimal-pad"
               value={creditLimit}
               onChangeText={setCreditLimit}
-            />
+ />
           </View>
         </View>
 
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-full bg-primary h-14 rounded-2xl flex-row items-center justify-center active:scale-95 mb-6"
           onPress={onSubmit}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator className="text-white" />
           ) : (
             <>
-              <MaterialIcons name="save" size={20} color="#ffffff" />
+              <MaterialIcons name="save" size={20} className="text-white" />
               <Text className="font-label-md text-label-md text-on-primary font-semibold ml-2">
                 Save Retailer
               </Text>

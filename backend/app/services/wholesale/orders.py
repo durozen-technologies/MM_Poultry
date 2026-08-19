@@ -40,6 +40,7 @@ async def upsert_today_order(
         if existing.status == OrderStatus.CANCELLED:
             existing.status = OrderStatus.PLACED
         existing.requested_kg = q_kg(payload.requested_kg)
+        existing.bird_size = payload.bird_size
         existing.notes = payload.notes
         order = existing
     else:

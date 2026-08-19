@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "0002_idea_mvp_expand"
+TENANT_MIGRATION_HEAD = "0003_user_profile_fields"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -81,6 +81,28 @@ def _platform_table_names() -> set[str]:
     return {"organizations", "user_auth_index", "users"}
 
 
+async def reset_test_database_async() -> None:
+    """Drop tenant schemas and truncate public control-plane tables (test isolation)."""
+    engine = get_engine()
+    async with engine.begin() as conn:
+        rows = await conn.execute(
+            text(
+                "SELECT schema_name FROM information_schema.schemata "
+                "WHERE schema_name LIKE 'tenant\\_%' ESCAPE '\\'"
+            )
+        )
+        for (schema_name,) in rows:
+            if _SCHEMA_SAFE.match(schema_name):
+                await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+        await conn.execute(text("SET search_path TO public"))
+        await conn.execute(
+            text(
+                "TRUNCATE TABLE user_auth_index, users, organizations "
+                "RESTART IDENTITY CASCADE"
+            )
+        )
+
+
 async def create_platform_tables() -> None:
     """Create public control-plane tables (organizations + auth index + platform users)."""
     import app.models  # noqa: F401 — register metadata
@@ -96,6 +118,52 @@ async def create_platform_tables() -> None:
         await conn.execute(text("SET search_path TO public"))
         for table in platform_tables:
             await conn.run_sync(table.create, checkfirst=True)
+    await repair_platform_schema_async()
+
+
+async def repair_platform_schema_async() -> None:
+    """Align public control-plane columns and global username uniqueness."""
+    engine = get_engine()
+    async with engine.begin() as conn:
+        await conn.execute(text("SET search_path TO public"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)"))
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF EXISTS (
+                    SELECT username_lower FROM user_auth_index
+                    GROUP BY username_lower HAVING COUNT(*) > 1
+                  ) THEN
+                    RAISE EXCEPTION 'Duplicate username_lower values exist; resolve before unique constraint';
+                  END IF;
+                END $$;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'uq_auth_index_user_org'
+                  ) THEN
+                    ALTER TABLE user_auth_index DROP CONSTRAINT uq_auth_index_user_org;
+                  END IF;
+                END $$;
+                """
+            )
+        )
+        await conn.execute(text("DROP INDEX IF EXISTS ix_user_auth_index_username_lower"))
+        await conn.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_user_auth_index_username_lower "
+                "ON user_auth_index (username_lower)"
+            )
+        )
 
 
 async def provision_tenant_schema_async(schema_name: str) -> None:
@@ -163,6 +231,8 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailer_daily_orders ADD COLUMN IF NOT EXISTS bird_size VARCHAR(50)",
         "ALTER TABLE delivery_stops ADD COLUMN IF NOT EXISTS delivered_bird_count INTEGER",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))

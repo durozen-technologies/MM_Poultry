@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View, Alert, RefreshControl, KeyboardAvoidingView, Platform } from "react-native";
 import { useFocusEffect, useRoute, useNavigation } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { api } from "../../api/client";
+import { api, getApiErrorMessage } from "../../api/client";
 import { User, TenantAdminCreate, TenantAdminUpdate } from "../../types/api";
 
 export function SuperAdminOrgAdminsScreen() {
@@ -108,7 +108,7 @@ export function SuperAdminOrgAdminsScreen() {
               showMessage("Admin deleted.");
               await refresh();
             } catch (e: any) {
-              showMessage(e?.response?.data?.detail || "Delete failed.", true);
+              showMessage(getApiErrorMessage(e), true);
             }
           }
         }
@@ -121,11 +121,11 @@ export function SuperAdminOrgAdminsScreen() {
       <View className="flex-1 p-lg pt-12">
         {/* Header */}
         <View className="flex-row items-center mb-lg">
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Button" 
             onPress={() => navigation.goBack()}
             className="bg-surface-container-highest w-10 h-10 rounded-full mr-md items-center justify-center border border-outline-variant active:opacity-70"
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#414844" />
+            <MaterialCommunityIcons name="arrow-left" size={20} className="text-on-surface" />
           </Pressable>
           <View className="flex-1">
             <Text className="text-display-lg font-display-lg text-on-background" numberOfLines={1}>
@@ -139,7 +139,7 @@ export function SuperAdminOrgAdminsScreen() {
         <View className="bg-surface rounded-2xl p-md mb-xl shadow-sm border border-outline-variant/50">
           <View className="flex-row items-center mb-md">
             <View className="bg-primary-container w-8 h-8 rounded-full items-center justify-center mr-sm">
-              <MaterialCommunityIcons name="account-plus" size={18} color="#86af99" />
+              <MaterialCommunityIcons name="account-plus" size={18} className="text-primary" />
             </View>
             <Text className="text-headline-sm font-headline-sm text-on-surface">New Tenant Admin</Text>
           </View>
@@ -154,29 +154,27 @@ export function SuperAdminOrgAdminsScreen() {
           ) : null}
 
           <View className="flex-row items-center bg-surface-container-low border border-outline-variant rounded-xl px-md mb-sm h-12">
-            <MaterialCommunityIcons name="account" size={20} color="#717973" className="mr-sm" />
+            <MaterialCommunityIcons name="account" size={20} className="text-on-surface-variant mr-sm" />
             <TextInput
-              className="flex-1 text-on-surface font-body-md h-full"
+              className="flex-1 text-on-surface font-body-md h-full placeholder:text-on-surface-variant"
               placeholder="Admin Username"
-              placeholderTextColor="#717973"
               autoCapitalize="none"
               value={username}
               onChangeText={setUsername}
-            />
+ />
           </View>
           <View className="flex-row items-center bg-surface-container-low border border-outline-variant rounded-xl px-md mb-md h-12">
-            <MaterialCommunityIcons name="lock-outline" size={20} color="#717973" className="mr-sm" />
+            <MaterialCommunityIcons name="lock-outline" size={20} className="text-on-surface-variant mr-sm" />
             <TextInput
-              className="flex-1 text-on-surface font-body-md h-full"
+              className="flex-1 text-on-surface font-body-md h-full placeholder:text-on-surface-variant"
               placeholder="Password"
-              placeholderTextColor="#717973"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
-            />
+ />
           </View>
           
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Button" 
             className="bg-primary rounded-xl h-12 flex-row items-center justify-center active:opacity-80" 
             onPress={createAdmin}
             disabled={loading}
@@ -185,7 +183,7 @@ export function SuperAdminOrgAdminsScreen() {
               <Text className="text-on-primary font-label-md">Adding...</Text>
             ) : (
               <>
-                <MaterialCommunityIcons name="plus" size={20} color="#ffffff" className="mr-1" />
+                <MaterialCommunityIcons name="plus" size={20} className="text-white mr-1" />
                 <Text className="text-on-primary font-label-md">Add Administrator</Text>
               </>
             )}
@@ -204,7 +202,7 @@ export function SuperAdminOrgAdminsScreen() {
           }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-xl mt-xl">
-              <MaterialCommunityIcons name="account-group-outline" size={64} color="#c5c7c8" className="mb-md opacity-50" />
+              <MaterialCommunityIcons name="account-group-outline" size={64} className="text-surface-variant mb-md opacity-50" />
               <Text className="text-headline-sm font-headline-sm text-on-surface-variant text-center">No Admins Assigned</Text>
               <Text className="text-body-md text-outline mt-sm text-center px-lg">This organization has no administrators. Create one above to grant them access.</Text>
             </View>
@@ -221,13 +219,13 @@ export function SuperAdminOrgAdminsScreen() {
                   <View>
                     <Text className="text-headline-sm font-headline-sm text-on-surface mb-1">{item.username}</Text>
                     <View className="flex-row items-center">
-                      <MaterialCommunityIcons name="shield-check" size={14} color="#75b393" className="mr-1" />
+                      <MaterialCommunityIcons name="shield-check" size={14} className="text-primary-container mr-1" />
                       <Text className="text-sm text-outline font-medium">Tenant Admin</Text>
                     </View>
                   </View>
                 </View>
                 <View className="flex-row gap-2">
-                  <Pressable 
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                     className={`px-3 py-1.5 rounded-full border ${item.is_active ? 'border-error/30 bg-error/10' : 'border-primary/30 bg-primary/10'}`}
                     onPress={() => toggleAdminStatus(item.id, item.is_active)}
                   >
@@ -242,24 +240,23 @@ export function SuperAdminOrgAdminsScreen() {
               {editingId === item.id ? (
                 <View className="flex-row gap-2 mt-md border-t border-outline-variant/30 pt-md">
                   <View className="flex-1 flex-row items-center bg-surface-container-low border border-outline-variant rounded-xl px-sm h-10">
-                    <MaterialCommunityIcons name="lock-reset" size={18} color="#717973" className="mr-1" />
+                    <MaterialCommunityIcons name="lock-reset" size={18} className="text-on-surface-variant mr-1" />
                     <TextInput
-                      className="flex-1 text-on-surface font-body-md h-full"
+                      className="flex-1 text-on-surface font-body-md h-full placeholder:text-on-surface-variant"
                       placeholder="New password"
-                      placeholderTextColor="#717973"
                       secureTextEntry
                       value={editPassword}
                       onChangeText={setEditPassword}
                       autoFocus
-                    />
+ />
                   </View>
-                  <Pressable 
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                     className="bg-primary rounded-xl px-4 justify-center active:opacity-80"
                     onPress={() => updateAdminPassword(item.id)}
                   >
                     <Text className="text-on-primary font-label-md">Save</Text>
                   </Pressable>
-                  <Pressable 
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                     className="bg-surface-container-highest rounded-xl px-4 justify-center border border-outline-variant active:opacity-80"
                     onPress={() => { setEditingId(null); setEditPassword(""); }}
                   >
@@ -268,12 +265,12 @@ export function SuperAdminOrgAdminsScreen() {
                 </View>
               ) : (
                 <View className="flex-row gap-4 mt-md border-t border-outline-variant/30 pt-sm">
-                  <Pressable onPress={() => { setEditingId(item.id); setEditPassword(""); }} className="flex-row items-center py-2">
-                    <MaterialCommunityIcons name="key-outline" size={16} color="#002d1c" className="mr-1" />
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => { setEditingId(item.id); setEditPassword(""); }} className="flex-row items-center py-2">
+                    <MaterialCommunityIcons name="key-outline" size={16} className="text-primary mr-1" />
                     <Text className="text-tertiary font-label-md">Change Password</Text>
                   </Pressable>
-                  <Pressable onPress={() => confirmDelete(item.id, item.username)} className="flex-row items-center py-2">
-                    <MaterialCommunityIcons name="delete-outline" size={16} color="#ba1a1a" className="mr-1" />
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => confirmDelete(item.id, item.username)} className="flex-row items-center py-2">
+                    <MaterialCommunityIcons name="delete-outline" size={16} className="text-error mr-1" />
                     <Text className="text-error font-label-md">Delete User</Text>
                   </Pressable>
                 </View>

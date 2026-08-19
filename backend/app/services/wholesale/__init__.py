@@ -8,4 +8,5 @@ from .orders import *
 from .organizations import *
 from .rates import *
 from .reports import *
+from .retailer_portal import *
 from .retailers import *

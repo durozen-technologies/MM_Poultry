@@ -1,7 +1,8 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
-import { api } from "../api/client";
-import type { LoginResponse, User } from "../types/api";
+import { getMe, login as apiLogin } from "../api/auth";
+import { setAuthToken, setOnUnauthorized } from "../api/client";
+import type { User } from "../types/api";
 
 const TOKEN_KEY = "mmbroilers.token";
 const USER_KEY = "mmbroilers.user";
@@ -20,7 +21,6 @@ async function saveSession(token: string, user: User) {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
   } catch {
-    // web fallback
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -60,34 +60,42 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   hydrated: false,
   async hydrate() {
-    const { token, user } = await readSession();
-    set({ token, user, hydrated: true });
+    const { token } = await readSession();
+    if (token) {
+      setAuthToken(token);
+      try {
+        const me = await getMe();
+        await saveSession(token, me);
+        set({ token, user: me, hydrated: true });
+        return;
+      } catch {
+        setAuthToken(null);
+        await clearSession();
+        set({ token: null, user: null, hydrated: true });
+        return;
+      }
+    }
+    set({ token: null, user: null, hydrated: true });
   },
   async login(username, password, organizationSlug) {
-    const { data } = await api.post<LoginResponse>("/auth/login", {
-      username,
-      password,
-      organization_slug: organizationSlug || null,
-    });
+    const data = await apiLogin(username, password, organizationSlug);
+    setAuthToken(data.access_token);
     await saveSession(data.access_token, data.user);
     set({ token: data.access_token, user: data.user });
   },
   async logout() {
+    setAuthToken(null);
     await clearSession();
     set({ token: null, user: null });
   },
 }));
-
-// Bind the store to the API client to avoid require cycles
-import { setAuthToken, setOnUnauthorized } from "../api/client";
 
 useAuthStore.subscribe((state) => {
   setAuthToken(state.token);
 });
 
 setOnUnauthorized(() => {
-  useAuthStore.getState().logout();
+  void useAuthStore.getState().logout();
 });
 
-// Initial binding
 setAuthToken(useAuthStore.getState().token);

@@ -44,14 +44,14 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       {/* Header */}
       <View className="h-16 px-4 flex-row items-center bg-surface/80">
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-variant/50 mr-2"
           onPress={() => navigation.goBack()}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#181c20" />
+          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
         </Pressable>
         <Text className="font-headline-sm text-headline-sm text-primary font-semibold">
           Farm Information
@@ -72,12 +72,11 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               Farm Name <Text className="text-error">*</Text>
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter farm name"
-              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
-            />
+ />
           </View>
         </View>
 
@@ -89,13 +88,12 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               Mobile Number
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter mobile number"
-              placeholderTextColor="#717973"
               keyboardType="phone-pad"
               value={mobile}
               onChangeText={setMobile}
-            />
+ />
           </View>
         </View>
 
@@ -107,53 +105,50 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               Address
             </Text>
             <TextInput
-              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px]"
+              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
               placeholder="Enter full address"
-              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={address}
               onChangeText={setAddress}
-            />
+ />
           </View>
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Location (City/Region)
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter village or city"
-              placeholderTextColor="#717973"
               value={village}
               onChangeText={setVillage}
-            />
+ />
           </View>
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Capacity (Number of Birds)
             </Text>
             <TextInput
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface"
+              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. 5000"
-              placeholderTextColor="#717973"
               keyboardType="number-pad"
               value={capacity}
               onChangeText={setCapacity}
-            />
+ />
           </View>
         </View>
 
         {/* Submit Button */}
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-full bg-primary h-14 rounded-2xl flex-row items-center justify-center active:scale-95 mb-6 shadow-md shadow-primary/30"
           onPress={onSubmit}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator className="text-white" />
           ) : (
             <>
-              <MaterialIcons name="save" size={20} color="#ffffff" />
+              <MaterialIcons name="save" size={20} className="text-white" />
               <Text className="font-label-md text-label-md text-on-primary font-semibold ml-2">
                 Save Farm
               </Text>

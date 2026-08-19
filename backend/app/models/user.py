@@ -20,6 +20,8 @@ class User(Base, BaseModelMixin):
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     username: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    mobile_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         SqlEnum(UserRole, name="user_role", native_enum=False),
         nullable=False,

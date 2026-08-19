@@ -13,8 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("password123");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [organizationSlug, setOrganizationSlug] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,8 +24,11 @@ export function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      // organizationSlug is implicitly 'demo' if not provided for now, or we can leave it undefined so it defaults to public auth_index lookup
-      await login(username.trim(), password);
+      await login(
+        username.trim(),
+        password,
+        organizationSlug.trim() || undefined
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Login failed");
     } finally {
@@ -33,7 +37,7 @@ export function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-container-low" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-surface-container-low" edges={["top", "bottom"]}>
       <View className="flex-1 w-full justify-center items-center px-4">
         <View className="flex-col items-center mb-8 w-full max-w-sm">
           <View className="w-20 h-20 mb-4 rounded-xl overflow-hidden shadow-sm bg-surface">
@@ -58,16 +62,15 @@ export function LoginScreen() {
             <Text className="text-label-md text-on-surface font-semibold">Username</Text>
             <View className="relative flex-row items-center bg-surface rounded-lg border border-outline-variant">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="person" size={24} color="#414844" />
+                <MaterialIcons name="person" size={24} className="text-on-surface" />
               </View>
               <TextInput
-                className="w-full pl-10 pr-4 py-3 text-body-md text-on-surface h-12"
-                placeholder="Enter username"
-                placeholderTextColor="#717973"
+                className="w-full pl-10 pr-4 py-3 text-body-md text-on-surface h-12 placeholder:text-on-surface-variant"
+                placeholder="e.g. admin"
                 autoCapitalize="none"
                 value={username}
                 onChangeText={setUsername}
-              />
+ />
             </View>
           </View>
 
@@ -75,38 +78,55 @@ export function LoginScreen() {
             <Text className="text-label-md text-on-surface font-semibold">Password</Text>
             <View className="relative flex-row items-center bg-surface rounded-lg border border-outline-variant">
               <View className="absolute left-3 z-10">
-                <MaterialIcons name="lock" size={24} color="#414844" />
+                <MaterialIcons name="lock" size={24} className="text-on-surface" />
               </View>
               <TextInput
-                className="flex-1 pl-10 pr-12 py-3 text-body-md text-on-surface h-12"
+                className="flex-1 pl-10 pr-12 py-3 text-body-md text-on-surface h-12 placeholder:text-on-surface-variant"
                 placeholder="Enter password"
-                placeholderTextColor="#717973"
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
-              />
-              <Pressable
+ />
+              <Pressable accessibilityRole="button" accessibilityLabel="Button"
                 className="absolute right-3 p-1 rounded-full z-10"
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <MaterialIcons
                   name={showPassword ? "visibility" : "visibility-off"}
                   size={24}
-                  color="#414844"
+                  className="text-on-surface"
                 />
               </Pressable>
             </View>
           </View>
 
+          <View className="flex-col gap-2">
+            <Text className="text-label-md text-on-surface font-semibold">
+              Organization (optional)
+            </Text>
+            <View className="relative flex-row items-center bg-surface rounded-lg border border-outline-variant">
+              <View className="absolute left-3 z-10">
+                <MaterialIcons name="business" size={24} className="text-on-surface" />
+              </View>
+              <TextInput
+                className="w-full pl-10 pr-4 py-3 text-body-md text-on-surface h-12 placeholder:text-on-surface-variant"
+                placeholder="e.g. demo"
+                autoCapitalize="none"
+                value={organizationSlug}
+                onChangeText={setOrganizationSlug}
+ />
+            </View>
+          </View>
+
           {error ? <Text className="text-error mb-3 text-center">{error}</Text> : null}
 
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Button"
             className="w-full bg-primary-container h-12 rounded-lg flex-row items-center justify-center active:scale-95"
             onPress={onSubmit}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#86af99" />
+              <ActivityIndicator className="text-primary" />
             ) : (
               <Text className="text-on-primary-container font-semibold text-label-md">
                 Login
@@ -116,7 +136,7 @@ export function LoginScreen() {
         </View>
 
         <View className="mt-8 flex-row items-center justify-center gap-2">
-          <MaterialIcons name="verified-user" size={16} color="#414844" />
+          <MaterialIcons name="verified-user" size={16} className="text-on-surface" />
           <Text className="text-label-md text-on-surface-variant font-semibold">
             Secure B2B Portal
           </Text>

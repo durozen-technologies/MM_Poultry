@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_password_hash
@@ -17,9 +18,15 @@ from app.models.user import User
 from app.schemas import (
     RetailerCreate,
     RetailerOut,
+    RetailerPortalUserCreate,
     RetailerUpdate,
+    UserOut,
 )
-from app.services.auth import upsert_auth_index
+from app.services.auth import (
+    require_username_available,
+    reraise_username_conflict,
+    upsert_auth_index,
+)
 from app.services.wholesale.common import q_money
 
 
@@ -50,28 +57,13 @@ async def create_retailer(
     db.add(retailer)
     await db.flush()
     if payload.username and payload.password:
-        from app.db.tenant_schema import set_search_path
-        from app.services.auth import check_global_username_available
-        
-        await set_search_path(db, None)
-        if not await check_global_username_available(db, payload.username):
-            raise HTTPException(status_code=409, detail="Retailer username is already taken globally")
-        await set_search_path(db, schema_name)
-        user = User(
-            username=payload.username.strip(),
-            password_hash=get_password_hash(payload.password),
-            role=UserRole.RETAILER,
-            organization_id=organization_id,
-            retailer_id=retailer.id,
-        )
-        db.add(user)
-        await db.flush()
-        await upsert_auth_index(
+        await _create_portal_user(
             db,
-            username=user.username,
+            retailer_id=retailer.id,
+            username=payload.username,
+            password=payload.password,
             organization_id=organization_id,
             schema_name=schema_name,
-            user_id=user.id,
         )
     return RetailerOut.model_validate(retailer, from_attributes=True)
 
@@ -116,5 +108,72 @@ async def update_retailer(
         setattr(retailer, key, value)
     await db.flush()
     return RetailerOut.model_validate(retailer, from_attributes=True)
+
+
+async def deactivate_retailer(db: AsyncSession, retailer_id: UUID) -> None:
+    retailer = await get_retailer(db, retailer_id)
+    retailer.is_active = False
+    await db.flush()
+
+
+async def create_retailer_portal_user(
+    db: AsyncSession,
+    retailer_id: UUID,
+    payload: RetailerPortalUserCreate,
+    *,
+    organization_id: UUID,
+    schema_name: str,
+) -> UserOut:
+    await get_retailer(db, retailer_id)
+    existing = await db.scalar(select(User).where(User.retailer_id == retailer_id))
+    if existing:
+        raise HTTPException(status_code=409, detail="Retailer already has a portal user")
+    user = await _create_portal_user(
+        db,
+        retailer_id=retailer_id,
+        username=payload.username,
+        password=payload.password,
+        organization_id=organization_id,
+        schema_name=schema_name,
+    )
+    return UserOut.model_validate(user, from_attributes=True)
+
+
+async def _create_portal_user(
+    db: AsyncSession,
+    *,
+    retailer_id: UUID,
+    username: str,
+    password: str,
+    organization_id: UUID,
+    schema_name: str,
+) -> User:
+    from app.db.tenant_schema import set_search_path
+
+    await set_search_path(db, None)
+    normalized = await require_username_available(db, username)
+    await set_search_path(db, schema_name)
+    user = User(
+        username=normalized,
+        password_hash=get_password_hash(password),
+        role=UserRole.RETAILER,
+        organization_id=organization_id,
+        retailer_id=retailer_id,
+    )
+    db.add(user)
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        reraise_username_conflict(exc)
+    await set_search_path(db, None)
+    await upsert_auth_index(
+        db,
+        username=user.username,
+        organization_id=organization_id,
+        schema_name=schema_name,
+        user_id=user.id,
+    )
+    await set_search_path(db, schema_name)
+    return user
 
 

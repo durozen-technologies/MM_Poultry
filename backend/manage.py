@@ -4,15 +4,19 @@ import asyncio
 import sys
 from getpass import getpass
 
+from sqlalchemy.exc import IntegrityError
+
 from app.core.security import get_password_hash
 from app.db.database import get_session_factory
 from app.db.tenant_schema import set_search_path
 from app.models.enums import UserRole
 from app.models.user import User
+from app.services.auth import normalize_username, require_username_available, reraise_username_conflict, upsert_auth_index
 
 
 async def setup_db():
     from app.db.tenant_schema import create_platform_tables
+
     print("Setting up platform tables...")
     await create_platform_tables()
     print("Platform tables created successfully.")
@@ -21,12 +25,8 @@ async def setup_db():
 async def create_superadmin(username: str, password: str | None = None):
     session = get_session_factory()()
     try:
-        from app.services.auth import check_global_username_available
         await set_search_path(session, None)
-        
-        if not await check_global_username_available(session, username):
-            print(f"Superadmin '{username}' already exists.")
-            return
+        normalized = await require_username_available(session, username)
 
         if not password:
             password = getpass("Password: ")
@@ -36,14 +36,25 @@ async def create_superadmin(username: str, password: str | None = None):
                 sys.exit(1)
 
         user = User(
-            username=username,
+            username=normalized,
             password_hash=get_password_hash(password),
             role=UserRole.SUPER_ADMIN,
             organization_id=None,
         )
         session.add(user)
+        try:
+            await session.flush()
+        except IntegrityError as exc:
+            reraise_username_conflict(exc)
+        await upsert_auth_index(
+            session,
+            username=user.username,
+            organization_id=None,
+            schema_name="public",
+            user_id=user.id,
+        )
         await session.commit()
-        print(f"Superadmin '{username}' created successfully.")
+        print(f"Superadmin '{normalized}' created successfully.")
     except Exception as e:
         await session.rollback()
         print(f"Error creating superadmin: {e}")
@@ -56,10 +67,8 @@ def main():
     parser = argparse.ArgumentParser(description="MM Poultry Backend Management CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Setup command
-    setup_parser = subparsers.add_parser("setup", help="Create platform tables")
+    subparsers.add_parser("setup", help="Create platform tables")
 
-    # Create superadmin command
     sa_parser = subparsers.add_parser("createsuperadmin", help="Create a superadmin user")
     sa_parser.add_argument("--username", required=True, help="Username for the superadmin")
     sa_parser.add_argument("--password", help="Password (will prompt if not provided)")

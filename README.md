@@ -31,7 +31,7 @@ Demo credentials: `.core/TEST_CREDENTIALS.md` (tenant users need `organization_s
 
 ## Debug APK (GitHub Actions)
 
-Workflow: [`.github/workflows/apk-debug.yml`](.github/workflows/apk-debug.yml)
+Workflow: [`.github/workflows/build-android-debug.yml`](.github/workflows/build-android-debug.yml)
 
 1. Push to `main` / `dev`, or run **Actions → Build Debug APK (Development) → Run workflow**.
 2. Leave the API URL input **blank** (recommended). Keep `EXPO_PUBLIC_API_BASE_URL` in laptop `frontend/.env` — Metro picks it up with `npm run start:dev`.

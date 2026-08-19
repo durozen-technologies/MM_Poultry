@@ -1,0 +1,46 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: mmbroilers_test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_SERVER: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: mmbroilers_test
+      SECRET_KEY: test-secret-key-with-32-chars-minimum
+    steps:
+      - uses: actions/checkout@v4.4.0
+      - uses: astral-sh/setup-uv@v5.4.2
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+      - name: Ruff
+        working-directory: backend
+        run: uv run ruff check app
+      - name: Pytest
+        working-directory: backend
+        run: uv run pytest -q

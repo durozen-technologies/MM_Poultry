@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token_for_user, verify_password
@@ -12,39 +13,57 @@ from app.models.organization import Organization, UserAuthIndex
 from app.models.user import User
 from app.schemas.auth import LoginRequest, LoginResponse, UserOut
 
+USERNAME_TAKEN = "Username is already taken globally"
+
 
 def normalize_username(username: str) -> str:
     return username.strip().lower()
 
 
+def raise_username_taken(exc: Exception | None = None) -> None:
+    if exc is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=USERNAME_TAKEN) from exc
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=USERNAME_TAKEN)
+
+
+def reraise_username_conflict(exc: IntegrityError) -> None:
+    msg = str(getattr(exc, "orig", exc)).lower()
+    if "username" in msg or "user_auth_index" in msg:
+        raise_username_taken(exc)
+    raise exc
+
+
 async def check_global_username_available(db: AsyncSession, username: str) -> bool:
     """Check if a username is available globally across all tenants and superadmins."""
     username_lower = normalize_username(username)
-    
-    # Check public.user_auth_index
+
     existing_index = await db.scalar(
         select(UserAuthIndex).where(UserAuthIndex.username_lower == username_lower)
     )
     if existing_index:
         return False
-        
-    # Check public.users (superadmins who might not be in auth index)
+
     existing_sa = await db.scalar(
         select(User).where(
             func.lower(User.username) == username_lower,
-            User.organization_id.is_(None)
+            User.organization_id.is_(None),
         )
     )
-    if existing_sa:
-        return False
-        
-    return True
+    return existing_sa is None
+
+
+async def require_username_available(db: AsyncSession, username: str) -> str:
+    username_lower = normalize_username(username)
+    if not username_lower:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username is required")
+    if not await check_global_username_available(db, username_lower):
+        raise_username_taken()
+    return username_lower
 
 
 async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
     username_lower = normalize_username(payload.username)
 
-    # Super admin in public.users
     super_admin = await db.scalar(
         select(User).where(
             func.lower(User.username) == username_lower,
@@ -126,6 +145,8 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
                 is_active=user.is_active,
                 organization_slug=org.slug,
                 organization_name=org.name,
+                full_name=user.full_name,
+                mobile_number=user.mobile_number,
             ),
         )
 
@@ -138,22 +159,21 @@ async def upsert_auth_index(
     schema_name: str,
     user_id,
 ) -> None:
-
     username_lower = normalize_username(username)
     existing = await db.scalar(
-        select(UserAuthIndex).where(
-            UserAuthIndex.username_lower == username_lower
-        )
+        select(UserAuthIndex).where(UserAuthIndex.username_lower == username_lower)
     )
     if existing:
-        existing.schema_name = schema_name
-        existing.user_id = user_id
-    else:
-        db.add(
-            UserAuthIndex(
-                username_lower=username_lower,
-                organization_id=organization_id,
-                schema_name=schema_name,
-                user_id=user_id,
-            )
+        if existing.user_id == user_id:
+            existing.schema_name = schema_name
+            existing.organization_id = organization_id
+            return
+        raise_username_taken()
+    db.add(
+        UserAuthIndex(
+            username_lower=username_lower,
+            organization_id=organization_id,
+            schema_name=schema_name,
+            user_id=user_id,
         )
+    )

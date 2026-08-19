@@ -3,7 +3,7 @@ import { FlatList, Pressable, Text, TextInput, View, Alert, RefreshControl, Keyb
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { api } from "../../api/client";
+import { api, getApiErrorMessage } from "../../api/client";
 import { useAuthStore } from "../../store/auth-store";
 import { OrganizationOut, OrganizationUpdate } from "../../types/api";
 
@@ -112,7 +112,7 @@ export function SuperAdminHomeScreen() {
               showMessage("Organization deleted.");
               await refresh();
             } catch (e: any) {
-              showMessage(e?.response?.data?.detail || "Delete failed (Database constraints may prevent this).", true);
+              showMessage(getApiErrorMessage(e), true);
             }
           }
         }
@@ -129,11 +129,11 @@ export function SuperAdminHomeScreen() {
             <Text className="text-display-lg font-display-lg text-on-background">Tenants</Text>
             <Text className="text-body-md text-on-surface-variant mt-1">Manage wholesale organizations</Text>
           </View>
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Button" 
             onPress={() => logout()}
             className="bg-surface-container-highest w-10 h-10 rounded-full items-center justify-center border border-outline-variant active:opacity-70"
           >
-            <MaterialCommunityIcons name="logout-variant" size={20} color="#414844" />
+            <MaterialCommunityIcons name="logout-variant" size={20} className="text-on-surface" />
           </Pressable>
         </View>
 
@@ -141,7 +141,7 @@ export function SuperAdminHomeScreen() {
         <View className="bg-surface rounded-2xl p-md mb-xl shadow-sm border border-outline-variant/50">
           <View className="flex-row items-center mb-md">
             <View className="bg-primary-container w-8 h-8 rounded-full items-center justify-center mr-sm">
-              <MaterialCommunityIcons name="domain-plus" size={18} color="#86af99" />
+              <MaterialCommunityIcons name="domain-plus" size={18} className="text-primary" />
             </View>
             <Text className="text-headline-sm font-headline-sm text-on-surface">New Organization</Text>
           </View>
@@ -156,17 +156,16 @@ export function SuperAdminHomeScreen() {
           ) : null}
 
           <View className="flex-row items-center bg-surface-container-low border border-outline-variant rounded-xl px-md mb-md h-12">
-            <MaterialCommunityIcons name="office-building" size={20} color="#717973" className="mr-sm" />
+            <MaterialCommunityIcons name="office-building" size={20} className="text-on-surface-variant mr-sm" />
             <TextInput
-              className="flex-1 text-on-surface font-body-md h-full"
+              className="flex-1 text-on-surface font-body-md h-full placeholder:text-on-surface-variant"
               placeholder="Enter Organization Name"
-              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
-            />
+ />
           </View>
           
-          <Pressable 
+          <Pressable accessibilityRole="button" accessibilityLabel="Button" 
             className="bg-primary rounded-xl h-12 flex-row items-center justify-center active:opacity-80" 
             onPress={createOrg}
             disabled={loading}
@@ -175,7 +174,7 @@ export function SuperAdminHomeScreen() {
               <Text className="text-on-primary font-label-md">Creating...</Text>
             ) : (
               <>
-                <MaterialCommunityIcons name="plus" size={20} color="#ffffff" className="mr-1" />
+                <MaterialCommunityIcons name="plus" size={20} className="text-white mr-1" />
                 <Text className="text-on-primary font-label-md">Create Organization</Text>
               </>
             )}
@@ -194,7 +193,7 @@ export function SuperAdminHomeScreen() {
           }
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-xl mt-xl">
-              <MaterialCommunityIcons name="domain-off" size={64} color="#c5c7c8" className="mb-md opacity-50" />
+              <MaterialCommunityIcons name="domain-off" size={64} className="text-surface-variant mb-md opacity-50" />
               <Text className="text-headline-sm font-headline-sm text-on-surface-variant text-center">No Active Organizations</Text>
               <Text className="text-body-md text-outline mt-sm text-center px-lg">Create a new organization above to get started with the platform.</Text>
             </View>
@@ -218,14 +217,14 @@ export function SuperAdminHomeScreen() {
                       <Text className="text-headline-sm font-headline-sm text-on-surface mb-1">{item.name}</Text>
                     )}
                     <View className="flex-row items-center">
-                      <MaterialCommunityIcons name="database-outline" size={14} color="#717973" className="mr-1" />
+                      <MaterialCommunityIcons name="database-outline" size={14} className="text-on-surface-variant mr-1" />
                       <Text className="text-sm text-outline font-medium">{item.schema_name}</Text>
                     </View>
                   </View>
                 </View>
                 
                 <View className="flex-row gap-2 items-center ml-sm">
-                  <Pressable 
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                     className={`px-3 py-1.5 rounded-full border ${item.is_active ? 'border-error/30 bg-error/10' : 'border-primary/30 bg-primary/10'}`}
                     onPress={() => toggleOrgStatus(item.id, item.is_active)}
                   >
@@ -241,36 +240,36 @@ export function SuperAdminHomeScreen() {
                 <View className="flex-row gap-4">
                   {editingId === item.id ? (
                     <>
-                      <Pressable onPress={() => updateOrg(item.id)} className="flex-row items-center py-2">
-                        <MaterialCommunityIcons name="check" size={16} color="#012d1d" className="mr-1" />
+                      <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => updateOrg(item.id)} className="flex-row items-center py-2">
+                        <MaterialCommunityIcons name="check" size={16} className="text-primary mr-1" />
                         <Text className="text-primary font-label-md">Save</Text>
                       </Pressable>
-                      <Pressable onPress={() => { setEditingId(null); setEditName(""); }} className="flex-row items-center py-2">
-                        <MaterialCommunityIcons name="close" size={16} color="#414844" className="mr-1" />
+                      <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => { setEditingId(null); setEditName(""); }} className="flex-row items-center py-2">
+                        <MaterialCommunityIcons name="close" size={16} className="text-on-surface mr-1" />
                         <Text className="text-on-surface-variant font-label-md">Cancel</Text>
                       </Pressable>
                     </>
                   ) : (
                     <>
-                      <Pressable onPress={() => { setEditingId(item.id); setEditName(item.name); }} className="flex-row items-center py-2">
-                        <MaterialCommunityIcons name="pencil-outline" size={16} color="#002d1c" className="mr-1" />
+                      <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => { setEditingId(item.id); setEditName(item.name); }} className="flex-row items-center py-2">
+                        <MaterialCommunityIcons name="pencil-outline" size={16} className="text-primary mr-1" />
                         <Text className="text-tertiary font-label-md">Edit</Text>
                       </Pressable>
-                      <Pressable onPress={() => confirmDelete(item.id, item.name)} className="flex-row items-center py-2">
-                        <MaterialCommunityIcons name="delete-outline" size={16} color="#ba1a1a" className="mr-1" />
+                      <Pressable accessibilityRole="button" accessibilityLabel="Button" onPress={() => confirmDelete(item.id, item.name)} className="flex-row items-center py-2">
+                        <MaterialCommunityIcons name="delete-outline" size={16} className="text-error mr-1" />
                         <Text className="text-error font-label-md">Delete</Text>
                       </Pressable>
                     </>
                   )}
                 </View>
 
-                <Pressable 
+                <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                   className="bg-primary-container px-4 py-2 rounded-full active:opacity-80 flex-row items-center"
                   onPress={() => navigation.navigate("SuperAdminOrgAdmins", { orgId: item.id, orgName: item.name })}
                 >
-                  <MaterialCommunityIcons name="shield-account-outline" size={16} color="#86af99" className="mr-1.5" />
+                  <MaterialCommunityIcons name="shield-account-outline" size={16} className="text-primary mr-1.5" />
                   <Text className="text-on-primary-container font-label-md">Admins</Text>
-                  <MaterialCommunityIcons name="chevron-right" size={16} color="#86af99" className="ml-1" />
+                  <MaterialCommunityIcons name="chevron-right" size={16} className="text-primary ml-1" />
                 </Pressable>
               </View>
             </View>

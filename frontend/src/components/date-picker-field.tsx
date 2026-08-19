@@ -49,12 +49,12 @@ export function DatePickerField({
 
   return (
     <View className="mb-2">
-      <Text className="text-brand-ink mb-1">{label} (DD/MM/YYYY · IST)</Text>
-      <Pressable
-        className="bg-white border border-brand-leaf/30 rounded-lg px-3 py-3"
+      <Text className="text-on-surface mb-1">{label} (DD/MM/YYYY · IST)</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Button"
+        className="bg-surface border border-outline-variant/30 rounded-lg px-3 py-3"
         onPress={() => setOpen(true)}
       >
-        <Text className="text-brand-ink text-base">{formatIstDate(value || todayIstDate())}</Text>
+        <Text className="text-on-surface text-base">{formatIstDate(value || todayIstDate())}</Text>
       </Pressable>
       {open ? (
         <DateTimePicker
@@ -67,8 +67,8 @@ export function DatePickerField({
         />
       ) : null}
       {Platform.OS === "ios" && open ? (
-        <Pressable className="mt-1 self-end" onPress={() => setOpen(false)}>
-          <Text className="text-brand-leaf font-semibold">Done</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="mt-1 self-end" onPress={() => setOpen(false)}>
+          <Text className="text-primary font-semibold">Done</Text>
         </Pressable>
       ) : null}
     </View>
