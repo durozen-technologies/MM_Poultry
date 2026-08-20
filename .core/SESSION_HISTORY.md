@@ -343,3 +343,11 @@
 - **Request:** Fix placeholders not being visible (shown in white color).
 - **Action:** Used a Node script to replace  with  in 11 files.
 - **Outcome:** Placeholders now dynamically adapt to the active theme via NativeWind v4.
+
+### [2026-08-20T12:06:00] Fix API Interface Issues
+- User Request: Fix the api's interface issues, in both backend and frontend.
+- Actions Taken: Aligned frontend types in `frontend/src/types/api.ts` with backend pydantic schemas. Added missing fields (`started_at`, `completed_at` in `DeliveryRun`; `daily_order_id` in `DeliveryStop`; `full_name`, `mobile_number` in `User`), made `password` required in `TenantAdminCreate` and `DeliveryUserCreate`, and added `TodayOrdersResponse`.
+
+### [2026-08-20T12:17:19] Push Code
+- User Request: push
+- Actions Taken: Added all files to git, committed changes for API interface alignment, and pushed to origin.

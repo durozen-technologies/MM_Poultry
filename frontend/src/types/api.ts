@@ -9,6 +9,8 @@ export type User = {
   is_active: boolean;
   organization_slug?: string | null;
   organization_name?: string | null;
+  full_name?: string | null;
+  mobile_number?: string | null;
 };
 
 export type LoginResponse = {
@@ -57,6 +59,13 @@ export type DailyOrder = {
 };
 
 export type DailyOrderOut = DailyOrder;
+
+export type TodayOrdersResponse = {
+  items: DailyOrder[];
+  total_requested_kg: string;
+  has_more: boolean;
+  next_cursor: string | null;
+};
 
 export type FarmOut = {
   id: string;
@@ -109,7 +118,7 @@ export type OrganizationUpdate = {
 
 export type TenantAdminCreate = {
   username: string;
-  password?: string;
+  password: string;
 };
 
 export type TenantAdminUpdate = {
@@ -119,7 +128,7 @@ export type TenantAdminUpdate = {
 
 export type DeliveryUserCreate = {
   username: string;
-  password?: string;
+  password: string;
   full_name?: string | null;
   mobile_number?: string | null;
 };
@@ -136,6 +145,7 @@ export type DeliveryStop = {
   id: string;
   delivery_run_id: string;
   retailer_id: string;
+  daily_order_id?: string | null;
   sequence: number;
   ordered_kg: string;
   delivered_weight_kg: string | null;
@@ -152,6 +162,8 @@ export type DeliveryRun = {
   farm_load_id: string;
   run_date: string;
   status: string;
+  started_at?: string | null;
+  completed_at?: string | null;
   stops: DeliveryStop[];
 };
 
