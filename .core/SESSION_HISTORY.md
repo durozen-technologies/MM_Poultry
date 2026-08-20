@@ -395,3 +395,11 @@
 ### [2026-08-20T12:45:18] Push Code
 - User Request: push
 - Actions Taken: Added all files to git, committed changes for Dockerfile multi-stage build and compose updates, then pushed to origin.
+
+### [2026-08-20T12:46:47] DB Healthcheck Endpoint
+- User Request: Add healthckeck enpoint in backend to ensure backend and db are working fine.
+- Actions Taken: Upgraded `/api/v1/health` endpoint in `backend/app/routers/health.py` to use the database session dependency and execute a simple `SELECT 1`. Returns a 503 Service Unavailable if the DB connection fails, ensuring orchestrators like Dokploy know the backend is not ready to serve traffic.
+
+### [2026-08-20T12:47:48] Push Code
+- User Request: push
+- Actions Taken: Added all files to git, committed changes for the new healthcheck endpoint, and pushed to origin.

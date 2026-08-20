@@ -486,3 +486,11 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T12:45:18] Chat Log
 - **User**: push
 - **Agent**: Logging push action, committing modified files, and pushing the multi-stage Dockerfile optimizations and compose.yaml updates to the remote repository.
+
+### [2026-08-20T12:46:47] Chat Log
+- **User**: Add healthckeck enpoint in backend to ensure backend and db are working fine.
+- **Agent**: Upgraded the existing `/health` endpoint to query the database with `SELECT 1`. It will now return `{"status": "ok", "db": "ok"}` if everything is healthy, or a 503 error if the database connection fails.
+
+### [2026-08-20T12:47:48] Chat Log
+- **User**: push
+- **Agent**: Committing the new database-aware healthcheck endpoint and pushing the changes to the remote repository.
