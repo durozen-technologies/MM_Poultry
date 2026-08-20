@@ -443,3 +443,7 @@
 ### [2026-08-20T13:13:49] Formatting and Push
 - User Request: check and push
 - Actions Taken: Ran `ruff check --fix` and `ruff format` to lint and auto-format the codebase. Then added, committed, and pushed the refactored config and formatting changes to the remote branch.
+
+### [2026-08-20T13:15:11] Fix JSONDecodeError on Settings Boot
+- User Request: json.decoder.JSONDecodeError: Expecting value
+- Actions Taken: Reverted `CORS_ORIGINS` and `ALLOWED_HOSTS` types in `config.py` back to strings (`cors_origins_raw`). Pydantic Settings V2 automatically attempts to run `json.loads()` on list fields by default from the environment. Since the environment variables often contain simple strings like `*` instead of JSON arrays like `["*"]`, it crashed the startup sequence. Fixed by manually parsing the string properties as before.

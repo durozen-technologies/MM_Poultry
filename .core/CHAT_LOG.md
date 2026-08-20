@@ -534,3 +534,7 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T13:13:49] Chat Log
 - **User**: check and push
 - **Agent**: Ran formatting checks, committed the config.py refactor + formatting fixes, and pushed to origin.
+
+### [2026-08-20T13:15:11] Chat Log
+- **User**: Reported `JSONDecodeError` on `CORS_ORIGINS`.
+- **Agent**: Fixed the error by reverting the Pydantic type to `str` and using a safe `@property` parser so Pydantic doesn't attempt to JSON-decode a raw asterisk.

@@ -3,7 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 720
     
-    cors_origins: list[str] = Field(default=["*"], alias="CORS_ORIGINS")
-    allowed_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="ALLOWED_HOSTS")
+    cors_origins_raw: str = Field(default="*", alias="CORS_ORIGINS")
+    allowed_hosts_raw: str = Field(default="localhost, 127.0.0.1", alias="ALLOWED_HOSTS")
 
     model_config = SettingsConfigDict(
         env_file=str(_BACKEND_ROOT / ".env"),
@@ -37,9 +37,8 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("cors_origins", "allowed_hosts", mode="before")
     @classmethod
-    def parse_string_list(cls, v: Any) -> list[str]:
+    def _parse_string_list(cls, v: Any) -> list[str]:
         if isinstance(v, str):
             v = v.strip()
             if not v:
@@ -53,6 +52,14 @@ class Settings(BaseSettings):
         if isinstance(v, list):
             return [str(item).strip() for item in v]
         return []
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return self._parse_string_list(self.cors_origins_raw)
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        return self._parse_string_list(self.allowed_hosts_raw)
 
     @property
     def async_database_url(self) -> str:
