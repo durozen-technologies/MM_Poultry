@@ -506,3 +506,11 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T12:55:52] Chat Log
 - **User**: Reported Connection Refused error (Alembic connecting to localhost instead of db container).
 - **Agent**: Added `POSTGRES_SERVER=db` back to `compose.yaml` to ensure the container connects to the correct database instance on the Docker network.
+
+### [2026-08-20T12:57:28] Chat Log
+- **User**: Add a content to root about the application to stop 404s.
+- **Agent**: Added a `/` route that returns basic app info and points users/pingers to the `/docs` endpoint.
+
+### [2026-08-20T12:58:20] Chat Log
+- **User**: push
+- **Agent**: Committing the new `/` (root) endpoint fix and pushing the changes to the remote repository.

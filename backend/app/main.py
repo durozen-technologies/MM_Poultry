@@ -30,6 +30,15 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router, prefix=settings.api_v1_prefix)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.get("/", tags=["root"])
+    async def root() -> dict[str, str]:
+        return {
+            "app_name": settings.app_name,
+            "status": "online",
+            "docs_url": "/docs"
+        }
+
     return app
 
 

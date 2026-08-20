@@ -415,3 +415,11 @@
 ### [2026-08-20T12:55:52] Fix DB Connection Refused
 - User Request: psycopg.OperationalError: connection failed: connection to server at 127.0.0.1, port 5432 failed: Connection refused
 - Actions Taken: Restored `POSTGRES_SERVER=db` explicitly in the `compose.yaml` `environment` block for the backend service. This prevents Docker from falling back to `localhost` from the `.env` file, allowing Alembic to correctly connect to the `db` container over the Docker network.
+
+### [2026-08-20T12:57:28] Add root endpoint
+- User Request: Add a content to root aboyt the application
+- Actions Taken: Added a `GET /` endpoint in `backend/app/main.py` that returns the app's name, online status, and a pointer to the `/docs` URL to avoid 404s for uptime monitors hitting the root.
+
+### [2026-08-20T12:58:20] Push Code
+- User Request: push
+- Actions Taken: Added all files to git, committed the new root endpoint, and pushed to origin.
