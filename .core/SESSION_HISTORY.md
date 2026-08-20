@@ -427,3 +427,7 @@
 ### [2026-08-20T13:02:01] Fix DB Crash / Missing Logs
 - User Request: Fix by finding the root cause.: tail error: tail: cannot open ... log for reading
 - Actions Taken: Discovered that `compose.yaml` was pointing to the root `.env` file (which was completely empty) rather than `./backend/.env`. This caused the `db` container to crash instantly due to a missing `POSTGRES_PASSWORD`. Because the DB crashed, the `backend` container never started (due to `depends_on: service_healthy`), causing Dokploy to fail to find a log file for the backend. Fixed by updating `env_file: - ./backend/.env` in `compose.yaml`.
+
+### [2026-08-20T13:10:02] Revert env_file to .env
+- User Request: push (after manually reverting env_file to .env)
+- Actions Taken: Committed the user's manual change reverting `env_file` to `- .env` in `compose.yaml`. This indicates the user is managing environment variables natively in Dokploy or via a root `.env` file on the server.

@@ -518,3 +518,7 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T13:02:01] Chat Log
 - **User**: Demanded the root cause for the Dokploy log tailing error.
 - **Agent**: Traced the error cascade: Root `.env` was empty -> `db` crashed lacking a password -> `backend` never started because `db` wasn't healthy -> Dokploy couldn't find a log file for the non-existent `backend` container. Fixed `compose.yaml` to point to `./backend/.env`.
+
+### [2026-08-20T13:10:02] Chat Log
+- **User**: push
+- **Agent**: Pushed the user's manual revert of the `env_file` configuration in `compose.yaml`.

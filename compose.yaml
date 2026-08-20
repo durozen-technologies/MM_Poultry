@@ -4,7 +4,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file: 
-      - ./backend/.env
+      - .env
     environment:
       - POSTGRES_SERVER=db
     depends_on:
@@ -18,7 +18,7 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - .env
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
