@@ -494,3 +494,11 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T12:47:48] Chat Log
 - **User**: push
 - **Agent**: Committing the new database-aware healthcheck endpoint and pushing the changes to the remote repository.
+
+### [2026-08-20T12:51:12] Chat Log
+- **User**: Reported Alembic missing script_location error logs.
+- **Agent**: Identified that the multi-stage Dockerfile missed copying `alembic.ini` and the `migrations/` directory. Added the missing files to the Dockerfile `COPY` directives.
+
+### [2026-08-20T12:53:07] Chat Log
+- **User**: Reported the alembic error was still occurring in Dokploy.
+- **Agent**: Enforced `working_dir: /app` and an explicit `cd /app` with `-c alembic.ini` flag in `compose.yaml` to prevent Dokploy from executing Alembic in the wrong path.

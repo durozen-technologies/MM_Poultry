@@ -16,7 +16,8 @@ ENV UV_LINK_MODE=copy
 
 # Copy application source
 COPY app ./app
-COPY main.py migrate.py manage.py ./
+COPY migrations ./migrations
+COPY main.py migrate.py manage.py alembic.ini ./
 
 # Sync dependencies and create virtual environment
 RUN uv sync --no-dev

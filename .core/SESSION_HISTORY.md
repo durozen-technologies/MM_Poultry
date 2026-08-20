@@ -403,3 +403,11 @@
 ### [2026-08-20T12:47:48] Push Code
 - User Request: push
 - Actions Taken: Added all files to git, committed changes for the new healthcheck endpoint, and pushed to origin.
+
+### [2026-08-20T12:51:12] Fix Dockerfile Alembic error
+- User Request: FAILED: No 'script_location' key found in configuration.
+- Actions Taken: Updated `backend/Dockerfile` to properly `COPY migrations ./migrations` and `COPY alembic.ini ./` into the Docker image. Alembic requires these to run migrations in production.
+
+### [2026-08-20T12:53:07] Fix Alembic Working Directory
+- User Request: FAILED: No 'script_location' key found in configuration. (repeated)
+- Actions Taken: Updated `compose.yaml` to explicitly set `working_dir: /app` and modified the startup command to `cd /app && alembic -c alembic.ini upgrade head` to force Alembic to locate the configuration file regardless of Dokploy's environment overrides.
