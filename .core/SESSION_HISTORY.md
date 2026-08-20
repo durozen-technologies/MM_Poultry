@@ -379,3 +379,19 @@
 ### [2026-08-20T12:38:37] Push Code
 - User Request: push
 - Actions Taken: Added all files to git, committed changes for Dokploy compose setup, seed.py removal, and .gitignore updates, then pushed to origin.
+
+### [2026-08-20T12:41:38] Update .env CORS
+- User Request: Make allow to all : *
+- Actions Taken: Updated `backend/.env` to set `CORS_ORIGINS` and `ALLOWED_HOSTS` to `"*"` to allow all cross-origin requests and host headers locally.
+
+### [2026-08-20T12:42:30] Superadmin command
+- User Request: cmd to create super admin
+- Actions Taken: Provided the user with the CLI command to create a super admin using `manage.py`.
+
+### [2026-08-20T12:43:13] Implement Multi-stage Docker Image
+- User Request: Implement multi stage image
+- Actions Taken: Rewrote `backend/Dockerfile` to use a two-stage build (Builder & Final Runner). The builder uses `uv` to sync dependencies and compile bytecode into `/app/.venv`, which is then copied to a clean final image. Removed `uv run` from `compose.yaml` commands since the venv is now globally added to the `PATH`.
+
+### [2026-08-20T12:45:18] Push Code
+- User Request: push
+- Actions Taken: Added all files to git, committed changes for Dockerfile multi-stage build and compose updates, then pushed to origin.
