@@ -538,3 +538,10 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T13:15:11] Chat Log
 - **User**: Reported `JSONDecodeError` on `CORS_ORIGINS`.
 - **Agent**: Fixed the error by reverting the Pydantic type to `str` and using a safe `@property` parser so Pydantic doesn't attempt to JSON-decode a raw asterisk.
+### [2026-08-19 12:51:01] GitHub Actions Fixes
+- Fixed package-lock.json issue in CI by using Bun.
+- Updated GitHub release workflow to match Duro_Tracker pattern.
+
+- Fixed gradle cache error by removing it from setup-java step.
+
+- Fixed EXPO_PUBLIC_API_BASE_URL typo in workflow and hardcoded the production URL.

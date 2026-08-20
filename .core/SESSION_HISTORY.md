@@ -447,3 +447,11 @@
 ### [2026-08-20T13:15:11] Fix JSONDecodeError on Settings Boot
 - User Request: json.decoder.JSONDecodeError: Expecting value
 - Actions Taken: Reverted `CORS_ORIGINS` and `ALLOWED_HOSTS` types in `config.py` back to strings (`cors_origins_raw`). Pydantic Settings V2 automatically attempts to run `json.loads()` on list fields by default from the environment. Since the environment variables often contain simple strings like `*` instead of JSON arrays like `["*"]`, it crashed the startup sequence. Fixed by manually parsing the string properties as before.
+### [2026-08-19 12:51:01] GitHub Actions Pipeline Fixed
+- Fixed actions/setup-java and actions/setup-node crashing on package-lock.json by updating to bun install.
+- Refactored build-android-release.yml to use Duro_Tracker's python build.gradle patching method instead of r0adkll.
+- Re-confirmed user secrets are securely ignored and uploaded.
+
+- Removed gradle cache from setup-java action since gradle files do not exist until expo prebuild completes.
+
+- Hardcoded EXPO_PUBLIC_API_BASE_URL into the Github workflows to ensure cloud builds connect to the live backend.

@@ -111,3 +111,4 @@ stitch_ui/
 secrets/
 *.keystore
 tasks/
+.github/workflows/acesskey.txt
