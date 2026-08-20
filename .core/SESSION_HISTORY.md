@@ -431,3 +431,15 @@
 ### [2026-08-20T13:10:02] Revert env_file to .env
 - User Request: push (after manually reverting env_file to .env)
 - Actions Taken: Committed the user's manual change reverting `env_file` to `- .env` in `compose.yaml`. This indicates the user is managing environment variables natively in Dokploy or via a root `.env` file on the server.
+
+### [2026-08-20T13:11:38] Create Super Admin Instructions
+- User Request: How to create super admin
+- Actions Taken: Provided the user with the terminal command to run `python manage.py createsuperadmin` inside their Dokploy backend container.
+
+### [2026-08-20T13:12:19] Refactor config.py
+- User Request: Make config.py production level code.
+- Actions Taken: Replaced the bulky, unidiomatic standalone list parsing function with a cleaner `@field_validator`. Replaced `_raw` fields with native Pydantic `alias` arguments and proper list typing. Tightened validation loops to match Pydantic Settings V2 best practices.
+
+### [2026-08-20T13:13:49] Formatting and Push
+- User Request: check and push
+- Actions Taken: Ran `ruff check --fix` and `ruff format` to lint and auto-format the codebase. Then added, committed, and pushed the refactored config and formatting changes to the remote branch.

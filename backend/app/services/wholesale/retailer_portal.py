@@ -20,8 +20,8 @@ from app.schemas import (
     RetailerLastPayment,
     RetailerOrderDetailOut,
     RetailerOrdersPage,
-    RetailerProfileOut,
     RetailerOut,
+    RetailerProfileOut,
 )
 from app.services.wholesale.common import ZERO, q_money
 from app.services.wholesale.orders import get_today_order_for_retailer

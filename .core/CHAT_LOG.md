@@ -522,3 +522,15 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T13:10:02] Chat Log
 - **User**: push
 - **Agent**: Pushed the user's manual revert of the `env_file` configuration in `compose.yaml`.
+
+### [2026-08-20T13:11:38] Chat Log
+- **User**: Asked how to create a super admin account.
+- **Agent**: Shared the `manage.py createsuperadmin` command instructions for Dokploy.
+
+### [2026-08-20T13:12:19] Chat Log
+- **User**: Requested `backend/app/core/config.py` be refactored to production level code.
+- **Agent**: Refactored the file to use idiomatic Pydantic Settings V2 patterns (removed custom raw getters, used field validators and aliases, simplified validation rules).
+
+### [2026-08-20T13:13:49] Chat Log
+- **User**: check and push
+- **Agent**: Ran formatting checks, committed the config.py refactor + formatting fixes, and pushed to origin.

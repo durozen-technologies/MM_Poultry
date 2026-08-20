@@ -4,14 +4,17 @@ import asyncio
 import sys
 from getpass import getpass
 
-from sqlalchemy.exc import IntegrityError
-
 from app.core.security import get_password_hash
 from app.db.database import get_session_factory
 from app.db.tenant_schema import set_search_path
 from app.models.enums import UserRole
 from app.models.user import User
-from app.services.auth import normalize_username, require_username_available, reraise_username_conflict, upsert_auth_index
+from app.services.auth import (
+    require_username_available,
+    reraise_username_conflict,
+    upsert_auth_index,
+)
+from sqlalchemy.exc import IntegrityError
 
 
 async def setup_db():
