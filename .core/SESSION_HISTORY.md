@@ -351,3 +351,31 @@
 ### [2026-08-20T12:17:19] Push Code
 - User Request: push
 - Actions Taken: Added all files to git, committed changes for API interface alignment, and pushed to origin.
+
+### [2026-08-20T12:23:29] Dokploy Compose Setup
+- User Request: I want to deploy the application in dokploy, write compose file for it.
+- Actions Taken: Wrote a robust `compose.yaml` containing the backend FastAPI service with auto-migrations (alembic) and a PostgreSQL database service with persistent volume.
+
+### [2026-08-20T12:25:31] Remove seed and document CLI
+- User Request: remove seed, implement cli to create superadmin.
+- Actions Taken: Verified `manage.py` already has a robust `createsuperadmin` command. Removed `backend/seed.py`. Updated `backend/Dockerfile` and `backend/README.md` to point to the `createsuperadmin` command instead of `seed.py`.
+
+### [2026-08-20T12:28:15] Update compose for Dokploy
+- User Request: I will deploy in dokploy, change for the fit.
+- Actions Taken: Changed `ports:` to `expose:` in `compose.yaml` for both `backend` and `db` to prevent host port binding conflicts and allow Dokploy's Traefik proxy to route traffic natively.
+
+### [2026-08-20T12:28:55] Remove Expose from compose
+- User Request: Dont expose the port.
+- Actions Taken: Removed `expose` directives entirely from `compose.yaml` for both `backend` and `db` services.
+
+### [2026-08-20T12:30:50] Implement env_file in compose
+- User Request: implement pydantic setting, env_file : .env
+- Actions Taken: Replaced verbose `environment` lists in `compose.yaml` with a clean `env_file: - .env` directive. This delegates configuration entirely to the `.env` file, working perfectly with Dokploy and Pydantic Settings.
+
+### [2026-08-20T12:33:44] Update .gitignore
+- User Request: update .gitignore
+- Actions Taken: Verified `.env` was already globally ignored in `.gitignore`. Explicitly added `/.env` and Docker compose override files (`compose.override.yaml`, etc.) to `.gitignore` to ensure no local configs accidentally get committed.
+
+### [2026-08-20T12:38:37] Push Code
+- User Request: push
+- Actions Taken: Added all files to git, committed changes for Dokploy compose setup, seed.py removal, and .gitignore updates, then pushed to origin.

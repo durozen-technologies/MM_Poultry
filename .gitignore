@@ -14,9 +14,16 @@ Desktop.ini
 
 # --- Env & secrets (keep *.example) ---
 .env
+/.env
 .env.*
 !.env.example
 !**/.env.example
+
+# --- Docker ---
+docker-compose.override.yml
+docker-compose.override.yaml
+compose.override.yml
+compose.override.yaml
 
 # --- Python / backend ---
 __pycache__/

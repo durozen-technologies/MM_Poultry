@@ -8,7 +8,7 @@ cp .env.example .env
 uv sync
 # create DB once: createdb MM_Poultry  (or via psql)
 uv run python migrate.py
-uv run python seed.py
+uv run python manage.py createsuperadmin --username admin
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
