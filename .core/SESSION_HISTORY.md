@@ -411,3 +411,7 @@
 ### [2026-08-20T12:53:07] Fix Alembic Working Directory
 - User Request: FAILED: No 'script_location' key found in configuration. (repeated)
 - Actions Taken: Updated `compose.yaml` to explicitly set `working_dir: /app` and modified the startup command to `cd /app && alembic -c alembic.ini upgrade head` to force Alembic to locate the configuration file regardless of Dokploy's environment overrides.
+
+### [2026-08-20T12:55:52] Fix DB Connection Refused
+- User Request: psycopg.OperationalError: connection failed: connection to server at 127.0.0.1, port 5432 failed: Connection refused
+- Actions Taken: Restored `POSTGRES_SERVER=db` explicitly in the `compose.yaml` `environment` block for the backend service. This prevents Docker from falling back to `localhost` from the `.env` file, allowing Alembic to correctly connect to the `db` container over the Docker network.

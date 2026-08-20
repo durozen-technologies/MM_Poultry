@@ -502,3 +502,7 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-20T12:53:07] Chat Log
 - **User**: Reported the alembic error was still occurring in Dokploy.
 - **Agent**: Enforced `working_dir: /app` and an explicit `cd /app` with `-c alembic.ini` flag in `compose.yaml` to prevent Dokploy from executing Alembic in the wrong path.
+
+### [2026-08-20T12:55:52] Chat Log
+- **User**: Reported Connection Refused error (Alembic connecting to localhost instead of db container).
+- **Agent**: Added `POSTGRES_SERVER=db` back to `compose.yaml` to ensure the container connects to the correct database instance on the Docker network.
