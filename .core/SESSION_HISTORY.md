@@ -474,3 +474,5 @@
 - [2026-08-21] Globally patched all TextInput fields across the admin portal to explicitly use text-on-surface and placeholderTextColor="#737373" to fix invisible text on light backgrounds.
 - [2026-08-21] Verified that retailers list is dynamically fetched from the PostgreSQL database and not hardcoded.
 - [2026-08-21] Verified frontend-backend connectivity by checking the .env configuration (using correct local IPv4 address) and verifying the backend API responsiveness on /api/v1 routes.
+- [2026-08-21] Pushed all latest UI polish and bug fixes to the main branch.
+- [2026-08-21] Bumped version to 1.0.1 and added versionCode 2 to app.json for Google Play Store upload compliance.
