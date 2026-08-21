@@ -29,7 +29,7 @@ export function LoginScreen() {
     try {
       await login(
         username.trim(),
-        password
+        password.trim()
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Login failed");

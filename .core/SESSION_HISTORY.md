@@ -476,3 +476,12 @@
 - [2026-08-21] Verified frontend-backend connectivity by checking the .env configuration (using correct local IPv4 address) and verifying the backend API responsiveness on /api/v1 routes.
 - [2026-08-21] Pushed all latest UI polish and bug fixes to the main branch.
 - [2026-08-21] Bumped version to 1.0.1 and added versionCode 2 to app.json for Google Play Store upload compliance.
+- [2026-08-21] Diagnosed terminal visual glitch and SQLAlchemy f405 error related to missing Alembic migration (0003_user_profile_fields) causing the User model to be out of sync with Postgres.
+- [2026-08-21] Modified app/db/tenant_schema.py to automatically add missing 'permissions_version' and 'last_login_at' columns to both public and tenant user tables via migrate.py, resolving the SQLAlchemy f405 ProgrammingError without data loss.
+- [2026-08-21] Verified that all dashboard functions and endpoints are working. Confirmed that the 500 errors previously seen on /farms and /orders were resolved by the database schema fix.
+- [2026-08-21] Addressed user's query about the origins of the pre-existing retailers (Chicken Corner, etc). They were populated via the initial 'backend/seed.py' developer script.
+- [2026-08-21] Clarified that the old seed.py file was already removed from the codebase in a previous commit, and super admin creation is now correctly handled via 'manage.py createsuperadmin'.
+- [2026-08-21] Wiped all dummy data and test tenants from the database using reset_test_database_async. Recreated the superadmin account with username: 'superadmin', password: 'superadmin'.
+- [2026-08-21] Verified superadmin login works perfectly. Explained to the user that they must use the superadmin account to log in because the reset wiped all other users (admin, delivery, etc).
+- [2026-08-21] Diagnosed 401 Unauthorized on superadmin login from mobile device. Found that mobile keyboards frequently append trailing spaces to passwords. Added .trim() to the password payload in frontend/src/screens/auth/login-screen.tsx to prevent invisible space errors.
+- [2026-08-21] Truncated all non-essential tables in the public schema to fully wipe the lingering seed data (e.g. retailers from early setup). Re-created the superadmin user.

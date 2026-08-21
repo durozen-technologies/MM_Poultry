@@ -128,6 +128,8 @@ async def repair_platform_schema_async() -> None:
         await conn.execute(text("SET search_path TO public"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE"))
         await conn.execute(
             text(
                 """
@@ -233,6 +235,8 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
