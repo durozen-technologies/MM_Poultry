@@ -455,3 +455,7 @@
 - Removed gradle cache from setup-java action since gradle files do not exist until expo prebuild completes.
 
 - Hardcoded EXPO_PUBLIC_API_BASE_URL into the Github workflows to ensure cloud builds connect to the live backend.
+
+- Pushed the entire codebase to secondary test repository (Soundararajan102/Teat_poultry_MM.git).
+
+- Committed the app.json package name change (.test) and pushed exclusively to the Teat_poultry_MM.git test repository.
