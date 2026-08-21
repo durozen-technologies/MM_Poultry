@@ -214,8 +214,8 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                 <Text className="font-headline-sm font-semibold mb-4">Record Payment</Text>
                 <DatePickerField label="Payment Date" value={paymentDate} onChange={setPaymentDate} />
                 <View className="flex-row gap-2 mt-4">
-                  <TextInput className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md" value={cash} onChangeText={setCash} placeholder="Cash (₹)" keyboardType="decimal-pad" />
-                  <TextInput className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md" value={upi} onChangeText={setUpi} placeholder="UPI (₹)" keyboardType="decimal-pad" />
+                  <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={cash} onChangeText={setCash} placeholder="Cash (₹)" keyboardType="decimal-pad" />
+                  <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={upi} onChangeText={setUpi} placeholder="UPI (₹)" keyboardType="decimal-pad" />
                 </View>
                 <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary-container h-12 mt-4 rounded-lg items-center justify-center active:scale-95" onPress={collect}>
                   <Text className="text-on-primary-container font-semibold text-label-md">Submit Payment</Text>

@@ -69,8 +69,8 @@ export function AdminRatesScreen({ navigation }: { navigation: any }) {
 
             <View className="bg-surface-container-lowest rounded-2xl p-4 mb-4 border border-outline-variant/20">
               <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-3">Default Rate (₹/kg)</Text>
-              <TextInput
-                className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md mb-3"
+              <TextInput placeholderTextColor="#737373"
+                className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md mb-3 text-on-surface"
                 value={defaultRate}
                 onChangeText={setDefaultRate}
                 placeholder="0.00"

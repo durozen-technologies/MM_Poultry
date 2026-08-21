@@ -87,10 +87,10 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
 
             <View className="bg-surface-container-lowest rounded-2xl p-4 mb-4 border border-outline-variant/20 flex-col gap-3">
               <Text className="font-label-md text-on-surface-variant uppercase font-semibold">New Delivery User</Text>
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Full name (optional)" value={fullName} onChangeText={setFullName} />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Mobile (optional)" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" />
+              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" placeholderTextColor="#737373" />
+              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor="#737373" />
+              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Full name (optional)" value={fullName} onChangeText={setFullName} placeholderTextColor="#737373" />
+              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Mobile (optional)" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" placeholderTextColor="#737373" />
               <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary h-11 rounded-lg items-center justify-center" onPress={onAdd}>
                 <Text className="text-on-primary font-semibold">Create User</Text>
               </Pressable>

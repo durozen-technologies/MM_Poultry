@@ -166,7 +166,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             <View className="flex-col gap-2 flex-1">
               <Text className="font-body-md text-body-md text-on-surface-variant">Quantity (Birds)</Text>
               <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
-                <TextInput
+                <TextInput placeholderTextColor="#737373"
                   className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                   placeholder="0"
                   keyboardType="number-pad"
@@ -179,7 +179,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             <View className="flex-col gap-2 flex-1">
               <Text className="font-body-md text-body-md text-primary font-semibold">Total Weight (KG)</Text>
               <View className="bg-primary/5 rounded-2xl px-4 py-2 border border-primary/20 shadow-sm">
-                <TextInput
+                <TextInput placeholderTextColor="#737373"
                   className="bg-transparent font-display-lg text-[24px] font-bold text-primary h-10 w-full placeholder:text-on-surface-variant"
                   placeholder="0.00"
                   keyboardType="decimal-pad"
@@ -192,7 +192,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           <View className="flex-col gap-2 mt-4">
             <Text className="font-body-md text-body-md text-on-surface-variant">Rate (₹ per KG)</Text>
             <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
                 keyboardType="decimal-pad"
@@ -225,7 +225,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           <View className="flex-col gap-2 mt-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Paid Amount (₹)</Text>
             <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
                 keyboardType="decimal-pad"
@@ -248,7 +248,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
             Remarks
           </Text>
-          <TextInput
+          <TextInput placeholderTextColor="#737373"
             className="w-full bg-surface-container-lowest rounded-2xl p-4 min-h-[100px] border border-outline-variant/30 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
             placeholder="Add any notes here..."
             multiline

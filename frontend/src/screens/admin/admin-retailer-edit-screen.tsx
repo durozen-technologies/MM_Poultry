@@ -133,8 +133,8 @@ function Field({
   return (
     <View className="mb-4">
       <Text className="font-label-md text-on-surface-variant mb-1">{label}</Text>
-      <TextInput
-        className="bg-surface-container-lowest h-12 border border-outline-variant rounded-lg px-3 text-body-md"
+      <TextInput placeholderTextColor="#737373"
+        className="bg-surface-container-lowest h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface"
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}

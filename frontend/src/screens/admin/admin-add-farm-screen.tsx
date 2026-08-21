@@ -71,7 +71,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Farm Name <Text className="text-error">*</Text>
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter farm name"
               value={name}
@@ -87,7 +87,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Mobile Number
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter mobile number"
               keyboardType="phone-pad"
@@ -104,7 +104,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Address
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
               placeholder="Enter full address"
               multiline
@@ -117,7 +117,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Location (City/Region)
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter village or city"
               value={village}
@@ -128,7 +128,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Capacity (Number of Birds)
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. 5000"
               keyboardType="number-pad"

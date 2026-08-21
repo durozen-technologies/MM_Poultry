@@ -84,9 +84,9 @@ export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
 
             <View className="bg-surface-container-lowest rounded-2xl p-4 mb-4 border border-outline-variant/20 flex-col gap-3">
               <Text className="font-label-md text-on-surface-variant uppercase font-semibold">Add Vehicle</Text>
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Vehicle number" value={number} onChangeText={setNumber} />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Capacity (kg)" value={capacity} onChangeText={setCapacity} keyboardType="decimal-pad" />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3" placeholder="Driver name" value={driverName} onChangeText={setDriverName} />
+              <TextInput placeholderTextColor="#737373" className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface" placeholder="Vehicle number" value={number} onChangeText={setNumber} />
+              <TextInput placeholderTextColor="#737373" className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface" placeholder="Capacity (kg)" value={capacity} onChangeText={setCapacity} keyboardType="decimal-pad" />
+              <TextInput placeholderTextColor="#737373" className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface" placeholder="Driver name" value={driverName} onChangeText={setDriverName} />
               <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary h-11 rounded-lg items-center justify-center" onPress={onAdd}>
                 <Text className="text-on-primary font-semibold">Add Vehicle</Text>
               </Pressable>

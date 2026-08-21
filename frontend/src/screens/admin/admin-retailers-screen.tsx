@@ -89,7 +89,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       <View className="px-4 pt-4 pb-2 z-40 bg-background/95">
         <View className="flex-row items-center gap-2 bg-surface-container-highest rounded-full px-4 py-3 mb-3">
           <MaterialIcons name="search" size={24} className="text-on-surface-variant" />
-          <TextInput
+          <TextInput placeholderTextColor="#737373"
             className="flex-1 text-body-lg text-on-surface placeholder:text-on-surface-variant"
             placeholder="Search retailers..."
             value={searchQuery}
@@ -293,15 +293,15 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
               <Text className="font-semibold">Record Payment</Text>
               <DatePickerField label="Payment Date" value={paymentDate} onChange={setPaymentDate} />
               <View className="flex-row gap-2 mt-2">
-                <TextInput
-                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2"
+                <TextInput placeholderTextColor="#737373"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-on-surface"
                   value={cash}
                   onChangeText={setCash}
                   placeholder="Cash"
                   keyboardType="decimal-pad"
                 />
-                <TextInput
-                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2"
+                <TextInput placeholderTextColor="#737373"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-on-surface"
                   value={upi}
                   onChangeText={setUpi}
                   placeholder="UPI"

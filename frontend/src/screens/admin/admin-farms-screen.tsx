@@ -104,7 +104,7 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
                 <View className="absolute left-4 z-10">
                   <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
                 </View>
-                <TextInput
+                <TextInput placeholderTextColor="#737373"
                   className="flex-1 h-12 pl-12 pr-4 bg-surface-container-lowest border border-surface-variant rounded-2xl text-body-md text-on-surface placeholder:text-on-surface-variant"
                   placeholder="Search farms..."
                   value={searchQuery}

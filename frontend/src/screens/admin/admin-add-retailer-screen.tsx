@@ -92,7 +92,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Company / Business Name <Text className="text-error">*</Text>
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="Enter Retailer/Company Name"
               value={name}
@@ -104,7 +104,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Shop Name
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. SR Chicken Center"
               value={shopName}
@@ -120,7 +120,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <View className="absolute left-3 z-10">
                 <MaterialIcons name="person" size={18} className="text-on-surface-variant" />
               </View>
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="Enter owner name"
                 value={ownerName}
@@ -133,7 +133,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Category
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Wholesale, Retail"
               value={category}
@@ -159,7 +159,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <View className="absolute left-3 z-10">
                 <MaterialIcons name="phone-iphone" size={18} className="text-on-surface-variant" />
               </View>
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="10-digit primary number"
                 keyboardType="phone-pad"
@@ -177,7 +177,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <View className="absolute left-3 z-10">
                 <MaterialIcons name="chat" size={18} className="text-on-surface-variant" />
               </View>
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="WhatsApp number"
                 keyboardType="phone-pad"
@@ -195,7 +195,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <View className="absolute left-3 z-10">
                 <MaterialIcons name="phone" size={18} className="text-on-surface-variant" />
               </View>
-              <TextInput
+              <TextInput placeholderTextColor="#737373"
                 className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
                 placeholder="Other phone number"
                 keyboardType="phone-pad"
@@ -219,7 +219,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Area
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Downtown"
               value={area}
@@ -231,7 +231,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Route Name
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Route A"
               value={routeName}
@@ -243,7 +243,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Preferred Delivery Time
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. Morning 6 AM"
               value={preferredDeliveryTime}
@@ -255,7 +255,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Full Address
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
               placeholder="Enter complete address"
               multiline
@@ -279,7 +279,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Credit Limit (₹)
             </Text>
-            <TextInput
+            <TextInput placeholderTextColor="#737373"
               className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
               placeholder="e.g. 50000"
               keyboardType="decimal-pad"

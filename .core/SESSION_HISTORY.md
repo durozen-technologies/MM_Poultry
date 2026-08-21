@@ -459,3 +459,18 @@
 - Pushed the entire codebase to secondary test repository (Soundararajan102/Teat_poultry_MM.git).
 
 - Committed the app.json package name change (.test) and pushed exclusively to the Teat_poultry_MM.git test repository.
+- [2026-08-21] Reworked the Superadmin frontend (home and org admins screens) to include premium aesthetics, collapsible animated forms using react-native-reanimated, status badges, and polished empty states.
+- [2026-08-21] Implemented ultra-premium UI rework for Superadmin portal with split-background architectural headers, deep drop shadows, and decluttered action menus based on /frontend-ui-engineering skill.
+- [2026-08-21] Removed the organization text field from the login screen.
+- [2026-08-21] Copied new logo into assets, updated app name to "Trader's Hub" in app.json, and updated the login screen to use the new logo and name.
+- [2026-08-21] completely redesigned the login screen to match the new 'Trader's Hub' logo theme using a split navy blue background, rounded inputs, and smooth animations.
+- [2026-08-21] Removed 'Secure B2B Portal' text and 'SECURE' from the login button on the login screen.
+- [2026-08-21] Removed the 'ENTERPRISE AUTHENTICATION' badge from the login screen.
+- [2026-08-21] Wrapped the login screen content inside a KeyboardAwareScrollView to fix keyboard overlapping issues on mobile.
+- [2026-08-21] Fixed keyboard view issue on Android by conditionally removing KeyboardAvoidingView (relying on Expo's default adjustResize behavior instead).
+- [2026-08-21] Restructured the login screen view hierarchy to ensure proper Keyboard awareness and scrolling by moving SafeAreaView inside a ScrollView.
+- [2026-08-21] Replaced native KeyboardAvoidingView with react-native-keyboard-aware-scroll-view to ensure buttery smooth keyboard avoidance on both Android and iOS.
+- [2026-08-21] Changed global StatusBar style to 'dark' in App.tsx to ensure visibility on light-themed screens like Settings.
+- [2026-08-21] Globally patched all TextInput fields across the admin portal to explicitly use text-on-surface and placeholderTextColor="#737373" to fix invisible text on light backgrounds.
+- [2026-08-21] Verified that retailers list is dynamically fetched from the PostgreSQL database and not hardcoded.
+- [2026-08-21] Verified frontend-backend connectivity by checking the .env configuration (using correct local IPv4 address) and verifying the backend API responsiveness on /api/v1 routes.

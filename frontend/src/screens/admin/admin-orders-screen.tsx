@@ -84,7 +84,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
             <View className="px-4 pt-3 flex-row items-center gap-3">
               <View className="flex-1 h-12 bg-surface-container-high rounded-full flex-row items-center px-4 shadow-sm">
                 <MaterialIcons name="search" size={20} className="text-on-surface" />
-                <TextInput
+                <TextInput placeholderTextColor="#737373"
                   className="flex-1 h-full pl-2 font-body-md text-on-surface placeholder:text-on-surface-variant"
                   placeholder="Search orders..."
                   value={searchQuery}
