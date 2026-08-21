@@ -24,13 +24,19 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
   const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
-    if (!name.trim() || !phone.trim()) {
-      setError("Please fill required fields (Name, Primary Phone)");
+    if (!name.trim() || !phone.trim() || !username.trim() || !password.trim()) {
+      setError("Please fill all required fields (Name, Phone, Username, Password)");
+      return;
+    }
+    if (phone.trim().length < 10) {
+      setError("Phone number must be at least 10 digits");
       return;
     }
     setLoading(true);
@@ -49,6 +55,8 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         category: category.trim() || null,
         credit_limit: creditLimit ? parseFloat(creditLimit) : 0,
         preferred_delivery_time: preferredDeliveryTime.trim() || null,
+        username: username.trim(),
+        password: password.trim(),
       });
       navigation.goBack();
     } catch (e) {
@@ -286,6 +294,55 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               value={creditLimit}
               onChangeText={setCreditLimit}
  />
+          </View>
+        </View>
+
+        {/* Portal Access Card */}
+        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
+          <View className="flex-row items-center gap-2">
+            <MaterialIcons name="security" size={20} className="text-primary" />
+            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+              Portal Access
+            </Text>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Username <Text className="text-error">*</Text>
+            </Text>
+            <View className="relative flex-row items-center">
+              <View className="absolute left-3 z-10">
+                <MaterialIcons name="account-circle" size={18} className="text-on-surface-variant" />
+              </View>
+              <TextInput placeholderTextColor="#737373"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+                placeholder="Unique login username"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={username}
+                onChangeText={setUsername}
+ />
+            </View>
+          </View>
+
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Password <Text className="text-error">*</Text>
+            </Text>
+            <View className="relative flex-row items-center">
+              <View className="absolute left-3 z-10">
+                <MaterialIcons name="lock" size={18} className="text-on-surface-variant" />
+              </View>
+              <TextInput placeholderTextColor="#737373"
+                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+                placeholder="Secure password"
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+ />
+            </View>
           </View>
         </View>
 

@@ -493,3 +493,15 @@
 ### [2026-08-21 11:40:18] Git Pull
 - **User Request**: pull
 - **Actions Taken**: Executed `git stash`, `git pull`, and `git stash pop`. Resolved merge conflicts in the core documentation files (`CHAT_LOG.md` and `SESSION_HISTORY.md`) to retain both remote and local history. Dropped the applied stash.
+
+### [2026-08-21 15:01:48] Git Pull (Rebase)
+- **User Request**: pull
+- **Actions Taken**: Executed `git pull --rebase`. Encountered a conflict in `SESSION_HISTORY.md` during the rebase due to upstream updates. Manually resolved the conflict, keeping both histories intact, and completed the rebase. Workspace is now up to date.
+
+### [2026-08-21 15:21:33] Fix Frontend Missing Dependency
+- **User Request**: Fix : Unable to resolve "react-native-keyboard-aware-scroll-view"
+- **Actions Taken**: Installed the missing dependency `react-native-keyboard-aware-scroll-view` via `bun add` in the `frontend` directory to resolve the Metro Bundler crash.
+
+### [2026-08-21 15:32:00] Add Retailer Portal Authentication (Frontend)
+- **User Request**: Add username and password for retailers, so, the retailer can able to login with assigned username and password
+- **Actions Taken**: Added the necessary frontend UI to manage retailer logins. Modifed `AdminAddRetailerScreen` to enforce mandatory username/password fields and comprehensive validation. Modified `AdminRetailerProfileScreen` to expose a 'Create Login Account' block for creating portal access for existing retailers. Wired up the React Native app to the backend's `create_retailer_portal_user` endpoint.

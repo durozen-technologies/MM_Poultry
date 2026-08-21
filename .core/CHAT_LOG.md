@@ -557,3 +557,19 @@ uv run ruff check --fix && uv run ruff format
 ### [2026-08-21 11:40:18]
 **User:** pull
 **Assistant:** Ran `git stash && git pull && git stash pop` to successfully update the workspace from the remote repository. Resolved merge conflicts in `.core/CHAT_LOG.md` and `.core/SESSION_HISTORY.md`.
+
+### [2026-08-21 15:01:48]
+**User:** pull
+**Assistant:** Ran `git pull --rebase` to fetch and apply the latest upstream changes. Resolved a subsequent merge conflict in `.core/SESSION_HISTORY.md` and finalized the rebase. The local workspace is now fully synced with the remote `main` branch.
+
+### [2026-08-21 15:21:33]
+**User:** Fix : Unable to resolve "react-native-keyboard-aware-scroll-view"
+**Assistant:** Installed the missing `react-native-keyboard-aware-scroll-view` package in the `frontend` using `bun add`.
+
+### [2026-08-21 15:32:00]
+**User:** Add username and password for retailers, so, the retailer can able to login with assigned username and password
+**Assistant:** Implemented the UI required for Retailer portal login support:
+1. Linked the `POST /admin/retailers/{id}/portal-user` API in `retailers.ts`.
+2. Updated `AdminAddRetailerScreen` to include mandatory `Username` and `Password` inputs in a "Portal Access" card with full field validation.
+3. Updated `AdminRetailerProfileScreen` to include a "Portal Access" section, enabling the Admin to create a portal account for existing Retailers who do not have one.
+4. Used `frontend-ui-engineering` best practices and UI guidelines to seamlessly integrate this feature without breaking the current UI layout.

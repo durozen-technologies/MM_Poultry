@@ -40,3 +40,11 @@ export async function recordPayment(
   const { data } = await api.post(`/admin/retailers/${retailerId}/payments`, payload);
   return data;
 }
+
+export async function createRetailerPortalUser(
+  retailerId: string,
+  payload: { username: string; password: string; }
+) {
+  const { data } = await api.post(`/admin/retailers/${retailerId}/portal-user`, payload);
+  return data;
+}

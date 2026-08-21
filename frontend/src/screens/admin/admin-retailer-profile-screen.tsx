@@ -9,7 +9,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getLedger, recordPayment } from "../../api/retailers";
+import { getLedger, recordPayment, createRetailerPortalUser } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
@@ -25,6 +25,10 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const [paymentDate, setPaymentDate] = useState(todayIstDate());
   const [msg, setMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("OVERVIEW");
+  const [portalUsername, setPortalUsername] = useState("");
+  const [portalPassword, setPortalPassword] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalMessage, setPortalMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -62,6 +66,32 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
       await refresh();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed");
+    }
+  }
+
+  async function createPortalAccount() {
+    if (!portalUsername.trim() || !portalPassword.trim()) {
+      setPortalMessage("Username and Password are required");
+      return;
+    }
+    setPortalLoading(true);
+    setPortalMessage(null);
+    try {
+      await createRetailerPortalUser(retailerId, {
+        username: portalUsername.trim(),
+        password: portalPassword.trim(),
+      });
+      setPortalMessage("Portal account created successfully.");
+      setPortalUsername("");
+      setPortalPassword("");
+    } catch (e: any) {
+      if (e?.response?.status === 409) {
+        setPortalMessage("This retailer already has a portal account.");
+      } else {
+        setPortalMessage(e instanceof Error ? e.message : "Failed to create portal account.");
+      }
+    } finally {
+      setPortalLoading(false);
     }
   }
 
@@ -158,13 +188,57 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           {msg ? <Text className="text-error font-semibold">{msg}</Text> : null}
 
           {activeTab === "OVERVIEW" && (
-            <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
-              <InfoRow label="Owner" value={retailer.owner_name || "—"} />
-              <InfoRow label="Address" value={retailer.address || "—"} />
-              <InfoRow label="Area" value={retailer.area || "—"} />
-              <InfoRow label="Route" value={retailer.route_name || "—"} />
-              <InfoRow label="Category" value={retailer.category || "—"} />
-              <InfoRow label="Opening Balance" value={`₹${retailer.opening_balance}`} />
+            <View className="flex-col gap-4">
+              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
+                <InfoRow label="Owner" value={retailer.owner_name || "—"} />
+                <InfoRow label="Address" value={retailer.address || "—"} />
+                <InfoRow label="Area" value={retailer.area || "—"} />
+                <InfoRow label="Route" value={retailer.route_name || "—"} />
+                <InfoRow label="Category" value={retailer.category || "—"} />
+                <InfoRow label="Opening Balance" value={`₹${retailer.opening_balance}`} />
+              </View>
+
+              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
+                <View className="flex-row items-center gap-2 mb-2">
+                  <MaterialIcons name="security" size={20} className="text-primary" />
+                  <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                    Portal Access
+                  </Text>
+                </View>
+                {portalMessage && (
+                  <Text className={`font-label-md p-2 rounded ${portalMessage.includes("success") ? "text-primary bg-primary-container" : "text-error bg-error-container"}`}>
+                    {portalMessage}
+                  </Text>
+                )}
+                <View className="flex-col gap-2">
+                  <TextInput placeholderTextColor="#737373"
+                    className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-on-surface"
+                    placeholder="Username"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={portalUsername}
+                    onChangeText={setPortalUsername}
+                  />
+                  <TextInput placeholderTextColor="#737373"
+                    className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-on-surface"
+                    placeholder="Password"
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={portalPassword}
+                    onChangeText={setPortalPassword}
+                  />
+                  <Pressable accessibilityRole="button" accessibilityLabel="Button"
+                    className="w-full bg-primary h-12 rounded-lg flex items-center justify-center mt-2 active:scale-95"
+                    onPress={createPortalAccount}
+                    disabled={portalLoading}
+                  >
+                    <Text className="text-on-primary font-semibold font-label-md">
+                      {portalLoading ? "Creating..." : "Create Login Account"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           )}
 
