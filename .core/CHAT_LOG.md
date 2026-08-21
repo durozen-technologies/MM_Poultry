@@ -549,3 +549,11 @@ uv run ruff check --fix && uv run ruff format
 - Executed git push to https://github.com/Soundararajan102/Teat_poultry_MM.git.
 
 - Committed package change and ran git push ONLY to https://github.com/Soundararajan102/Teat_poultry_MM.git.
+
+### [2026-08-20T13:19:48] Chat Log
+- **User**: Got `relation "user_auth_index" does not exist` error when creating superadmin.
+- **Agent**: Explained that the DB is completely empty and they need to run `python manage.py setup` first to provision the platform tables.
+
+### [2026-08-21 11:40:18]
+**User:** pull
+**Assistant:** Ran `git stash && git pull && git stash pop` to successfully update the workspace from the remote repository. Resolved merge conflicts in `.core/CHAT_LOG.md` and `.core/SESSION_HISTORY.md`.

@@ -485,3 +485,11 @@
 - [2026-08-21] Verified superadmin login works perfectly. Explained to the user that they must use the superadmin account to log in because the reset wiped all other users (admin, delivery, etc).
 - [2026-08-21] Diagnosed 401 Unauthorized on superadmin login from mobile device. Found that mobile keyboards frequently append trailing spaces to passwords. Added .trim() to the password payload in frontend/src/screens/auth/login-screen.tsx to prevent invisible space errors.
 - [2026-08-21] Truncated all non-essential tables in the public schema to fully wipe the lingering seed data (e.g. retailers from early setup). Re-created the superadmin user.
+
+### [2026-08-20T13:19:48] Run manage.py setup
+- User Request: UndefinedTableError for user_auth_index when creating superadmin.
+- Actions Taken: Identified that the database is completely empty. In this multi-tenant architecture, platform tables (like user_auth_index) are created via `python manage.py setup`. Advised the user to run the setup command before creating the super admin.
+
+### [2026-08-21 11:40:18] Git Pull
+- **User Request**: pull
+- **Actions Taken**: Executed `git stash`, `git pull`, and `git stash pop`. Resolved merge conflicts in the core documentation files (`CHAT_LOG.md` and `SESSION_HISTORY.md`) to retain both remote and local history. Dropped the applied stash.
