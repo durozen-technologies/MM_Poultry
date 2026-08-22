@@ -13,6 +13,7 @@ import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-prof
 import { AdminRetailerEditScreen } from "../screens/admin/admin-retailer-edit-screen";
 import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
 import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
+import { AdminFarmEditScreen } from "../screens/admin/admin-farm-edit-screen";
 import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-screen";
 import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
@@ -22,6 +23,8 @@ import { AdminVehiclesScreen } from "../screens/admin/admin-vehicles-screen";
 import { AdminDeliveryUsersScreen } from "../screens/admin/admin-delivery-users-screen";
 import { AdminDeliveryRunsScreen } from "../screens/admin/admin-delivery-runs-screen";
 import { AdminReportsScreen } from "../screens/admin/admin-reports-screen";
+import { AdminExpensesScreen } from "../screens/admin/admin-expenses-screen";
+import { AdminAddExpenseScreen } from "../screens/admin/admin-add-expense-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
@@ -143,6 +146,7 @@ export function AppNavigator() {
             <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
             <Stack.Screen name="RetailerEdit" component={AdminRetailerEditScreen} />
             <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
+            <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
             <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
             <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
             <Stack.Screen name="DeliveryRuns" component={AdminDeliveryRunsScreen} />
@@ -150,6 +154,8 @@ export function AppNavigator() {
             <Stack.Screen name="Rates" component={AdminRatesScreen} />
             <Stack.Screen name="Vehicles" component={AdminVehiclesScreen} />
             <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
+            <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
+            <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
           </>
         ) : user.role === "DELIVERY" ? (
           <Stack.Screen name="DeliveryHome" component={DeliveryHomeScreen} />

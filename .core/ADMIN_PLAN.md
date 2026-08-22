@@ -84,8 +84,36 @@
   - [x] Bird counts on weigh / load
   - [x] Ops dashboard API + admin UI metrics
   - [x] Org settings loss thresholds (defaults)
-  - [ ] Full retailer form UI for new fields
-  - [ ] Expenses / returns / offline / GPS (later IDEA phases)
+  - [x] Full retailer form UI for new fields
+  - [x] Expenses (moved to Phase 7)
+  - [ ] Returns / offline / GPS (later IDEA phases)
+
+## Phase 7 — Expense Management
+
+- **Status:** Done
+- **Flow & Options:**
+  - [x] ExpenseCategory & Expense SQLAlchemy models and tables
+  - [x] APIs for CRUD on Categories and Expenses with pagination/filters
+  - [x] Expo UI: AdminExpensesScreen and AdminAddExpenseScreen
+  - [x] Integration with Admin Home quick actions
+
+## Phase 8 — Returns & Adjustments
+
+- **Status:** Done
+- **Flow & Options:**
+  - [x] RetailerReturn model and `is_credit` flag for Payment.
+  - [x] POST `/admin/retailers/{retailer_id}/returns` API.
+  - [x] Ledger logic for Returns and non-credit Adjustments.
+  - [x] Expo UI: "ACTIONS" tab in Retailer Profile (Record Payment, Return, Adjustment).
+  - [x] Integration tests for Returns & Adjustments.
+
+## Phase 9 — Offline First Support & Sync (Proposed)
+
+- **Status:** Planning
+- **Flow & Options:**
+  - [ ] Implement local SQLite or AsyncStorage for mobile device caching.
+  - [ ] Create sync queues for Delivery staff (can bill and weigh offline).
+  - [ ] Background sync worker when device comes online.
 
 ## Future (proposal — out of v1 scope)
 

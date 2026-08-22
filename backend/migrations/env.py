@@ -85,7 +85,7 @@ def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None
             include_schemas=False,
             include_object=include_object_tenant,
             schema_translate_map={"tenant": tenant_schema},
-            version_locations=[tenant_version_loc],
+            version_locations=[public_version_loc, tenant_version_loc],
             version_table_schema=tenant_schema if tenant_schema != "public" else None,
             render_item=render_item,
         )
@@ -104,7 +104,7 @@ def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None
             include_object=include_object_tenant,
             version_table_schema=schema_name,
             schema_translate_map={"tenant": schema_name},
-            version_locations=[tenant_version_loc],
+            version_locations=[public_version_loc, tenant_version_loc],
         )
         with context.begin_transaction():
             context.run_migrations()
@@ -139,7 +139,7 @@ def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None
                 include_object=include_object_tenant,
                 version_table_schema=schema_name,
                 schema_translate_map={"tenant": schema_name},
-                version_locations=[tenant_version_loc],
+                version_locations=[public_version_loc, tenant_version_loc],
             )
             with context.begin_transaction():
                 context.run_migrations()

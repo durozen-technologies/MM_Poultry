@@ -19,6 +19,7 @@ from app.schemas import (
     FarmCreate,
     FarmLoadCreate,
     FarmLoadOut,
+    FarmLoadUpdate,
     FarmOut,
     FarmUpdate,
     VehicleCreate,
@@ -45,6 +46,13 @@ async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
 async def list_farms(db: AsyncSession) -> list[FarmOut]:
     rows = list(await db.scalars(select(Farm).order_by(Farm.name)))
     return [FarmOut.model_validate(r, from_attributes=True) for r in rows]
+
+
+async def get_farm(db: AsyncSession, farm_id: UUID) -> FarmOut:
+    farm = await db.scalar(select(Farm).where(Farm.id == farm_id))
+    if farm is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm not found")
+    return FarmOut.model_validate(farm, from_attributes=True)
 
 
 async def update_farm(db: AsyncSession, farm_id: UUID, payload: FarmUpdate) -> FarmOut:
@@ -142,7 +150,7 @@ async def list_farm_loads(db: AsyncSession) -> list[FarmLoadOut]:
 
 
 async def update_farm_load(
-    db: AsyncSession, load_id: UUID, payload: FarmLoadCreate
+    db: AsyncSession, load_id: UUID, payload: FarmLoadUpdate
 ) -> FarmLoadOut:
     load = await db.scalar(select(FarmLoad).where(FarmLoad.id == load_id))
     if load is None:

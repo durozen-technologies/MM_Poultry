@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  FlatList,
   Text,
   TextInput,
   View,
@@ -102,7 +103,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-6 flex-col" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 px-4 pt-6 flex-col" contentContainerStyle={{ paddingBottom: 32 }}>
         {error && (
           <Text className="px-4 py-2 mb-4 text-error text-center text-label-md bg-error-container rounded-lg font-semibold">
             {error}
@@ -110,10 +111,13 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         )}
 
         {/* Purchase Info */}
-        <View className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 flex-col gap-4 mb-6">
-          <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-            Purchase Info
-          </Text>
+        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 z-50">
+          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
+            <MaterialIcons name="info-outline" size={20} className="text-primary" />
+            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
+              Purchase Info
+            </Text>
+          </View>
 
           <View className="flex-col gap-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
@@ -133,10 +137,12 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
               
               {showFarmDropdown && (
                 <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled>
-                    {farms.map((farm) => (
+                  <FlatList
+                    data={farms}
+                    keyExtractor={(item) => item.id}
+                    nestedScrollEnabled
+                    renderItem={({ item: farm }) => (
                       <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-                        key={farm.id}
                         className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
                         onPress={() => {
                           setSelectedFarm(farm.id);
@@ -145,33 +151,36 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
                       >
                         <Text className="font-body-md text-on-surface">{farm.name}</Text>
                       </Pressable>
-                    ))}
-                    {farms.length === 0 && (
-                      <Text className="p-4 text-center text-on-surface-variant">No farms found.</Text>
                     )}
-                  </ScrollView>
+                    ListEmptyComponent={
+                      <Text className="p-4 text-center text-on-surface-variant">No farms found.</Text>
+                    }
+                  />
                 </View>
               )}
             </View>
           </View>
 
-          <View className="flex-col gap-2 relative z-0">
+          <View className="flex-col gap-2 relative z-0 mt-2">
             <DatePickerField label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} />
           </View>
         </View>
 
         {/* Bird & Weight */}
-        <View className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 flex-col gap-4 mb-6 relative z-0">
-          <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-            Bird & Weight
-          </Text>
+        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
+          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
+            <MaterialIcons name="monitor-weight" size={20} className="text-primary" />
+            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
+              Bird & Weight
+            </Text>
+          </View>
           
           <View className="flex-row gap-4">
             <View className="flex-col gap-2 flex-1">
               <Text className="font-body-md text-body-md text-on-surface-variant">Quantity (Birds)</Text>
-              <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
+              <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
                 <TextInput placeholderTextColor="#737373"
-                  className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
+                  className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
                   placeholder="0"
                   keyboardType="number-pad"
                   value={quantity}
@@ -181,10 +190,10 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             </View>
             
             <View className="flex-col gap-2 flex-1">
-              <Text className="font-body-md text-body-md text-primary font-semibold">Total Weight (KG)</Text>
-              <View className="bg-primary/5 rounded-2xl px-4 py-2 border border-primary/20 shadow-sm">
+              <Text className="font-body-md text-body-md text-primary font-bold tracking-wide">Total Weight (KG)</Text>
+              <View className="bg-primary/10 rounded-2xl px-4 min-h-[56px] justify-center border-2 border-primary/30 shadow-sm">
                 <TextInput placeholderTextColor="#737373"
-                  className="bg-transparent font-display-lg text-[24px] font-bold text-primary h-10 w-full placeholder:text-on-surface-variant"
+                  className="bg-transparent font-display-lg text-[28px] font-black text-primary p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
                   placeholder="0.00"
                   keyboardType="decimal-pad"
                   value={weight}
@@ -195,9 +204,9 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           </View>
           <View className="flex-col gap-2 mt-4">
             <Text className="font-body-md text-body-md text-on-surface-variant">Rate (₹ per KG)</Text>
-            <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
+            <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
               <TextInput placeholderTextColor="#737373"
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
+                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 value={rate}
@@ -208,10 +217,13 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         </View>
 
         {/* Payment */}
-        <View className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 flex-col gap-4 mb-6 relative z-0">
-          <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-            Payment
-          </Text>
+        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
+          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
+            <MaterialIcons name="payments" size={20} className="text-primary" />
+            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
+              Payment
+            </Text>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pb-2 -mx-4 px-4 snap-x">
             {["Bank Transfer", "UPI", "Cash", "Credit"].map((method) => (
               <Pressable accessibilityRole="button" accessibilityLabel="Button"
@@ -228,9 +240,9 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
 
           <View className="flex-col gap-2 mt-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Paid Amount (₹)</Text>
-            <View className="bg-surface-container-lowest rounded-2xl px-4 py-2 border border-outline-variant/30 shadow-sm">
+            <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
               <TextInput placeholderTextColor="#737373"
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface h-10 w-full placeholder:text-on-surface-variant"
+                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 value={paidAmount}
@@ -239,19 +251,22 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             </View>
           </View>
 
-          <View className="flex-row items-center justify-between pt-2">
-            <Text className="font-body-lg text-body-lg text-on-surface-variant">Balance Amount</Text>
-            <Text className="font-headline-md-mobile text-headline-md-mobile text-error">
+          <View className="flex-row items-center justify-between pt-4 mt-2 border-t border-surface-variant/30">
+            <Text className="font-title-md text-title-md text-on-surface font-semibold">Balance Amount</Text>
+            <Text className={`font-headline-sm text-headline-sm font-bold ${balanceAmount > 0 ? 'text-error' : 'text-primary'}`}>
               ₹{balanceAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
             </Text>
           </View>
         </View>
 
         {/* Remarks */}
-        <View className="bg-surface-container-lowest rounded-2xl shadow-sm p-4 flex-col gap-4 mb-6 relative z-0">
-          <Text className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-            Remarks
-          </Text>
+        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
+          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
+            <MaterialIcons name="notes" size={20} className="text-primary" />
+            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
+              Remarks
+            </Text>
+          </View>
           <TextInput placeholderTextColor="#737373"
             className="w-full bg-surface-container-lowest rounded-2xl p-4 min-h-[100px] border border-outline-variant/30 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
             placeholder="Add any notes here..."
@@ -263,34 +278,37 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         </View>
 
         {/* Summary Card */}
-        <View className="bg-surface-container rounded-2xl p-4 flex-col gap-2 mb-6">
-          <Text className="font-headline-sm text-headline-sm text-on-surface mb-2 font-semibold">Summary</Text>
+        <View className="bg-primary/5 rounded-3xl p-6 flex-col gap-3 mb-6 border border-primary/20 shadow-sm">
+          <View className="flex-row items-center gap-2 mb-2">
+            <MaterialIcons name="receipt-long" size={24} className="text-primary" />
+            <Text className="font-headline-sm text-headline-sm text-primary font-bold">Purchase Summary</Text>
+          </View>
           
-          <View className="flex-row justify-between items-center py-2 border-b border-surface-variant/50">
+          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
             <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
             <Text className="font-body-md text-body-md text-on-surface font-semibold">{selectedFarmName}</Text>
           </View>
           
-          <View className="flex-row justify-between items-center py-2 border-b border-surface-variant/50">
+          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
             <Text className="font-body-md text-body-md text-on-surface-variant">Total Weight</Text>
             <Text className="font-body-md text-body-md text-on-surface font-semibold">{weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 })} KG</Text>
           </View>
           
-          <View className="flex-row justify-between items-center py-2 border-b border-surface-variant/50">
+          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
             <Text className="font-body-md text-body-md text-on-surface-variant">Rate</Text>
             <Text className="font-body-md text-body-md text-on-surface font-semibold">₹{rateNum.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
           </View>
           
-          <View className="flex-row justify-between items-center pt-2">
-            <Text className="font-body-lg text-body-lg text-on-surface font-bold">Net Payable</Text>
-            <Text className="font-headline-sm text-headline-sm text-primary font-bold">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+          <View className="flex-row justify-between items-center pt-4 mt-2">
+            <Text className="font-title-lg text-title-lg text-on-surface font-bold">Net Payable</Text>
+            <Text className="font-display-sm text-display-sm text-primary font-black tracking-tight">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
           </View>
         </View>
 
       </ScrollView>
 
-      {/* Sticky Bottom Actions */}
-      <View className="absolute bottom-0 left-0 right-0 bg-surface/90 border-t border-surface-variant/30 p-4 flex-row gap-4 z-40">
+      {/* Bottom Actions */}
+      <View className="bg-surface/90 border-t border-surface-variant/30 p-4 flex-row gap-4">
         <Pressable accessibilityRole="button" accessibilityLabel="Button" 
           className="flex-1 bg-transparent border-2 border-primary rounded-2xl py-3 items-center justify-center active:bg-primary/5"
           onPress={() => navigation.goBack()}

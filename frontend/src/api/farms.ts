@@ -6,6 +6,11 @@ export async function listFarms() {
   return data;
 }
 
+export async function getFarm(farmId: string) {
+  const { data } = await api.get<FarmOut>(`/admin/farms/${farmId}`);
+  return data;
+}
+
 export async function createFarm(payload: Record<string, unknown>) {
   const { data } = await api.post<FarmOut>("/admin/farms", payload);
   return data;

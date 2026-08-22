@@ -10,6 +10,7 @@ from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
     Payment,
+    RetailerReturn,
 )
 from app.models.enums import (
     PaymentType,
@@ -20,6 +21,8 @@ from app.schemas import (
     PaymentCreate,
     PaymentOut,
     RetailerOut,
+    RetailerReturnCreate,
+    RetailerReturnOut,
 )
 from app.services.wholesale.common import ZERO, q_money
 from app.services.wholesale.retailers import get_retailer
@@ -39,13 +42,42 @@ async def create_payment(
         upi_amount=q_money(payload.upi_amount),
         total_amount=total,
         type=payload.type,
+        is_credit=payload.is_credit,
         notes=payload.notes,
     )
     db.add(payment)
-    if payload.type == PaymentType.RECEIVED:
+    if payload.type == PaymentType.RECEIVED and payload.is_credit:
         retailer.credit_balance = q_money(retailer.credit_balance - total)
     await db.flush()
     return PaymentOut.model_validate(payment, from_attributes=True)
+
+
+async def create_return(
+    db: AsyncSession, retailer_id: UUID, payload: RetailerReturnCreate
+) -> RetailerReturnOut:
+    retailer = await get_retailer(db, retailer_id)
+    if payload.total_amount <= ZERO:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Total amount required"
+        )
+    
+    ret = RetailerReturn(
+        retailer_id=retailer_id,
+        return_date=payload.return_date or today_ist(),
+        delivery_bill_id=payload.delivery_bill_id,
+        weight_kg=payload.weight_kg,
+        bird_count=payload.bird_count,
+        rate_per_kg=payload.rate_per_kg,
+        total_amount=payload.total_amount,
+        reason=payload.reason,
+    )
+    db.add(ret)
+    
+    # Credit the retailer's balance
+    retailer.credit_balance = q_money(retailer.credit_balance - payload.total_amount)
+    
+    await db.flush()
+    return RetailerReturnOut.model_validate(ret, from_attributes=True)
 
 
 async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
@@ -62,6 +94,13 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
             select(Payment)
             .where(Payment.retailer_id == retailer_id)
             .order_by(Payment.payment_date.asc(), Payment.created_at.asc())
+        )
+    )
+    returns = list(
+        await db.scalars(
+            select(RetailerReturn)
+            .where(RetailerReturn.retailer_id == retailer_id)
+            .order_by(RetailerReturn.return_date.asc(), RetailerReturn.created_at.asc())
         )
     )
     entries: list[LedgerEntry] = []
@@ -96,8 +135,19 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
                 entry_date=payment.payment_date,
                 reference=str(payment.id),
                 debit=ZERO,
-                credit=payment.total_amount if payment.type == PaymentType.RECEIVED else ZERO,
+                credit=payment.total_amount if payment.type == PaymentType.RECEIVED and payment.is_credit else ZERO,
                 notes=payment.notes,
+            )
+        )
+    for ret in returns:
+        entries.append(
+            LedgerEntry(
+                entry_type="RETURN",
+                entry_date=ret.return_date,
+                reference=str(ret.id),
+                debit=ZERO,
+                credit=ret.total_amount,
+                notes=f"Return {ret.weight_kg}kg " + (ret.reason or ""),
             )
         )
     entries.sort(key=lambda e: (e.entry_date, e.entry_type))

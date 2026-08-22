@@ -21,13 +21,21 @@ from app.schemas.farm import (
     FarmCreate,
     FarmLoadCreate,
     FarmLoadOut,
+    FarmLoadUpdate,
     FarmOut,
     FarmUpdate,
     VehicleCreate,
     VehicleOut,
     VehicleUpdate,
 )
-from app.schemas.ledger import LedgerEntry, LedgerOut, PaymentCreate, PaymentOut
+from app.schemas.ledger import (
+    LedgerEntry,
+    LedgerOut,
+    PaymentCreate,
+    PaymentOut,
+    RetailerReturnCreate,
+    RetailerReturnOut,
+)
 from app.schemas.order import DailyOrderCreate, DailyOrderOut, TodayOrdersResponse
 from app.schemas.organization import (
     DeliveryUserCreate,
@@ -78,6 +86,7 @@ __all__ = [
     "FarmOut",
     "FarmLoadCreate",
     "FarmLoadOut",
+    "FarmLoadUpdate",
     "VehicleCreate",
     "VehicleUpdate",
     "VehicleOut",
@@ -103,6 +112,8 @@ __all__ = [
     "LedgerEntry",
     "LedgerOut",
     "PaymentOut",
+    "RetailerReturnCreate",
+    "RetailerReturnOut",
     "ReportSummary",
     "TripWeightLossOut",
     "OrderTrackingStage",

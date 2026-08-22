@@ -180,6 +180,13 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
               <MaterialIcons name="payments" size={20} className="text-primary" />
               <Text className="font-label-md text-label-md text-on-surface">Payment</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+              className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 flex-row items-center justify-center gap-2 shadow-sm active:scale-95 border border-outline-variant/30 mt-3"
+              onPress={() => navigation.navigate("Expenses")}
+            >
+              <MaterialIcons name="receipt" size={20} className="text-primary" />
+              <Text className="font-label-md text-label-md text-on-surface">Expenses</Text>
+            </Pressable>
           </View>
 
           {/* Recent Orders */}

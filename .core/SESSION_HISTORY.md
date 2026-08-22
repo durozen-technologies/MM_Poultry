@@ -523,3 +523,69 @@
  \   C A S C A D E \   i m m e d i a t e l y   a f t e r   d e l e t i n g   t h e   o r g a n i z a t i o n   r e c o r d . 
   
  
+### [2026-08-22 11:53:52] Pull
+**Request:** pull
+**Action:** Stashed uncommitted log changes, pulled latest from main branch, and restored the remote log state to resolve merge conflicts.
+
+### [2026-08-22 12:02:21] Impeccable UI Fix for Farm Purchase
+**Request:** Fix the field layout and UI in Farm Purchase screen.
+**Action:** Removed fixed `h-10` constraints from TextInputs that caused vertical clipping of numbers on Android and replaced with flex/min-height properties. Removed absolute positioning on the bottom action bar so it no longer overlaps with the scrollable content area, implementing proper Safe Area layout.
+
+### [2026-08-22 12:04:40] Impeccable Full Page Polish
+**Request:** fix the full page ui and polish it.
+**Action:** Applied 'impeccable' standard polish to `admin-farm-purchase-screen.tsx`. Upgraded cards to `rounded-3xl` with subtle borders and more generous paddings (`p-5`). Added intuitive Material Icons to all section headers, separated headers with subtle bottom borders, redesigned the 'Total Weight' input to be ultra-prominent, and completely overhauled the 'Summary' card to use a highlighted background (`bg-primary/5`) with a bold, high-contrast 'Net Payable' display.
+
+### [2026-08-22 12:10:49] Bug Fixes and Performance Optimization
+**Request:** Fix the broken code, in it.
+**Action:** Identified and fixed a React Native Android z-index bug in `admin-farm-purchase-screen.tsx` where the 'Purchase Info' card was overlapping the dropdown menu. Added `z-50` to the parent container. Replaced the `ScrollView` implementation for the farms dropdown with a `FlatList` to prevent significant performance degradation when handling large farm datasets, in alignment with the performance optimization guidelines.
+
+### [2026-08-22 12:18:58] Added Edit Option to Farms List
+**Request:** Add edit option in the three dots.
+**Action:** Implemented a dropdown menu for the three-dots button on farm cards in `admin-farms-screen.tsx`. The menu now includes 'Edit Farm' and 'Mark Inactive/Active' options. Managed state to open one menu at a time and ensured proper z-index and elevation for Android rendering within a FlatList.
+
+### [2026-08-22 12:34:37] Implemented Edit Farm and Toggle Active Status
+**Request:** And make us redirect the page to perform the operation.
+**Action:** Created `admin-farm-edit-screen.tsx` following the UI standards. Exposed `GET /admin/farms/{farm_id}` on backend router and service. Wired up the frontend UI to toggle the active status of a farm inline via API patch, and linked the Edit button to navigate to the new screen, utilizing the single-item GET request.
+### [2026-08-22 07:29:35] Agent: API Testing Phase 1 Execution\n- Resolved database schema setup for test environment using `NullPool` and `app.db.tenant_schema` functions.\n- Fixed cross-loop issues with FastAPI TestClient and pytest asyncio by instantiating test DB session locally in dependency overrides instead of via fixture injection.\n- Fixed typing mismatch on `Decimal` assertions.\n- Successfully implemented and passed 14 endpoints test cases for Farm, Vehicle, and Farm Loads under `test_admin_farms.py`, `test_admin_vehicles.py`, and `test_admin_farm_loads.py`.
+### [2026-08-22 07:32:41] Agent: API Testing Phase 2 Planning\n- Outlined Phase 2 plan covering 19 endpoints across Admin Retailers, Orders, Reports, Users, and Dashboard.\n- Created implementation_plan.md with explicit breakdown of tasks and an open question regarding the PDF generation dependency for the reports endpoint.
+
+### [2026-08-22 13:09:49] Completed Phase 2 Tests
+- Resolved database integrity constraints for test_admin_users.
+- Wrote and passed tests for Admin Orders, Reports, and Dashboard endpoints.
+- Created implementation plan for Phase 3 (Retailer Portal) and Phase 4 (Public Auth).
+
+- **[2026-08-22T14:12:00+05:30] Phase 6 UI Completion:** Updated admin-add-retailer-screen.tsx to include notes. Completely rewrote admin-retailer-edit-screen.tsx with cards (Basic Details, Contact Details, Location & Delivery, Financial Details) for all new Phase 6 fields. Redesigned admin-retailer-profile-screen.tsx overview tab to use grouped cards. Verified cleanly with tsc.
+
+- **[2026-08-22T14:42:00+05:30] Phase 3 & 4 API Testing:** Created test_retailer.py, test_delivery.py, test_auth.py, and test_super_admin.py. Mocked AuthContext for Retailer, Delivery, and Super Admin roles. Fixed tenant search_path bug during yield. Verified Duro_POS structured error logic in endpoints. Achieved 51/51 passing tests.
+
+## [2026-08-22] Phase 7 Expense Management Completion & Phase 8 Planning
+**Request:** check everything is done correctly...! Write api testing for every endpoint, use fastapi test client. With different senarios. Update the plan. make next plan.
+**Actions Taken:**
+- Fixed import path for `AuthContext` and `require_roles` in `backend/app/routers/admin_expenses.py`.
+- Fixed schemas and `User` imports so that tests pass. All 6 tests in `test_admin_expenses.py` are passing.
+- Created `frontend/src/api/expenses.ts` for API queries.
+- Built `AdminExpensesScreen` and `AdminAddExpenseScreen` and wired them to `app-navigator.tsx`.
+- Updated `walkthrough.md` with Phase 7 completion details.
+- Updated `ADMIN_PLAN.md` explicitly marking Phase 7 as Done and proposing Phase 8.
+- Drafted `implementation_plan.md` for Phase 8 (Returns & Adjustments Management) and requested user review.
+
+## [2026-08-22] Test Coverage Expansion Planning
+**Request:** How many endpoints are there to be tested. Write test for other end points too.
+**Actions Taken:**
+- Verified that there are 66 endpoints and 57 tests passing.
+- Identified 32 lines of missing coverage in app/routers using pytest-cov.
+- Created an Implementation Plan to reach 100% router coverage by testing HTTP 404 error handlers and report period boundaries.
+- **[2026-08-22 09:41]**: Reached 100% test coverage for `app/routers/` by adding tests for missing edge cases (400 Bad Request for unlinked retailers, 403 Forbidden for admins with no org, and POST payloads). Fixed fixture scoping and payload validation.
+### [2026-08-22] Phase 8 Backend Implementation
+- Generated and applied Alembic migration for `RetailerReturn` model and `Payment.is_credit` flag across all tenant schemas.
+- Implemented `/admin/retailers/{retailer_id}/returns` endpoint.
+- Updated `get_ledger` logic to include returns and handle `is_credit` appropriately.
+- Wrote integration tests for returns and `is_credit` payments and achieved 100% pass rate.
+### [2026-08-22] Phase 8 Frontend Implementation
+- Updated `api/retailers.ts` with `createReturn` function.
+- Updated `recordPayment` function signature in `api/retailers.ts` to support `is_credit` flag and `type`.
+- Overhauled `admin-retailer-profile-screen.tsx` Ledger Actions tab (renamed to ACTIONS) to support logging Payments, Returns, and non-credit Adjustments.
+- Verified visual coloring and status rendering of Returns and Adjustments in the ledger entries view.
+### [2026-08-22] Bug Fix: Expense Screens
+- Fixed TypeScript errors in `api/expenses.ts` (`int` -> `number`).
+- Fixed broken imports in `admin-add-expense-screen.tsx` and `admin-expenses-screen.tsx` which were incorrectly referencing non-existent `../../components/ui/` components. Replaced them with native React Native elements styled with NativeWind.

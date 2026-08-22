@@ -9,7 +9,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getLedger, recordPayment, createRetailerPortalUser } from "../../api/retailers";
+import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
@@ -29,6 +29,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const [portalPassword, setPortalPassword] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
+  
+  const [actionType, setActionType] = useState<"PAYMENT" | "RETURN" | "ADJUSTMENT">("PAYMENT");
+  const [isCredit, setIsCredit] = useState(true); // for adjustment
+  const [returnWeight, setReturnWeight] = useState("");
+  const [returnRate, setReturnRate] = useState("");
+  const [returnReason, setReturnReason] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -52,20 +58,40 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   );
 
   async function collect() {
-    if (!cash && !upi) return;
+    if (actionType === "PAYMENT" && (!cash && !upi)) return;
+    if (actionType === "RETURN" && (!returnWeight || !returnRate)) return;
+    if (actionType === "ADJUSTMENT" && (!cash && !upi)) return;
+    
+    setLoading(true);
     try {
-      await recordPayment(retailerId, {
-        cash_amount: cash || "0",
-        upi_amount: upi || "0",
-        payment_date: toApiDate(paymentDate) ?? undefined,
-      });
-      setCash("");
-      setUpi("");
-      setMsg("Payment recorded");
+      if (actionType === "RETURN") {
+        await createReturn(retailerId, {
+          weight_kg: returnWeight,
+          rate_per_kg: returnRate,
+          total_amount: String(Number(returnWeight) * Number(returnRate)),
+          reason: returnReason || undefined,
+        });
+        setReturnWeight("");
+        setReturnRate("");
+        setReturnReason("");
+        setMsg("Return recorded successfully");
+      } else {
+        await recordPayment(retailerId, {
+          cash_amount: cash || "0",
+          upi_amount: upi || "0",
+          payment_date: toApiDate(paymentDate) ?? undefined,
+          type: actionType === "ADJUSTMENT" ? "ADJUSTMENT" : "RECEIVED",
+          is_credit: actionType === "ADJUSTMENT" ? isCredit : true,
+        });
+        setCash("");
+        setUpi("");
+        setMsg(actionType === "ADJUSTMENT" ? "Adjustment recorded" : "Payment recorded");
+      }
       setTimeout(() => setMsg(null), 3000);
       await refresh();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed");
+      setLoading(false);
     }
   }
 
@@ -106,7 +132,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const { retailer, entries } = ledger;
   const bal = Number(retailer.credit_balance || 0);
   const billEntries = entries.filter((e) => e.entry_type === "BILL");
-  const paymentEntries = entries.filter((e) => e.entry_type === "PAYMENT" || e.entry_type === "BILL_PAYMENT");
+  const actionEntries = entries.filter((e) => e.entry_type === "PAYMENT" || e.entry_type === "BILL_PAYMENT" || e.entry_type === "RETURN" || e.entry_type === "ADJUSTMENT");
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
@@ -170,7 +196,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
 
         <View className="bg-surface border-b border-surface-container-high mt-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
-            {["OVERVIEW", "ORDERS", "BILLS", "PAYMENTS", "LEDGER"].map((tab) => (
+            {["OVERVIEW", "ORDERS", "BILLS", "ACTIONS", "LEDGER"].map((tab) => (
               <Pressable accessibilityRole="button" accessibilityLabel="Button"
                 key={tab}
                 onPress={() => setActiveTab(tab)}
@@ -190,12 +216,36 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           {activeTab === "OVERVIEW" && (
             <View className="flex-col gap-4">
               <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
-                <InfoRow label="Owner" value={retailer.owner_name || "—"} />
-                <InfoRow label="Address" value={retailer.address || "—"} />
+                <View className="flex-row items-center gap-2 mb-1">
+                  <MaterialIcons name="contacts" size={18} className="text-primary" />
+                  <Text className="font-label-lg text-on-surface font-semibold">Contact Details</Text>
+                </View>
+                <InfoRow label="Primary Phone" value={retailer.phone || "—"} />
+                <InfoRow label="WhatsApp" value={retailer.whatsapp || "—"} />
+                <InfoRow label="Alternate Phone" value={retailer.alternate_phone || "—"} />
+              </View>
+
+              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
+                <View className="flex-row items-center gap-2 mb-1">
+                  <MaterialIcons name="location-on" size={18} className="text-primary" />
+                  <Text className="font-label-lg text-on-surface font-semibold">Location & Delivery</Text>
+                </View>
+                <InfoRow label="Full Address" value={retailer.address || "—"} />
                 <InfoRow label="Area" value={retailer.area || "—"} />
                 <InfoRow label="Route" value={retailer.route_name || "—"} />
+                <InfoRow label="Preferred Time" value={retailer.preferred_delivery_time || "—"} />
+              </View>
+
+              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
+                <View className="flex-row items-center gap-2 mb-1">
+                  <MaterialIcons name="storefront" size={18} className="text-primary" />
+                  <Text className="font-label-lg text-on-surface font-semibold">Business Information</Text>
+                </View>
+                <InfoRow label="Owner Name" value={retailer.owner_name || "—"} />
+                <InfoRow label="Shop Name" value={retailer.shop_name || "—"} />
                 <InfoRow label="Category" value={retailer.category || "—"} />
                 <InfoRow label="Opening Balance" value={`₹${retailer.opening_balance}`} />
+                <InfoRow label="Notes" value={retailer.notes || "—"} />
               </View>
 
               <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
@@ -282,26 +332,69 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             </View>
           )}
 
-          {activeTab === "PAYMENTS" && (
+          {activeTab === "ACTIONS" && (
             <View className="flex-col gap-4">
               <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm">
-                <Text className="font-headline-sm font-semibold mb-4">Record Payment</Text>
-                <DatePickerField label="Payment Date" value={paymentDate} onChange={setPaymentDate} />
-                <View className="flex-row gap-2 mt-4">
-                  <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={cash} onChangeText={setCash} placeholder="Cash (₹)" keyboardType="decimal-pad" />
-                  <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={upi} onChangeText={setUpi} placeholder="UPI (₹)" keyboardType="decimal-pad" />
+                
+                <View className="flex-row bg-surface-container rounded-lg p-1 mb-4">
+                  {(["PAYMENT", "RETURN", "ADJUSTMENT"] as const).map((type) => (
+                    <Pressable
+                      key={type}
+                      onPress={() => setActionType(type)}
+                      className={`flex-1 py-2 items-center justify-center rounded-md ${actionType === type ? "bg-surface shadow-sm" : ""}`}
+                    >
+                      <Text className={`font-label-md font-semibold ${actionType === type ? "text-primary" : "text-on-surface-variant"}`}>
+                        {type}
+                      </Text>
+                    </Pressable>
+                  ))}
                 </View>
+
+                {actionType === "RETURN" ? (
+                  <View className="flex-col gap-3">
+                    <View className="flex-row gap-2">
+                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnWeight} onChangeText={setReturnWeight} placeholder="Weight (kg)" keyboardType="decimal-pad" />
+                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnRate} onChangeText={setReturnRate} placeholder="Rate (₹/kg)" keyboardType="decimal-pad" />
+                    </View>
+                    <TextInput placeholderTextColor="#737373" className="w-full bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnReason} onChangeText={setReturnReason} placeholder="Reason (e.g., Spoiled, Dead on arrival)" />
+                    {returnWeight && returnRate ? (
+                      <Text className="text-on-surface-variant font-label-md">Total Credit: ₹{(Number(returnWeight) * Number(returnRate)).toFixed(2)}</Text>
+                    ) : null}
+                  </View>
+                ) : (
+                  <View className="flex-col gap-3">
+                    <DatePickerField label="Date" value={paymentDate} onChange={setPaymentDate} />
+                    <View className="flex-row gap-2">
+                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={cash} onChangeText={setCash} placeholder="Cash (₹)" keyboardType="decimal-pad" />
+                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={upi} onChangeText={setUpi} placeholder="UPI (₹)" keyboardType="decimal-pad" />
+                    </View>
+                    {actionType === "ADJUSTMENT" && (
+                      <Pressable className="flex-row items-center gap-2 mt-2" onPress={() => setIsCredit(!isCredit)}>
+                        <View className={`w-5 h-5 rounded border ${isCredit ? "bg-primary border-primary" : "border-outline"} items-center justify-center`}>
+                          {isCredit && <MaterialIcons name="check" size={16} color="white" />}
+                        </View>
+                        <Text className="text-on-surface font-body-md">Credit Balance (Reduces Outstanding)</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+
                 <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary-container h-12 mt-4 rounded-lg items-center justify-center active:scale-95" onPress={collect}>
-                  <Text className="text-on-primary-container font-semibold text-label-md">Submit Payment</Text>
+                  <Text className="text-on-primary-container font-semibold text-label-md">
+                    Submit {actionType}
+                  </Text>
                 </Pressable>
               </View>
-              {paymentEntries.map((item, idx) => (
+
+              {actionEntries.map((item, idx) => (
                 <View key={idx} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 flex-row justify-between">
                   <View>
                     <Text className="font-body-md text-on-surface-variant">{formatIstDate(item.entry_date)}</Text>
-                    <Text className="font-label-md text-on-surface font-semibold mt-1">{item.entry_type}</Text>
+                    <Text className="font-label-md text-on-surface font-semibold mt-1">{item.entry_type} {item.notes ? ` - ${item.notes}` : ""}</Text>
                   </View>
-                  <Text className="font-body-md text-primary font-semibold">₹{item.credit}</Text>
+                  <Text className={`font-body-md font-semibold ${item.entry_type === "RETURN" || Number(item.credit) > 0 ? "text-primary" : "text-error"}`}>
+                    ₹{item.entry_type === "RETURN" || Number(item.credit) > 0 ? item.credit : item.debit}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -316,8 +409,8 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                     <Text className="font-label-md text-on-surface font-semibold mt-1">{item.entry_type}</Text>
                   </View>
                   <View className="flex-col items-end">
-                    {Number(item.debit) > 0 && <Text className="font-body-md text-error font-semibold">Dr ₹{item.debit}</Text>}
-                    {Number(item.credit) > 0 && <Text className="font-body-md text-primary font-semibold">Cr ₹{item.credit}</Text>}
+                    {Number(item.debit) > 0 && <Text className={`font-body-md font-semibold ${item.entry_type === "ADJUSTMENT" ? "text-error" : "text-error"}`}>Dr ₹{item.debit}</Text>}
+                    {Number(item.credit) > 0 && <Text className={`font-body-md font-semibold ${item.entry_type === "RETURN" ? "text-primary" : "text-primary"}`}>Cr ₹{item.credit}</Text>}
                   </View>
                 </View>
               ))}

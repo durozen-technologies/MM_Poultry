@@ -10,6 +10,7 @@ from app.models.domain import (
     Retailer,
     RetailerDailyOrder,
     RetailerItemRate,
+    RetailerReturn,
     TripWeightLoss,
     Vehicle,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "Retailer",
     "RetailerDailyOrder",
     "RetailerItemRate",
+    "RetailerReturn",
     "Farm",
     "FarmLoad",
     "Vehicle",

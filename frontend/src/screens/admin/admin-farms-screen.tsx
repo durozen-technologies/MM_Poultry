@@ -12,12 +12,14 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAdminFarms } from "../../hooks/use-queries";
 import type { FarmLoad, FarmOut } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
+import { updateFarm } from "../../api/farms";
 
 export function AdminFarmsScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
   const { data, isLoading, refetch } = useAdminFarms();
 
   const farms = data?.farms || [];
+  const [openMenuFarmId, setOpenMenuFarmId] = useState<string | null>(null);
   const loads = (data?.loads || []).slice(0, 10);
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +74,8 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
         className="flex-1 px-4 pt-4"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        onScroll={() => setOpenMenuFarmId(null)}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <>
             {/* Summary Chips */}
@@ -180,6 +184,7 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
         renderItem={({ item: farm }) => (
           <View
             className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3 border border-outline-variant/20"
+            style={{ zIndex: openMenuFarmId === farm.id ? 50 : 0, elevation: openMenuFarmId === farm.id ? 10 : 0 }}
           >
             <View className="flex-row justify-between items-start">
               <View className="flex-col flex-1">
@@ -210,12 +215,54 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
                   {farm.id.split("-")[0].toUpperCase()}
                 </Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-8 h-8 rounded-full flex items-center justify-center text-outline active:bg-surface-container">
-                <MaterialIcons name="more-vert" size={20} className="text-on-surface-variant" />
-              </Pressable>
+              <View className="relative z-50">
+                <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-outline active:bg-surface-container"
+                  onPress={() => setOpenMenuFarmId(openMenuFarmId === farm.id ? null : farm.id)}
+                >
+                  <MaterialIcons name="more-vert" size={20} className="text-on-surface-variant" />
+                </Pressable>
+
+                {openMenuFarmId === farm.id && (
+                  <View className="absolute top-10 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 overflow-hidden w-44" style={{ elevation: 5 }}>
+                    <Pressable 
+                      className="flex-row items-center gap-3 px-4 py-3 active:bg-surface-container"
+                      onPress={() => {
+                        setOpenMenuFarmId(null);
+                        navigation.navigate("AdminEditFarm", { farmId: farm.id });
+                      }}
+                    >
+                      <MaterialIcons name="edit" size={18} className="text-on-surface-variant" />
+                      <Text className="font-body-md text-on-surface">Edit Farm</Text>
+                    </Pressable>
+                    
+                    <Pressable 
+                      className="flex-row items-center gap-3 px-4 py-3 active:bg-surface-container border-t border-surface-variant/30"
+                      onPress={async () => {
+                        setOpenMenuFarmId(null);
+                        try {
+                          await updateFarm(farm.id, { is_active: !farm.is_active });
+                          refetch();
+                        } catch (e) {
+                          console.error("Failed to toggle active status", e);
+                        }
+                      }}
+                    >
+                      <MaterialIcons 
+                        name={farm.is_active ? "block" : "check-circle-outline"} 
+                        size={18} 
+                        className={farm.is_active ? "text-error" : "text-primary"} 
+                      />
+                      <Text className={`font-body-md font-semibold ${farm.is_active ? "text-error" : "text-primary"}`}>
+                        {farm.is_active ? "Mark Inactive" : "Mark Active"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             </View>
 
-            <View className="flex-col gap-2 mt-2">
+            <View className="flex-col gap-2 mt-2 z-0">
               <View className="flex-row items-center gap-2">
                 <MaterialIcons name="call" size={16} className="text-on-surface-variant" />
                 <Text className="text-body-md text-primary font-semibold">

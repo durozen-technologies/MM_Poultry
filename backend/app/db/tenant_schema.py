@@ -74,6 +74,9 @@ def _tenant_table_names() -> set[str]:
         "payments",
         "trip_weight_losses",
         "bill_sequences",
+        "expense_categories",
+        "expenses",
+        "retailer_returns",
     }
 
 
@@ -242,7 +245,7 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
         for table in Base.metadata.sorted_tables:
-            if table.name in {"vehicles", "org_settings"}:
+            if table.name in {"vehicles", "org_settings", "expense_categories", "expenses"}:
                 await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))

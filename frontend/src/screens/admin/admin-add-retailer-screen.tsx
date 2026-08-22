@@ -24,6 +24,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const [area, setArea] = useState("");
   const [routeName, setRouteName] = useState("");
   const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
   const [creditLimit, setCreditLimit] = useState("");
   const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
   const [username, setUsername] = useState("");
@@ -55,6 +56,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         area: area.trim() || null,
         route_name: routeName.trim() || null,
         category: category.trim() || null,
+        notes: notes.trim() || null,
         credit_limit: creditLimit ? parseFloat(creditLimit) : 0,
         preferred_delivery_time: preferredDeliveryTime.trim() || null,
         username: username.trim(),
@@ -149,6 +151,19 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               placeholder="e.g. Wholesale, Retail"
               value={category}
               onChangeText={setCategory}
+ />
+          </View>
+          <View className="flex-col gap-2">
+            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+              Notes / Remarks
+            </Text>
+            <TextInput placeholderTextColor="#737373"
+              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[80px] placeholder:text-on-surface-variant"
+              placeholder="Any additional notes..."
+              multiline
+              textAlignVertical="top"
+              value={notes}
+              onChangeText={setNotes}
  />
           </View>
         </View>

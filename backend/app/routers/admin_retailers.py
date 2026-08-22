@@ -17,6 +17,8 @@ from app.schemas import (
     RetailerCreate,
     RetailerOut,
     RetailerPortalUserCreate,
+    RetailerReturnCreate,
+    RetailerReturnOut,
     RetailerUpdate,
     UserOut,
 )
@@ -121,3 +123,12 @@ async def admin_payment(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> PaymentOut:
     return await svc.create_payment(auth.db, retailer_id, payload)
+
+
+@router.post("/admin/retailers/{retailer_id}/returns", response_model=RetailerReturnOut)
+async def admin_return(
+    retailer_id: UUID,
+    payload: RetailerReturnCreate,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> RetailerReturnOut:
+    return await svc.create_return(auth.db, retailer_id, payload)

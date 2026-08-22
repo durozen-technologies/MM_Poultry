@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.routers.admin_dashboard import router as admin_dashboard_router
+from app.routers.admin_expenses import router as admin_expenses_router
 from app.routers.admin_farms import router as admin_farms_router
 from app.routers.admin_orders import router as admin_orders_router
 from app.routers.admin_reports import router as admin_reports_router
@@ -23,6 +24,7 @@ api_router.include_router(admin_orders_router)
 api_router.include_router(admin_farms_router)
 api_router.include_router(admin_dashboard_router)
 api_router.include_router(admin_reports_router)
+api_router.include_router(admin_expenses_router)
 api_router.include_router(delivery_router)
 api_router.include_router(retailer_router)
 

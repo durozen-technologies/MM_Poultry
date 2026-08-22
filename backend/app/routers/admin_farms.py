@@ -11,6 +11,7 @@ from app.schemas import (
     FarmCreate,
     FarmLoadCreate,
     FarmLoadOut,
+    FarmLoadUpdate,
     FarmOut,
     FarmUpdate,
     VehicleCreate,
@@ -35,6 +36,14 @@ async def admin_create_farm(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> FarmOut:
     return await svc.create_farm(auth.db, payload)
+
+
+@router.get("/admin/farms/{farm_id}", response_model=FarmOut)
+async def admin_get_farm(
+    farm_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> FarmOut:
+    return await svc.get_farm(auth.db, farm_id)
 
 
 @router.patch("/admin/farms/{farm_id}", response_model=FarmOut)
@@ -72,7 +81,7 @@ async def admin_create_load(
 @router.patch("/admin/farm-loads/{load_id}", response_model=FarmLoadOut)
 async def admin_update_load(
     load_id: UUID,
-    payload: FarmLoadCreate,
+    payload: FarmLoadUpdate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> FarmLoadOut:
     return await svc.update_farm_load(auth.db, load_id, payload)

@@ -598,3 +598,84 @@ uv run ruff check --fix && uv run ruff format
  -   * * R e a s o n i n g : * *   U s e r   r e q u e s t e d   a   h a r d   p h y s i c a l   d e l e t e   o f   t e n a n t   d a t a   u p o n   o r g a n i z a t i o n   d e l e t i o n ,   b y p a s s i n g   s t a n d a r d   s o f t - d e l e t e   c o n v e n t i o n s .   T h i s   e n s u r e s   c o m p l e t e   r e m o v a l   o f   t h e   P o s t g r e s   s c h e m a . 
   
  
+### [2026-08-22 11:53:52] Pull Command
+**User:** pull
+**Antigravity:**
+Ran commands:
+```bash
+git stash
+git pull
+git stash pop
+git checkout HEAD -- .core/CHAT_LOG.md .core/SESSION_HISTORY.md
+git reset
+```
+The branch is now up to date with origin/main.
+
+### [2026-08-22 12:02:21] UI Polish
+**User:** Fix the feidl layout and ui. (Invoked impeccable and frontend UI skills).
+**Antigravity:**
+Modified `frontend/src/screens/admin/admin-farm-purchase-screen.tsx`:
+- Increased base tap targets by removing `h-10` and applying `min-h-[52px]` to text input containers.
+- Reset default Android TextInput padding using `p-0 m-0` to prevent text clipping (e.g. '0.00' looking like 'U.UU').
+- Fixed the overlapping 'Cancel / Save' bar by moving it out of absolute positioning and letting `SafeAreaView` flex container handle it naturally.
+
+### [2026-08-22 12:04:40] Full Page Polish
+**User:** /impeccable fix the full page ui and polish it.
+**Antigravity:**
+Performed a deep UI polish on `frontend/src/screens/admin/admin-farm-purchase-screen.tsx`:
+- Increased card corner radius (`rounded-3xl`) and interior padding (`p-5`) for a premium feel.
+- Introduced strong typography hierarchy and MaterialIcons (`info-outline`, `monitor-weight`, `payments`, `notes`) to all section headers.
+- Transformed the Summary card into a standout colored block (`bg-primary/5`) emphasizing the 'Net Payable' amount using display fonts.
+- Elevated the 'Total Weight' input styling to draw visual focus, as it is the most critical dynamic field.
+
+### [2026-08-22 12:10:49] Bug Fixes and Performance Optimization
+**User:** Fix the broken code, in it.
+**Antigravity:**
+Fixed two major issues in `frontend/src/screens/admin/admin-farm-purchase-screen.tsx`:
+1. **Layout Bug (Android):** The Farm selector dropdown was getting cut off and hidden behind the 'Bird & Weight' card on Android devices because it lacked a superior stacking context over its siblings. Solved by elevating the 'Purchase Info' card with `z-50`.
+2. **Performance Bottleneck:** The farm dropdown was using a `.map()` inside a `ScrollView`, which causes massive main-thread frame drops if a user accumulates hundreds of farms. Upgraded it to a virtualized `FlatList` per performance best practices to ensure buttery smooth rendering.
+
+### [2026-08-22 12:18:58] Added Edit Option to Farms List
+**User:** Add edit option in the three dots.
+**Antigravity:**
+Added a fully functioning UI dropdown to the three-dots menu on each farm card. It includes options to 'Edit Farm' and 'Mark Inactive/Active'. The menu intelligently closes when you scroll the list.
+
+### [2026-08-22 12:34:37] Implemented Edit Farm and Toggle Active Status
+**User:** And make us redirect the page to perform the operation.
+**Antigravity:**
+Fully implemented the Edit Farm flow end-to-end. Built a dedicated GET API route in the backend, wired up a new Edit Farm screen, and connected the dropdown menus on the main Farm screen to instantly toggle the active state and redirect to the Edit page!
+### [2026-08-22 07:30:05] Agent: API Testing Phase 1 Execution\nResolved database and async event loop issues preventing testing. Fixed Decimal casting assertions and missing `FarmLoadUpdate` schema. Successfully ran 14 endpoints test cases for Farm, Vehicle, and Farm Loads under Phase 1.
+
+### [2026-08-22 13:09:49]
+User: make plan for next phase.
+Agent: Fixed conftest.py to provision a mock Organization in the test DB. Fixed schemas in test assertions. All Phase 2 tests (Retailers, Users, Orders, Reports, Dashboard) successfully pass. Updated implementation_plan.md and task.md with Phase 3 and Phase 4 details.
+
+### [2026-08-22T14:12:00+05:30]
+**User:** make plan for next phase.
+**Agent:** Asked user for clarification (Phase 6 UI vs Phase 7). User chose Phase 6 UI.
+**Agent:** Created implementation plan for Phase 6 Retailer Form UI polish. After approval, added 'notes' to add screen. Rewrote edit screen to match card layout of add screen with new fields (whatsapp, category, preferred_delivery_time, notes, alternate_phone). Rewrote profile overview screen to use distinct detail cards. Ran `bun x tsc --noEmit` which succeeded. Wrote task.md and walkthrough.md.
+
+### [2026-08-22T14:42:00+05:30]
+**User:** Make next phase plan.
+**Agent:** Asked user which phase to plan. User selected Phase 3 & 4 API testing.
+**Agent:** Implemented test_retailer.py, test_delivery.py, test_auth.py, test_super_admin.py. Fixed DB search_path yield bug. Adapted tests to expect Duro_POS structured errors (error.message). All 51 tests passed successfully.
+
+## [2026-08-22] Chat Log Update
+Agent ran commands to test API and fix schema imports.
+Agent ran uv run pytest tests/test_admin_expenses.py -v (all 6 tests passed).
+Agent wrote frontend/src/api/expenses.ts and screens/admin/admin-expenses-screen.tsx and admin-add-expense-screen.tsx.
+Updated app-navigator.tsx and admin-home-screen.tsx.
+Updated walkthrough.md, ADMIN_PLAN.md, and drafted implementation_plan.md for Phase 8.
+
+## [2026-08-22] Test Coverage Chat
+- Answered user that there are 66 endpoints.
+- User asked to test remaining endpoints.
+- Installed pytest-cov using uv pip.
+- Discovered remaining coverage gaps are mostly 404 edge cases.
+- Generated Implementation Plan for 100% router coverage.
+
+### [2026-08-22 09:41] User: "Write test for other end points too."
+**Action**: Fixed the last 5 remaining untested lines in the routers. Moved `mock_super_admin_auth` to `conftest.py`. Fixed `test_delivery.py` sending incorrect JSON schemas that caused 422 errors instead of 404s. Added specific inline tests using mocked `AuthContext` to test branches where `retailer_id` and `organization_id` are `None`.
+**Commands Run**:
+- `uv run pytest tests/ --cov=app.routers --cov-report=term-missing`
+**Outcome**: Hit 100% coverage on `app.routers`. Updated task and walkthrough.

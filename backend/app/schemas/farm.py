@@ -57,6 +57,23 @@ class FarmLoadCreate(BaseModel):
     remarks: str | None = None
 
 
+class FarmLoadUpdate(BaseModel):
+    load_date: IstDateOptional = None
+    farm_id: UUID | None = None
+    vehicle_id: UUID | None = None
+    vehicle_number: str | None = None
+    driver_name: str | None = None
+    driver_user_id: UUID | None = None
+    loaded_weight_kg: Decimal | None = Field(default=None, gt=0)
+    bird_count: int | None = None
+    rate_per_kg: Decimal | None = None
+    total_amount: Decimal | None = None
+    paid_amount: Decimal | None = None
+    payment_method: str | None = None
+    remarks: str | None = None
+    status: FarmLoadStatus | None = None
+
+
 class FarmLoadOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

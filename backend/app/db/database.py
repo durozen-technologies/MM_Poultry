@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 
@@ -18,10 +19,15 @@ def get_engine() -> AsyncEngine:
     global _engine, _session_factory
     if _engine is None:
         settings = get_settings()
+        
+        # Use NullPool in tests to avoid cross-loop connection pooling issues
+        poolclass = NullPool if settings.postgres_db.endswith("_test") else None
+        
         _engine = create_async_engine(
             settings.async_database_url,
             pool_pre_ping=True,
             echo=False,
+            poolclass=poolclass,
         )
 
         from sqlalchemy import event

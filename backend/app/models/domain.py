@@ -259,6 +259,25 @@ class DeliveryBill(Base, BaseModelMixin):
     )
 
 
+class RetailerReturn(Base, BaseModelMixin):
+    __tablename__ = "retailer_returns"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    retailer_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("retailers.id"), nullable=False, index=True
+    )
+    delivery_bill_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_bills.id"), nullable=True
+    )
+    return_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+
 class Payment(Base, BaseModelMixin):
     __tablename__ = "payments"
 
@@ -281,6 +300,9 @@ class Payment(Base, BaseModelMixin):
         SqlEnum(PaymentType, name="payment_type", native_enum=False),
         nullable=False,
         default=PaymentType.RECEIVED,
+    )
+    is_credit: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -318,3 +340,53 @@ class BillSequence(Base, BaseModelMixin):
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     last_value: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+
+
+class ExpenseCategory(Base, BaseModelMixin):
+    __tablename__ = "expense_categories"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        onupdate=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+
+
+class Expense(Base, BaseModelMixin):
+    __tablename__ = "expenses"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    category_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("expense_categories.id"), nullable=False, index=True
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    expense_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        onupdate=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )

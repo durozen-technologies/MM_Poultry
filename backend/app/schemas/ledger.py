@@ -16,6 +16,7 @@ class PaymentCreate(BaseModel):
     payment_date: IstDateOptional = None
     notes: str | None = None
     type: PaymentType = PaymentType.RECEIVED
+    is_credit: bool = True
 
 
 class PaymentOut(BaseModel):
@@ -29,7 +30,33 @@ class PaymentOut(BaseModel):
     upi_amount: Decimal
     total_amount: Decimal
     type: PaymentType
+    is_credit: bool
     notes: str | None
+
+
+class RetailerReturnCreate(BaseModel):
+    return_date: IstDateOptional = None
+    delivery_bill_id: UUID | None = None
+    weight_kg: Decimal
+    bird_count: int | None = None
+    rate_per_kg: Decimal
+    total_amount: Decimal
+    reason: str | None = None
+
+
+class RetailerReturnOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    retailer_id: UUID
+    delivery_bill_id: UUID | None
+    return_date: IstDate
+    weight_kg: Decimal
+    bird_count: int | None
+    rate_per_kg: Decimal
+    total_amount: Decimal
+    reason: str | None
+    created_at: IstDate
 
 
 class LedgerEntry(BaseModel):

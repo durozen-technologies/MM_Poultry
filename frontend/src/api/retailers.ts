@@ -35,9 +35,17 @@ export async function getLedger(retailerId: string) {
 
 export async function recordPayment(
   retailerId: string,
-  payload: { cash_amount: string; upi_amount: string; payment_date?: string; notes?: string }
+  payload: { cash_amount: string; upi_amount: string; payment_date?: string; notes?: string; type?: string; is_credit?: boolean }
 ) {
   const { data } = await api.post(`/admin/retailers/${retailerId}/payments`, payload);
+  return data;
+}
+
+export async function createReturn(
+  retailerId: string,
+  payload: { weight_kg: string; rate_per_kg: string; total_amount: string; reason?: string; bird_count?: number }
+) {
+  const { data } = await api.post(`/admin/retailers/${retailerId}/returns`, payload);
   return data;
 }
 
