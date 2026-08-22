@@ -81,8 +81,13 @@ async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     for row in auth_rows:
         await db.delete(row)
 
+    schema_name = org.schema_name
     await db.delete(org)
     await db.flush()
+
+    if schema_name:
+        from sqlalchemy import text
+        await db.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
 
 
 async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:

@@ -9,9 +9,11 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 
 export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
   const [ownerName, setOwnerName] = useState("");
@@ -58,6 +60,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         username: username.trim(),
         password: password.trim(),
       });
+      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
       navigation.goBack();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create retailer");

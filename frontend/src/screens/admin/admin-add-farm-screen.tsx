@@ -9,9 +9,11 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 
 export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
@@ -36,6 +38,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
         location: village.trim() || null,
         capacity: capacity ? parseInt(capacity, 10) : null,
       });
+      queryClient.invalidateQueries({ queryKey: ["admin", "farms"] });
       navigation.goBack();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add farm");

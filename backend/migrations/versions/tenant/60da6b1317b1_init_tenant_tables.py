@@ -1,18 +1,19 @@
-"""Init public
+"""Init tenant tables
 
-Revision ID: dcfcaa07b246
-Revises: 
-Create Date: 2026-08-10 12:56:41.098704
+Revision ID: 60da6b1317b1
+Revises: 2422fde3c720
+Create Date: 2026-08-22 11:21:37.426638
 
 """
 from typing import Sequence, Union
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision: str = 'dcfcaa07b246'
-down_revision: Union[str, Sequence[str], None] = None
+revision: str = '60da6b1317b1'
+down_revision: Union[str, Sequence[str], None] = '2422fde3c720'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -32,8 +33,11 @@ def upgrade() -> None:
     op.create_table('farms',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
+    sa.Column('owner_name', sa.String(length=120), nullable=True),
     sa.Column('location', sa.String(length=250), nullable=True),
+    sa.Column('address', sa.String(length=500), nullable=True),
     sa.Column('contact_phone', sa.String(length=30), nullable=True),
+    sa.Column('capacity', sa.Integer(), nullable=True),
     sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     sa.PrimaryKeyConstraint('id')
@@ -48,19 +52,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_org_settings_created_at'), 'org_settings', ['created_at'], unique=False)
-    op.create_table('organizations',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('name', sa.String(length=200), nullable=False),
-    sa.Column('slug', sa.String(length=80), nullable=False),
-    sa.Column('schema_name', sa.String(length=63), nullable=False),
-    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('schema_name')
-    )
-    op.create_index(op.f('ix_organizations_created_at'), 'organizations', ['created_at'], unique=False)
-    op.create_index(op.f('ix_organizations_slug'), 'organizations', ['slug'], unique=True)
     op.create_table('retailers',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(length=120), nullable=False),
@@ -84,23 +75,12 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_retailers_created_at'), 'retailers', ['created_at'], unique=False)
-    op.create_table('user_auth_index',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('username_lower', sa.String(length=80), nullable=False),
-    sa.Column('organization_id', sa.Uuid(), nullable=True),
-    sa.Column('schema_name', sa.String(length=63), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('username_lower', 'organization_id', name='uq_auth_index_user_org')
-    )
-    op.create_index(op.f('ix_user_auth_index_created_at'), 'user_auth_index', ['created_at'], unique=False)
-    op.create_index(op.f('ix_user_auth_index_organization_id'), 'user_auth_index', ['organization_id'], unique=False)
-    op.create_index(op.f('ix_user_auth_index_username_lower'), 'user_auth_index', ['username_lower'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('username', sa.String(length=80), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
+    sa.Column('full_name', sa.String(length=120), nullable=True),
+    sa.Column('mobile_number', sa.String(length=30), nullable=True),
     sa.Column('role', sa.Enum('SUPER_ADMIN', 'ADMIN', 'DELIVERY', 'RETAILER', name='user_role', native_enum=False), nullable=False),
     sa.Column('organization_id', sa.Uuid(), nullable=True),
     sa.Column('retailer_id', sa.Uuid(), nullable=True),
@@ -114,7 +94,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_created_at'), 'users', ['created_at'], unique=False)
     op.create_index(op.f('ix_users_organization_id'), 'users', ['organization_id'], unique=False)
     op.create_index(op.f('ix_users_retailer_id'), 'users', ['retailer_id'], unique=False)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=False)
+    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('vehicles',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('number', sa.String(length=40), nullable=False),
@@ -136,6 +116,10 @@ def upgrade() -> None:
     sa.Column('driver_user_id', sa.Uuid(), nullable=True),
     sa.Column('loaded_weight_kg', sa.Numeric(precision=12, scale=3), nullable=False),
     sa.Column('bird_count', sa.Integer(), nullable=True),
+    sa.Column('rate_per_kg', sa.Numeric(precision=12, scale=2), nullable=True),
+    sa.Column('total_amount', sa.Numeric(precision=12, scale=2), nullable=True),
+    sa.Column('paid_amount', sa.Numeric(precision=12, scale=2), nullable=True),
+    sa.Column('payment_method', sa.String(length=50), nullable=True),
     sa.Column('remarks', sa.String(length=500), nullable=True),
     sa.Column('status', sa.Enum('OPEN', 'IN_TRANSIT', 'CLOSED', name='farm_load_status', native_enum=False), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
@@ -150,6 +134,7 @@ def upgrade() -> None:
     sa.Column('retailer_id', sa.Uuid(), nullable=False),
     sa.Column('order_date', sa.Date(), nullable=False),
     sa.Column('requested_kg', sa.Numeric(precision=12, scale=3), nullable=False),
+    sa.Column('bird_size', sa.String(length=50), nullable=True),
     sa.Column('notes', sa.String(length=500), nullable=True),
     sa.Column('status', sa.Enum('PLACED', 'ACKNOWLEDGED', 'PARTIAL', 'FULFILLED', 'CANCELLED', name='order_status', native_enum=False), nullable=False),
     sa.Column('created_by_user_id', sa.Uuid(), nullable=True),
@@ -318,15 +303,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_organization_id'), table_name='users')
     op.drop_index(op.f('ix_users_created_at'), table_name='users')
     op.drop_table('users')
-    op.drop_index(op.f('ix_user_auth_index_username_lower'), table_name='user_auth_index')
-    op.drop_index(op.f('ix_user_auth_index_organization_id'), table_name='user_auth_index')
-    op.drop_index(op.f('ix_user_auth_index_created_at'), table_name='user_auth_index')
-    op.drop_table('user_auth_index')
     op.drop_index(op.f('ix_retailers_created_at'), table_name='retailers')
     op.drop_table('retailers')
-    op.drop_index(op.f('ix_organizations_slug'), table_name='organizations')
-    op.drop_index(op.f('ix_organizations_created_at'), table_name='organizations')
-    op.drop_table('organizations')
     op.drop_index(op.f('ix_org_settings_created_at'), table_name='org_settings')
     op.drop_table('org_settings')
     op.drop_index(op.f('ix_farms_created_at'), table_name='farms')

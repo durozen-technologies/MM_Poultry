@@ -20,20 +20,20 @@ from app.db.database import Base
 
 target_metadata = Base.metadata
 
+from app.db.tenant_schema import _tenant_table_names, _platform_table_names
+
 def include_object_public(object, name, type_, reflected, compare_to):
-    if type_ == "table" and name in ("spatial_ref_sys", "alembic_version"):
-        return False
-    # Only include objects that are NOT in the 'tenant' schema
-    if getattr(object, "schema", None) == "tenant":
-        return False
+    if type_ == "table":
+        if name in ("spatial_ref_sys", "alembic_version"):
+            return False
+        return name in _platform_table_names()
     return True
 
 def include_object_tenant(object, name, type_, reflected, compare_to):
-    if type_ == "table" and name == "alembic_version":
-        return False
-    # Only include objects that ARE in the 'tenant' schema
-    if getattr(object, "schema", None) != "tenant":
-        return False
+    if type_ == "table":
+        if name == "alembic_version":
+            return False
+        return name in _tenant_table_names()
     return True
 
 def render_item(type_, obj, autogen_context):

@@ -10,12 +10,14 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { DatePickerField } from "../../components/date-picker-field";
 import { toApiDate, todayIstDate } from "../../utils/ist-date";
 import type { FarmOut } from "../../types/api";
 
 export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
+  const queryClient = useQueryClient();
   const [farms, setFarms] = useState<FarmOut[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
   const [purchaseDate, setPurchaseDate] = useState(todayIstDate());
@@ -74,6 +76,8 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         payment_method: paymentMethod,
         remarks: remarks.trim() || null,
       });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "farms"] });
       navigation.goBack();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to record farm load");

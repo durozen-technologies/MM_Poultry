@@ -505,3 +505,21 @@
 ### [2026-08-21 15:32:00] Add Retailer Portal Authentication (Frontend)
 - **User Request**: Add username and password for retailers, so, the retailer can able to login with assigned username and password
 - **Actions Taken**: Added the necessary frontend UI to manage retailer logins. Modifed `AdminAddRetailerScreen` to enforce mandatory username/password fields and comprehensive validation. Modified `AdminRetailerProfileScreen` to expose a 'Create Login Account' block for creating portal access for existing retailers. Wired up the React Native app to the backend's `create_retailer_portal_user` endpoint.
+ 
+ 
+### [2026-08-22 10:10:00] Verify App Icon and Backend Login
+- **User Request**: check the project, is the app logo set for the app icon, i cant login?, working
+- **Actions Taken**: Verified that the previous Retailer Portal Auth pull request integrated successfully (TypeScript and Python logic). Identified that pp.json was missing the icon configuration, so updated it to point to ./assets/logo.jpeg for the global icon, Android adaptive icon, and splash screen. Investigated a login issue and diagnosed it to be a localized networking/cache issue; user confirmed it is now working.
+# # #   [ 2 0 2 6 - 0 8 - 2 2   1 1 : 3 5 : 1 5 ]   D a t a b a s e   R e s e t   a n d   M i g r a t i o n   S e t u p 
+ -   * * R e q u e s t : * *   ' r e s o l v e   t h e   a l l   t h e   a n d   s l o v e   a n y   p r o b l e m   i n   t h e   s c h e m a   l e v e l   i s o l a t i o n ' 
+ -   * * A c t i o n   T a k e n : * *   W i p e d   t h e   P o s t g r e S Q L   d a t a b a s e   ( d r o p p e d   s c h e m a s ) .   R e a l i z e d   A l e m b i c   m i g r a t i o n s   w e r e   b r o k e n ,   s o   i s o l a t e d   ' p u b l i c '   a n d   ' t e n a n t '   g e n e r a t i o n   ( u s i n g   a   d u m m y   s c h e m a   f o r   t e n a n t   d e t e c t i o n ) .   R e - r a n   A l e m b i c   a u t o g e n e r a t e   t o   c o r r e c t l y   m a p   o n l y   p l a t f o r m   t a b l e s   t o   p u b l i c   a n d   b u s i n e s s   t a b l e s   t o   t h e   t e n a n t   m i g r a t i o n s .   
+ -   * * A c t i o n   T a k e n : * *   E x e c u t e d   \ m a n a g e . p y   s e t u p \   t o   g e n e r a t e   t h e   p u b l i c   c o n t r o l   p l a n e .   E x e c u t e d   \ m a n a g e . p y   c r e a t e s u p e r a d m i n \   t o   s e e d   t h e   a d m i n .   R a n   a n   A P I   s c r i p t   t o   c r e a t e   t h e   \ m m b r o i l e r s \   o r g a n i z a t i o n ,   w h i c h   d y n a m i c a l l y   c r e a t e d   t h e   \ 	 e n a n t _ m m b r o i l e r s \   s c h e m a   n a t i v e l y   w i t h   i s o l a t e d   b u s i n e s s   t a b l e s .   
+ -   * * A c t i o n   T a k e n : * *   C r e a t e d   a   t e n a n t   a d m i n   ( \ m m a d m i n \ )   a n d   u s e d   t h e i r   t o k e n   t o   r e - s e e d   a   t e s t   r e t a i l e r   w i t h   u s e r n a m e   \ 9 0 8 0 1 7 7 \   a n d   p a s s w o r d   \ p a s s w o r d 1 2 3 \   f o r   i m m e d i a t e   f r o n t e n d   t e s t i n g . 
+  
+ # # #   [ 2 0 2 6 - 0 8 - 2 2   1 1 : 4 6 : 3 9 ]   A d d   D r o p   S c h e m a   t o   O r g a n i z a t i o n   D e l e t e 
+ -   * * R e q u e s t : * *   ' i f   i   d e l e c t   t h e   o r g a n a z a t i o n   i t   s h o u l d   d e l e c t   i t   e n t i r e l y   i n   a l l   t h e   p l a c e s   o k ' 
+ -   * * A c t i o n   T a k e n : * *   U p d a t e d   \ d e l e t e _ o r g a n i z a t i o n \   i n   \  a c k e n d / a p p / s e r v i c e s / w h o l e s a l e / o r g a n i z a t i o n s . p y \   t o   e x e c u t e   \ D R O P   S C H E M A   I F   E X I S T S   \  
+ s c h e m a _ n a m e  
+ \   C A S C A D E \   i m m e d i a t e l y   a f t e r   d e l e t i n g   t h e   o r g a n i z a t i o n   r e c o r d . 
+  
+ 
