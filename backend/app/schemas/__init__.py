@@ -56,6 +56,7 @@ from app.schemas.retailer import (
     RetailerPortalUserCreate,
     RetailerUpdate,
 )
+from app.schemas.common import CursorPage, Page
 from app.schemas.retailer_portal import (
     OrderTrackingStage,
     RetailerBillsPage,
@@ -117,6 +118,8 @@ __all__ = [
     "ReportSummary",
     "TripWeightLossOut",
     "OrderTrackingStage",
+    "Page",
+    "CursorPage",
     "RetailerBillsPage",
     "RetailerBillsSummary",
     "RetailerDashboardOut",

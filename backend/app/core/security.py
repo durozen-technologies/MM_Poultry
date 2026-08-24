@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from jose import jwt
-from pwdlib import PasswordHash
+from jose import jwt  # type: ignore[import-untyped]
+from pwdlib import PasswordHash  # type: ignore[import-not-found]
 
 from app.core.config import get_settings
 from app.models.enums import UserRole

@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.domain import Expense, ExpenseCategory
 from app.models.user import User
-from app.schemas.expense import ExpenseCategoryCreate, ExpenseCreate, ExpenseOut, ExpensePage
+from app.schemas.expense import ExpenseCategoryCreate, ExpenseCreate, ExpenseOut
+from app.schemas.common import Page
 
 
 async def get_expense_categories(db: AsyncSession, active_only: bool = True) -> list[ExpenseCategory]:
@@ -62,7 +63,7 @@ async def list_expenses(
     size: int = 50,
     from_date: date | None = None,
     to_date: date | None = None,
-) -> ExpensePage:
+) -> Page[ExpenseOut]:
     stmt = select(Expense, ExpenseCategory, User).outerjoin(
         ExpenseCategory, Expense.category_id == ExpenseCategory.id
     ).outerjoin(
@@ -97,7 +98,7 @@ async def list_expenses(
         out.created_by_user_name = user.full_name or user.username if user else None
         out_items.append(out)
         
-    return ExpensePage(
+    return Page[ExpenseOut](
         items=out_items,
         total=total,
         page=page,

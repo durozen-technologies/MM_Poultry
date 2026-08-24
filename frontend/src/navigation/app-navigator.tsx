@@ -10,7 +10,6 @@ import { AdminHomeScreen } from "../screens/admin/admin-home-screen";
 import { AdminRetailersScreen } from "../screens/admin/admin-retailers-screen";
 import { AdminAddRetailerScreen } from "../screens/admin/admin-add-retailer-screen";
 import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-profile-screen";
-import { AdminRetailerEditScreen } from "../screens/admin/admin-retailer-edit-screen";
 import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
 import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
 import { AdminFarmEditScreen } from "../screens/admin/admin-farm-edit-screen";
@@ -25,6 +24,7 @@ import { AdminDeliveryRunsScreen } from "../screens/admin/admin-delivery-runs-sc
 import { AdminReportsScreen } from "../screens/admin/admin-reports-screen";
 import { AdminExpensesScreen } from "../screens/admin/admin-expenses-screen";
 import { AdminAddExpenseScreen } from "../screens/admin/admin-add-expense-screen";
+import { AdminRetailerPortalAccessScreen } from "../screens/admin/admin-retailer-portal-access-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
@@ -123,8 +123,8 @@ export function AppNavigator() {
 
   if (!hydrated) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator className="text-primary" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
+        <ActivityIndicator color="#012d1d" />
       </View>
     );
   }
@@ -144,7 +144,6 @@ export function AppNavigator() {
             <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
             <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
             <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
-            <Stack.Screen name="RetailerEdit" component={AdminRetailerEditScreen} />
             <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
             <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
             <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
@@ -156,6 +155,7 @@ export function AppNavigator() {
             <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
             <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
             <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
+            <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />
           </>
         ) : user.role === "DELIVERY" ? (
           <Stack.Screen name="DeliveryHome" component={DeliveryHomeScreen} />

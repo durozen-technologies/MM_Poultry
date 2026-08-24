@@ -20,7 +20,7 @@ async def lifespan(_app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
-    app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore[arg-type]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

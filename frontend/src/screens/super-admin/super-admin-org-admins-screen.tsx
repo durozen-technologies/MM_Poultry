@@ -30,14 +30,14 @@ function AdminCard({
     >
       <View className="flex-row justify-between items-start mb-4">
         <View className="flex-1 flex-row items-center">
-          <View className="w-14 h-14 bg-brand-ink/5 rounded-full items-center justify-center mr-4 border border-brand-ink/10">
+          <View className="w-14 h-14 bg-[rgba(1,45,29,0.05)] rounded-full items-center justify-center mr-4 border border-[rgba(1,45,29,0.1)]">
             <Text className="text-brand-ink font-headline-md">{item.username.charAt(0).toUpperCase()}</Text>
           </View>
           <View className="flex-1 justify-center">
             <Text className="text-headline-sm font-headline-sm text-brand-ink mb-1" numberOfLines={1}>{item.username}</Text>
             <View className="flex-row items-center">
-              <MaterialCommunityIcons name="shield-account-outline" size={14} className="text-on-surface-variant/70 mr-1.5" />
-              <Text className="text-body-sm font-medium text-on-surface-variant/70">Tenant Admin</Text>
+              <MaterialCommunityIcons name="shield-account-outline" size={14} className="text-[rgba(65,72,68,0.7)] mr-1.5" />
+              <Text className="text-body-sm font-medium text-[rgba(65,72,68,0.7)]">Tenant Admin</Text>
             </View>
           </View>
         </View>
@@ -55,10 +55,10 @@ function AdminCard({
       <View className="flex-row items-center justify-between mt-2">
         {isEditing ? (
           <View className="w-full flex-row gap-3">
-            <View className="flex-1 flex-row items-center bg-surface-container-low rounded-full px-4 h-12 border border-brand-ink/20">
-              <MaterialCommunityIcons name="lock-reset" size={18} className="text-on-surface-variant/70 mr-2" />
+            <View className="flex-1 flex-row items-center bg-surface-container-low rounded-full px-4 h-12 border border-[rgba(1,45,29,0.2)]">
+              <MaterialCommunityIcons name="lock-reset" size={18} className="text-[rgba(65,72,68,0.7)] mr-2" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-on-surface-variant/50"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
                 placeholder="New password"
                 secureTextEntry
                 value={editPassword}
@@ -85,7 +85,7 @@ function AdminCard({
             </View>
 
             <Pressable accessibilityRole="button" 
-              className="bg-brand-ink/10 border border-brand-ink/20 flex-1 h-12 rounded-full active:opacity-80 flex-row items-center justify-center pl-4 pr-3"
+              className="bg-[rgba(1,45,29,0.1)] border border-[rgba(1,45,29,0.2)] flex-1 h-12 rounded-full active:opacity-80 flex-row items-center justify-center pl-4 pr-3"
               onPress={() => setIsEditing(true)}
             >
               <MaterialCommunityIcons name="key-outline" size={18} className="text-brand-ink mr-2" />
@@ -216,7 +216,7 @@ export function SuperAdminOrgAdminsScreen() {
           <View className="flex-row items-center flex-1 pr-4">
             <Pressable accessibilityRole="button"
               onPress={() => navigation.goBack()}
-              className="bg-white/10 border border-white/10 w-12 h-12 rounded-full mr-4 items-center justify-center active:opacity-70 shadow-sm"
+              className="bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.1)] w-12 h-12 rounded-full mr-4 items-center justify-center active:opacity-70 shadow-sm"
             >
               <MaterialCommunityIcons name="arrow-left" size={20} className="text-white" />
             </Pressable>
@@ -224,13 +224,13 @@ export function SuperAdminOrgAdminsScreen() {
               <Text className="text-[28px] leading-[36px] tracking-tight font-bold text-white mb-1" numberOfLines={1}>
                 {orgName}
               </Text>
-              <Text className="text-white/70 text-body-lg font-medium">Tenant Administrators</Text>
+              <Text className="text-[rgba(255,255,255,0.7)] text-body-lg font-medium">Tenant Administrators</Text>
             </View>
           </View>
           
           <Pressable accessibilityRole="button"
             onPress={() => setIsFormVisible(!isFormVisible)}
-            className={`w-12 h-12 rounded-full items-center justify-center active:opacity-70 shadow-sm ${isFormVisible ? 'bg-white' : 'bg-white/20'}`}
+            className={`w-12 h-12 rounded-full items-center justify-center active:opacity-70 shadow-sm ${isFormVisible ? 'bg-white' : 'bg-[rgba(255,255,255,0.2)]'}`}
           >
             <MaterialCommunityIcons name={isFormVisible ? "close" : "plus"} size={24} className={isFormVisible ? "text-brand-ink" : "text-white"} />
           </Pressable>
@@ -253,19 +253,19 @@ export function SuperAdminOrgAdminsScreen() {
             className="bg-white rounded-[32px] p-6 mb-8 shadow-sm border border-black/5 elevation-md"
           >
             <View className="flex-row items-center mb-6">
-              <View className="bg-brand-ink/5 w-12 h-12 rounded-full items-center justify-center mr-4">
+              <View className="bg-[rgba(1,45,29,0.05)] w-12 h-12 rounded-full items-center justify-center mr-4">
                 <MaterialCommunityIcons name="account-plus" size={24} className="text-brand-ink" />
               </View>
               <View>
                 <Text className="text-headline-sm font-headline-sm text-brand-ink">New Admin</Text>
-                <Text className="text-body-sm text-on-surface-variant/70 mt-0.5">Create credentials for this tenant</Text>
+                <Text className="text-body-sm text-[rgba(65,72,68,0.7)] mt-0.5">Create credentials for this tenant</Text>
               </View>
             </View>
 
             <View className="flex-row items-center bg-surface-container-low rounded-2xl px-4 mb-4 h-[56px] border border-outline-variant/30 focus:border-brand-ink">
-              <MaterialCommunityIcons name="account" size={22} className="text-on-surface-variant/70 mr-3" />
+              <MaterialCommunityIcons name="account" size={22} className="text-[rgba(65,72,68,0.7)] mr-3" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-on-surface-variant/50"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
                 placeholder="Admin Username"
                 autoCapitalize="none"
                 value={username}
@@ -273,9 +273,9 @@ export function SuperAdminOrgAdminsScreen() {
               />
             </View>
             <View className="flex-row items-center bg-surface-container-low rounded-2xl px-4 mb-6 h-[56px] border border-outline-variant/30 focus:border-brand-ink">
-              <MaterialCommunityIcons name="lock-outline" size={22} className="text-on-surface-variant/70 mr-3" />
+              <MaterialCommunityIcons name="lock-outline" size={22} className="text-[rgba(65,72,68,0.7)] mr-3" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-on-surface-variant/50"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
                 placeholder="Secure Password"
                 secureTextEntry
                 value={password}
@@ -305,12 +305,12 @@ export function SuperAdminOrgAdminsScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isFormVisible ? "#012d1d" : "#ffffff"} colors={['#012d1d']} />}
           ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-2xl mt-12 bg-white/5 rounded-[40px]">
-              <View className="bg-white/10 w-28 h-28 rounded-full items-center justify-center mb-6 border border-white/10">
-                <MaterialCommunityIcons name="account-group-outline" size={48} className="text-white/60" />
+            <View className="flex-1 items-center justify-center py-2xl mt-12 bg-[rgba(255,255,255,0.05)] rounded-[40px]">
+              <View className="bg-[rgba(255,255,255,0.1)] w-28 h-28 rounded-full items-center justify-center mb-6 border border-[rgba(255,255,255,0.1)]">
+                <MaterialCommunityIcons name="account-group-outline" size={48} className="text-[rgba(255,255,255,0.6)]" />
               </View>
               <Text className="text-[24px] font-bold text-white text-center mb-2">No Admins Assigned</Text>
-              <Text className="text-body-lg text-white/60 text-center px-lg">This organization has no administrators. Click the bright + button to grant access.</Text>
+              <Text className="text-body-lg text-[rgba(255,255,255,0.6)] text-center px-lg">This organization has no administrators. Click the bright + button to grant access.</Text>
             </View>
           }
           renderItem={({ item, index }) => (

@@ -9,12 +9,14 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 import { DatePickerField } from "../../components/date-picker-field";
-
+import { DatePickerField } from "../../components/date-picker-field";
+import { FormField } from "../../components/form-field";
 export function AdminRetailerProfileScreen({ route, navigation }: { route: any; navigation: any }) {
   const { retailerId } = route.params;
   const [ledger, setLedger] = useState<LedgerOut | null>(null);
@@ -58,9 +60,20 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   );
 
   async function collect() {
-    if (actionType === "PAYMENT" && (!cash && !upi)) return;
-    if (actionType === "RETURN" && (!returnWeight || !returnRate)) return;
-    if (actionType === "ADJUSTMENT" && (!cash && !upi)) return;
+    if (actionType === "PAYMENT" || actionType === "ADJUSTMENT") {
+      if (!cash && !upi) {
+        setMsg("Please enter an amount.");
+        setTimeout(() => setMsg(null), 3000);
+        return;
+      }
+    }
+    if (actionType === "RETURN") {
+      if (!returnWeight || !returnRate) {
+        setMsg("Please enter both weight and rate.");
+        setTimeout(() => setMsg(null), 3000);
+        return;
+      }
+    }
     
     setLoading(true);
     try {
@@ -150,13 +163,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center active:bg-surface-container-high"
-          onPress={() => navigation.navigate("RetailerEdit", { retailerId })}
+          onPress={() => alert("Edit Retailer functionality is under construction")}
         >
           <MaterialIcons name="edit" size={20} className="text-on-surface" />
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 w-full" contentContainerStyle={{ paddingBottom: 100 }}>
+      <KeyboardAwareScrollView enableOnAndroid={true} keyboardShouldPersistTaps="always" className="flex-1 w-full" contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="px-4 py-6 bg-surface flex-col gap-2">
           <View className="flex-row justify-between items-start">
             <View className="flex-col gap-1 flex-1">
@@ -261,16 +274,16 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   </Text>
                 )}
                 <View className="flex-col gap-2">
-                  <TextInput placeholderTextColor="#737373"
-                    className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-on-surface"
+                  <FormField
+                    label="Username"
                     placeholder="Username"
                     autoCapitalize="none"
                     autoCorrect={false}
                     value={portalUsername}
                     onChangeText={setPortalUsername}
                   />
-                  <TextInput placeholderTextColor="#737373"
-                    className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-on-surface"
+                  <FormField
+                    label="Password"
                     placeholder="Password"
                     secureTextEntry
                     autoCapitalize="none"
@@ -420,7 +433,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             </View>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

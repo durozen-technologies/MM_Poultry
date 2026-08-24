@@ -169,3 +169,57 @@ def test_admin_create_payment_not_credit(client: TestClient, mock_admin_auth: No
     assert data["entries"][0]["entry_type"] == "PAYMENT"
     assert float(data["entries"][0]["credit"]) == 0.0
     assert float(data["credit_balance"]) == 0.0
+
+def test_retailer_creation_with_portal_user(client: TestClient, mock_admin_auth: None) -> None:
+    # 60
+    create_resp = client.post("/api/v1/admin/retailers", json={
+        "name": "Retailer with User",
+        "username": "user1234",
+        "password": "Password123!"
+    })
+    assert create_resp.status_code == 200
+
+def test_retailer_list_with_cursor(client: TestClient, mock_admin_auth: None) -> None:
+    # 76
+    create_resp = client.post("/api/v1/admin/retailers", json={"name": "Retailer Cursor"})
+    r_id = create_resp.json()["id"]
+    get_resp = client.get(f"/api/v1/admin/retailers?cursor={r_id}&limit=1")
+    assert get_resp.status_code == 200
+
+def test_retailer_not_found(client: TestClient, mock_admin_auth: None) -> None:
+    # 91
+    nid = str(uuid.uuid4())
+    resp = client.get(f"/api/v1/admin/retailers/{nid}")
+    assert resp.status_code == 404
+
+def test_retailer_update_opening_balance(client: TestClient, mock_admin_auth: None) -> None:
+    # 102-106
+    create_resp = client.post("/api/v1/admin/retailers", json={"name": "Retailer Bal Update", "opening_balance": 1000.0})
+    r_id = create_resp.json()["id"]
+    up_resp = client.patch(f"/api/v1/admin/retailers/{r_id}", json={"opening_balance": 2000.0})
+    assert up_resp.status_code == 200
+    assert float(up_resp.json()["opening_balance"]) == 2000.0
+    
+def test_retailer_duplicate_portal_user(client: TestClient, mock_admin_auth: None) -> None:
+    # 130
+    create_resp = client.post("/api/v1/admin/retailers", json={"name": "Retailer Dup Portal"})
+    r_id = create_resp.json()["id"]
+    u_name = f"dup_{uuid.uuid4().hex[:8]}"
+    resp1 = client.post(f"/api/v1/admin/retailers/{r_id}/portal-user", json={"username": u_name, "password": "Password123!"})
+    assert resp1.status_code == 200
+    resp2 = client.post(f"/api/v1/admin/retailers/{r_id}/portal-user", json={"username": u_name + "2", "password": "Password123!"})
+    assert resp2.status_code == 409
+
+def test_retailer_duplicate_username(client: TestClient, mock_admin_auth: None) -> None:
+    # 166-167
+    create_resp = client.post("/api/v1/admin/retailers", json={"name": "Retailer U1"})
+    r1_id = create_resp.json()["id"]
+    create_resp2 = client.post("/api/v1/admin/retailers", json={"name": "Retailer U2"})
+    r2_id = create_resp2.json()["id"]
+    
+    u_name = f"userx_{uuid.uuid4().hex[:8]}"
+    client.post(f"/api/v1/admin/retailers/{r1_id}/portal-user", json={"username": u_name, "password": "Password123!"})
+    
+    # Try using same username on another retailer
+    resp2 = client.post(f"/api/v1/admin/retailers/{r2_id}/portal-user", json={"username": u_name, "password": "Password123!"})
+    assert resp2.status_code == 409

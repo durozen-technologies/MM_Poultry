@@ -146,8 +146,8 @@ async def report_summary(db: AsyncSession, start: date, end: date) -> ReportSumm
 def build_report_pdf(summary: ReportSummary) -> bytes:
     from io import BytesIO
 
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4  # type: ignore[import-untyped]
+    from reportlab.pdfgen import canvas  # type: ignore[import-untyped]
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)

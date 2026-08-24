@@ -65,9 +65,9 @@ def error_details_for_http_exception(exc: HTTPException) -> dict | list | None:
         details = exc.detail.get("details")
         if details is not None:
             return details
-        filtered = {
-            key: value for key, value in exc.detail.items() if key not in {"code", "message"}
-        }
+        filtered = exc.detail.copy()
+        filtered.pop("code", None)
+        filtered.pop("message", None)
         return filtered or None
     return None
 

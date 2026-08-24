@@ -103,6 +103,7 @@ graphify-out/
 *.zip
 .cache/
 coverage/
+coverage_report.txt
 
 # Github Token
 .agents/github_token.txt

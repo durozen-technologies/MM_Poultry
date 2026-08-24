@@ -697,3 +697,36 @@ Updated walkthrough.md, ADMIN_PLAN.md, and drafted implementation_plan.md for Ph
 - User requested to push the changes.
 - Committing all tracked modifications and untracked Alembic migrations.
 - Running \git add -A\ and \git commit\ and \git push\.
+### [2026-08-24 14:38:00] Complete API Test Coverage
+**User**: "Cover full api to be tested."
+**Agent**:
+1. Fixed flaky `test_delivery_active_run_empty` caused by shared DB session.
+2. Wrote `test_complete_delivery_run_coverage` in `test_admin_reports.py`.
+3. Extended `test_super_admin.py` to cover lifecycle tests for `organizations.py`.
+4. Fixed a bug in `create_tenant_admin` and `update_tenant_admin` where `full_name` was unhandled / referenced improperly.
+5. Handled testing scopes for `admin_farms` which brought `farms.py` to 84% coverage.
+6. Computed overall coverage for `app.services.wholesale`, yielding 88% overall (982/1097 lines tested successfully). 
+
+All backend APIs are heavily covered for the happy paths, exceptions, and validation constraints.
+\n### [2026-08-24 14:51:35] Planning Mode
+- Created plan for fixing NativeWind render crash.
+- Created plan for fixing Mypy backend errors.
+### [2026-08-24 09:35:00] Agent Session
+- Replaced backend fastAPI type annotations for Exceptions.
+- Fixed `AuthContext` injection logic without defaults inside `Annotated`.
+- Mypy now succeeds for all 63 files.
+- Pytest integration suite runs completely green.
+- Frontend AppNavigator crash should be resolved by replacing the dynamic opacity NativeWind utility classes with standard `rgba()` backgrounds in early-rendering screens.
+### [2026-08-24 15:15:00] Agent Session
+- Root caused the NativeWind/React Navigation crash definitively.
+- The crash happens because `react-native-css-interop`'s internal `stringify` function invokes getter methods on React Context default objects while generating warnings.
+- Used `patch-package` to fix the `stringify` function to gracefully handle errors during property enumeration.
+- Added `patch-package` to `package.json` so the fix persists.
+
+### [2026-08-24 10:55:00] Ponytail Audit Execution
+**User**: Implement it
+**Agent**: Executed the final steps of the ponytail audit plan. 
+- Restored `RetailerBillsPage` and `RetailerOrdersPage` imports in `backend/app/schemas/__init__.py`.
+- Fixed the navigation bug where `RetailerEdit` was crashing the profile page.
+- Added explicit errors inside the profile page `collect()` block and converted the form block to a `KeyboardAwareScrollView` so mobile keyboards don't overlap the inputs.
+- Refactored the portal access section to utilize the new `<FormField>` layout.

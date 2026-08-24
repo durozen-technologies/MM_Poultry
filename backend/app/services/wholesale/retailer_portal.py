@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -28,7 +28,7 @@ from app.services.wholesale.orders import get_today_order_for_retailer
 from app.services.wholesale.retailers import get_retailer
 
 
-def _estimated_delivery_date(order_date) -> object:
+def _estimated_delivery_date(order_date: date) -> date:
     return order_date + timedelta(days=1)
 
 

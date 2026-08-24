@@ -17,6 +17,7 @@ const ITEMS: SettingsItem[] = [
   { title: "Delivery Users", subtitle: "Driver app logins", icon: "badge", screen: "DeliveryUsers" },
   { title: "Delivery Runs", subtitle: "Build runs from farm loads", icon: "route", screen: "DeliveryRuns" },
   { title: "Reports", subtitle: "Sales summary & PDF export", icon: "assessment", screen: "Reports" },
+  { title: "Portal Access", subtitle: "Manage retailer login accounts", icon: "security", screen: "RetailerPortalAccess" },
 ];
 
 export function AdminSettingsScreen({ navigation }: { navigation: any }) {

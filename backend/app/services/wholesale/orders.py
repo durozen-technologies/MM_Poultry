@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -8,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import today_ist
 from app.models.domain import (
-    RetailerDailyOrder,
     OrderSequence,
+    RetailerDailyOrder,
 )
 from app.models.enums import (
     OrderStatus,
@@ -21,7 +22,6 @@ from app.schemas import (
 )
 from app.services.wholesale.common import q_kg
 from app.services.wholesale.retailers import get_retailer
-from datetime import date
 
 
 async def _next_order_number(db: AsyncSession, order_date: date) -> str:

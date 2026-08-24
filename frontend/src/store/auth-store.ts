@@ -20,11 +20,8 @@ async function saveSession(token: string, user: User) {
   try {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
-  } catch {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    }
+  } catch (e) {
+    console.warn("Failed to save session", e);
   }
 }
 
@@ -32,11 +29,8 @@ async function clearSession() {
   try {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(USER_KEY);
-  } catch {
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-    }
+  } catch (e) {
+    console.warn("Failed to clear session", e);
   }
 }
 
@@ -45,12 +39,8 @@ async function readSession(): Promise<{ token: string | null; user: User | null 
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     const raw = await SecureStore.getItemAsync(USER_KEY);
     return { token, user: raw ? (JSON.parse(raw) as User) : null };
-  } catch {
-    if (typeof localStorage !== "undefined") {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const raw = localStorage.getItem(USER_KEY);
-      return { token, user: raw ? (JSON.parse(raw) as User) : null };
-    }
+  } catch (e) {
+    console.warn("Failed to read session", e);
     return { token: null, user: null };
   }
 }

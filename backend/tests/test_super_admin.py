@@ -66,7 +66,60 @@ def test_super_admin_list_tenant_admins(client: TestClient, mock_super_admin_aut
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    # admin_test is created in mock_admin_auth but it's not saved to the db in conftest setup
-    # Wait, conftest setup inserts org, but not the user. 
-    # So this list might be empty.
     assert len(data) >= 0
+
+def test_super_admin_org_lifecycle(client: TestClient, mock_super_admin_auth: None):
+    # 1. Create org
+    payload = {
+        "name": "New Lifecycle Org",
+        "slug": "new_lifecycle_org"
+    }
+    create_resp = client.post("/api/v1/super-admin/organizations", json=payload)
+    assert create_resp.status_code == 200
+    org_id = create_resp.json()["id"]
+
+    # 2. Get org (wait, do we have a get org endpoint?)
+    # Usually list has it. Let's just list and find it.
+    list_resp = client.get("/api/v1/super-admin/organizations")
+    assert any(o["id"] == org_id for o in list_resp.json())
+
+    # 3. Update org
+    up_resp = client.patch(f"/api/v1/super-admin/organizations/{org_id}", json={"name": "Updated Org", "is_active": False})
+    assert up_resp.status_code == 200
+    assert up_resp.json()["name"] == "Updated Org"
+    assert up_resp.json()["is_active"] is False
+
+    # 4. Delete org
+    del_resp = client.delete(f"/api/v1/super-admin/organizations/{org_id}")
+    assert del_resp.status_code == 204
+
+def test_super_admin_admin_lifecycle(client: TestClient, mock_super_admin_auth: None):
+    # Setup org for admin tests
+    org_resp = client.post("/api/v1/super-admin/organizations", json={"name": "Admin Lifecycle Org", "slug": "admin_lc_org"})
+    org_id = org_resp.json()["id"]
+
+    # 1. Create admin
+    payload = {
+        "username": f"admin_{uuid.uuid4().hex[:8]}",
+        "password": "Password123!"
+    }
+    create_resp = client.post(f"/api/v1/super-admin/organizations/{org_id}/admins", json=payload)
+    assert create_resp.status_code == 200
+    admin_id = create_resp.json()["id"]
+
+    # Duplicate admin check
+    dup_resp = client.post(f"/api/v1/super-admin/organizations/{org_id}/admins", json=payload)
+    assert dup_resp.status_code == 409
+
+    # 2. Update admin
+    up_resp = client.patch(f"/api/v1/super-admin/organizations/{org_id}/admins/{admin_id}", json={"is_active": False})
+    assert up_resp.status_code == 200
+    assert up_resp.json()["is_active"] is False
+
+    # Reset password
+    pwd_resp = client.patch(f"/api/v1/super-admin/organizations/{org_id}/admins/{admin_id}", json={"password": "NewPassword123!"})
+    assert pwd_resp.status_code == 200
+
+    # 3. Delete admin
+    del_resp = client.delete(f"/api/v1/super-admin/organizations/{org_id}/admins/{admin_id}")
+    assert del_resp.status_code == 204
