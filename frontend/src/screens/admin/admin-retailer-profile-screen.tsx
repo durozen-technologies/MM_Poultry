@@ -15,7 +15,6 @@ import { listTodayOrders } from "../../api/orders";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 import { DatePickerField } from "../../components/date-picker-field";
-import { DatePickerField } from "../../components/date-picker-field";
 import { FormField } from "../../components/form-field";
 export function AdminRetailerProfileScreen({ route, navigation }: { route: any; navigation: any }) {
   const { retailerId } = route.params;
