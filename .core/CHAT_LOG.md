@@ -742,3 +742,7 @@ All backend APIs are heavily covered for the happy paths, exceptions, and valida
 ### [2026-08-24 16:41:00] Git Push
 **User**: push
 **Agent**: Committed and pushed the changes to `.github/workflows/backend-ci.yml` successfully.
+
+### [2026-08-24 16:45:00] Fix CI Pipeline
+**User**: Fix it (provided CI logs showing mypy and postgres errors)
+**Agent**: Updated `pyproject.toml` to include `mypy` in dev dependencies and updated `.github/workflows/backend-ci.yml` with the correct `pg_isready -U postgres` health check flag. Validated mypy locally and pushed to `origin/main`.

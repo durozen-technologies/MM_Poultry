@@ -656,3 +656,10 @@
 - **Request**: "push"
 - **Actions Taken**:
   - Pushed user modifications to `.github/workflows/backend-ci.yml`.
+
+### [2026-08-24 16:45:00] Fix CI Pipeline
+- **Request**: "Fix it" (Fix GitHub Actions CI errors)
+- **Actions Taken**:
+  - Added `mypy>=1.11.0` to `[dependency-groups] dev` in `pyproject.toml` so `uv run mypy app/` resolves successfully.
+  - Reverted `options` under `postgres` service in `.github/workflows/backend-ci.yml` to use `--health-cmd "pg_isready -U postgres"` because it was defaulting to `root` and causing the database health check to fail.
+  - Committed and pushed to `origin/main`.
