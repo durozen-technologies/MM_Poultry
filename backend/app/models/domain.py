@@ -89,6 +89,7 @@ class RetailerDailyOrder(Base, BaseModelMixin):
     )
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    order_number: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
     retailer_id: Mapped[UUID] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("retailers.id"), nullable=False, index=True
     )
@@ -336,6 +337,17 @@ class BillSequence(Base, BaseModelMixin):
 
     __tablename__ = "bill_sequences"
     __table_args__ = (UniqueConstraint("year", name="uq_bill_sequence_year"),)
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_value: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+
+
+class OrderSequence(Base, BaseModelMixin):
+    """Yearly order number counter: ORD-YY-000000."""
+
+    __tablename__ = "order_sequences"
+    __table_args__ = (UniqueConstraint("year", name="uq_order_sequence_year"),)
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     year: Mapped[int] = mapped_column(Integer, nullable=False)

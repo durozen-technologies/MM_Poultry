@@ -50,6 +50,7 @@ export type DailyOrder = {
   id: string;
   retailer_id: string;
   order_date: string;
+  order_number?: string | null;
   requested_kg: string;
   bird_size?: string | null;
   notes?: string | null;

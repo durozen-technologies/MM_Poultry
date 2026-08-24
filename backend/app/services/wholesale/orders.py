@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.timezone import today_ist
 from app.models.domain import (
     RetailerDailyOrder,
+    OrderSequence,
 )
 from app.models.enums import (
     OrderStatus,
@@ -20,6 +21,21 @@ from app.schemas import (
 )
 from app.services.wholesale.common import q_kg
 from app.services.wholesale.retailers import get_retailer
+from datetime import date
+
+
+async def _next_order_number(db: AsyncSession, order_date: date) -> str:
+    year = order_date.year
+    seq = await db.scalar(select(OrderSequence).where(OrderSequence.year == year))
+    if seq is None:
+        seq = OrderSequence(year=year, last_value=0)
+        db.add(seq)
+        await db.flush()
+    seq.last_value += 1
+    await db.flush()
+    # Format: ORD-YY-000000
+    yy = str(year)[-2:]
+    return f"ORD-{yy}-{seq.last_value:06d}"
 
 
 async def upsert_today_order(
@@ -42,11 +58,15 @@ async def upsert_today_order(
         existing.requested_kg = q_kg(payload.requested_kg)
         existing.bird_size = payload.bird_size
         existing.notes = payload.notes
+        if not existing.order_number:
+            existing.order_number = await _next_order_number(db, day)
         order = existing
     else:
+        order_number = await _next_order_number(db, day)
         order = RetailerDailyOrder(
             retailer_id=retailer_id,
             order_date=day,
+            order_number=order_number,
             requested_kg=q_kg(payload.requested_kg),
             bird_size=payload.bird_size,
             notes=payload.notes,

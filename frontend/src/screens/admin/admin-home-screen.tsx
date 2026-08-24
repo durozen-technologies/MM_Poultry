@@ -202,7 +202,7 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
               <View className="flex-row justify-between items-start mb-3">
                 <View>
                   <Text className="font-headline-sm text-headline-sm text-on-surface">{order.shop_name || order.retailer_name}</Text>
-                  <Text className="font-body-md text-body-md text-on-surface-variant">Order #{order.id.slice(0, 5)}</Text>
+                  <Text className="font-body-md text-body-md text-on-surface-variant">Order {order.order_number || `#${order.id.slice(0, 5)}`}</Text>
                 </View>
                 <View className="bg-surface-variant rounded-full px-3 py-1">
                   <Text className="font-label-md text-label-md text-on-surface-variant">{order.status}</Text>

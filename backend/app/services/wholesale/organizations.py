@@ -80,6 +80,10 @@ async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     auth_rows = await db.scalars(select(UserAuthIndex).where(UserAuthIndex.organization_id == org_id))
     for row in auth_rows:
         await db.delete(row)
+        
+    org_users = await db.scalars(select(User).where(User.organization_id == org_id))
+    for u in org_users:
+        await db.delete(u)
 
     schema_name = org.schema_name
     await db.delete(org)
@@ -98,7 +102,7 @@ async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:
     from app.db.tenant_schema import set_search_path
 
     await set_search_path(db, org.schema_name)
-    rows = list(await db.scalars(select(User).where(User.role == UserRole.ADMIN)))
+    rows = list(await db.scalars(select(User).where((User.role == UserRole.ADMIN) & (User.organization_id == org_id))))
     await set_search_path(db, None)
     return [UserOut.model_validate(r, from_attributes=True) for r in rows]
 

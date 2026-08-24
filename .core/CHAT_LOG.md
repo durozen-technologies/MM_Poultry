@@ -679,3 +679,21 @@ Updated walkthrough.md, ADMIN_PLAN.md, and drafted implementation_plan.md for Ph
 **Commands Run**:
 - `uv run pytest tests/ --cov=app.routers --cov-report=term-missing`
 **Outcome**: Hit 100% coverage on `app.routers`. Updated task and walkthrough.
+# # #   [ 2 0 2 6 - 0 8 - 2 4   1 0 : 1 0 : 4 0 ]   F i x   A d m i n   F e t c h   B u g 
+ -   * * U s e r   M e s s a g e : * *   ' i   o n l y   c r e a t e d   a n   o r g a n a z a t i o n   t h e   m m a d m i n   a d m i n   u s e r   p o p   u p   a u t o m a t i c a l l y   c h e c k   i t ' 
+ -   * * C o m m a n d s   E x e c u t e d : * *   M o d i f i e d   \  a c k e n d / a p p / s e r v i c e s / w h o l e s a l e / o r g a n i z a t i o n s . p y \ .   U p d a t e d   \ l i s t _ t e n a n t _ a d m i n s \   t o   f i l t e r   b y   \ ( U s e r . r o l e   = =   U s e r R o l e . A D M I N )   &   ( U s e r . o r g a n i z a t i o n _ i d   = =   o r g _ i d ) \   i n s t e a d   o f   j u s t   t h e   r o l e .   A l s o   u p d a t e d   \ d e l e t e _ o r g a n i z a t i o n \   t o   d e l e t e   a l l   \ U s e r \   r e c o r d s   a s s o c i a t e d   w i t h   t h e   \ o r g _ i d \   f r o m   t h e   p u b l i c   s c h e m a   b e f o r e   d e l e t i n g   t h e   o r g a n i z a t i o n . 
+ -   * * R e a s o n i n g : * *   A   c r i t i c a l   b u g   i n   \ l i s t _ t e n a n t _ a d m i n s \   c a u s e d   i t   t o   r e t u r n   A L L   a d m i n s   f r o m   t h e   g l o b a l   \ p u b l i c . u s e r s \   t a b l e   r e g a r d l e s s   o f   o r g a n i z a t i o n .   F u r t h e r m o r e ,   t h e   p r e v i o u s   h a r d - d e l e t e   i m p l e m e n t a t i o n   d i d   n o t   c l e a n   u p   t h e   \ u s e r s \   t a b l e ,   l e a v i n g   o r p h a n e d   u s e r s   ( l i k e   t h e   o l d   \ m m a d m i n \ )   t h a t   w o u l d   t h e n   m a g i c a l l y   r e a p p e a r   f o r   a n y   n e w l y   c r e a t e d   o r g a n i z a t i o n   d u e   t o   t h e   l a c k   o f   f i l t e r i n g . 
+  
+ 
+### [2026-08-24 11:10:00] Implementation of custom Bill and Order IDs
+- User requested formatting ID sequences as ORD-YY-000000 and Bill-YY-000000.
+- Planned and received user approval.
+- Implemented \OrderSequence\ model and \order_number\ string on \RetailerDailyOrder\.
+- Implemented custom Python migration and applied to existing active schema \	enant_mm\.
+- Updated frontend schemas and UI screens (\dmin-orders-screen.tsx\, \dmin-order-detail-screen.tsx\, \dmin-home-screen.tsx\, \etailer-order-detail-screen.tsx\) to display the new custom \order_number\ ID strings instead of raw UUID slices.
+
+
+### [2026-08-24 11:13:00] PUSH Request
+- User requested to push the changes.
+- Committing all tracked modifications and untracked Alembic migrations.
+- Running \git add -A\ and \git commit\ and \git push\.

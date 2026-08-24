@@ -589,3 +589,13 @@
 ### [2026-08-22] Bug Fix: Expense Screens
 - Fixed TypeScript errors in `api/expenses.ts` (`int` -> `number`).
 - Fixed broken imports in `admin-add-expense-screen.tsx` and `admin-expenses-screen.tsx` which were incorrectly referencing non-existent `../../components/ui/` components. Replaced them with native React Native elements styled with NativeWind.
+
+### [2026-08-24 11:10:00] Implementation of custom Bill and Order IDs
+- Action: Implemented custom sequence ID formats ORD-YY-000000 and Bill-YY-000000.
+- Details: Created OrderSequence model, added order_number field to RetailerDailyOrder. Generated and ran Alembic migration against active schemas. Updated orders.py and billing.py. Updated frontend schema and React Native screens to display order strings.
+
+
+### [2026-08-24 11:13:00] PUSH Request
+- Action: Git commit and push all changes.
+- Details: Staged and committed backend schema changes, frontend UI changes for sequence strings, and core documentation updates.
+

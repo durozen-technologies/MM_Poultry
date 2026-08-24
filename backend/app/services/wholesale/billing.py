@@ -115,7 +115,8 @@ async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
         await db.flush()
     seq.last_value += 1
     await db.flush()
-    return f"DEL-{year}-{seq.last_value:06d}"
+    yy = str(year)[-2:]
+    return f"Bill-{yy}-{seq.last_value:06d}"
 
 
 async def commit_bill(

@@ -39,7 +39,7 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
         <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full" onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
         </Pressable>
-        <Text className="font-headline-sm text-on-surface font-semibold ml-2">Order Details</Text>
+        <Text className="font-headline-sm text-on-surface font-semibold ml-2">Order {order?.order_number || (orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : "Details")}</Text>
       </View>
 
       <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 40 }}>

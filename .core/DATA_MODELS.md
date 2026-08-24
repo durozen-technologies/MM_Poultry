@@ -144,3 +144,9 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 
 **DeliveryBill**
 - `checkout_id` (unique) — client-generated or server UUID; persist-first with `print_status=PENDING` allowed; update via PATCH.
+
+### [2026-08-24 11:10:00] New ID Sequences
+- Added **OrderSequence** to generate ORD-YY-000000 sequence strings per year.
+- Added **order_number** to RetailerDailyOrder table.
+- Updated logic to generate bills as Bill-YY-000000 format.
+

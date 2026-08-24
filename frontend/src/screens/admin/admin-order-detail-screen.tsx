@@ -31,7 +31,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
               <Text className="font-headline-md text-on-surface font-semibold">
                 {order.shop_name || order.retailer_name}
               </Text>
-              <Text className="font-body-md text-on-surface-variant mt-1">#{order.id.slice(0, 8).toUpperCase()}</Text>
+              <Text className="font-body-md text-on-surface-variant mt-1">{order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`}</Text>
             </View>
             <View className="bg-surface-variant px-3 py-1 rounded-full">
               <Text className="font-label-md text-on-surface-variant font-semibold">{order.status}</Text>

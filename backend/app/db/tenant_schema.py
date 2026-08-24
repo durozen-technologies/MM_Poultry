@@ -77,6 +77,7 @@ def _tenant_table_names() -> set[str]:
         "expense_categories",
         "expenses",
         "retailer_returns",
+        "order_sequences",
     }
 
 
@@ -240,12 +241,14 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_credit BOOLEAN NOT NULL DEFAULT false",
+        "ALTER TABLE retailer_daily_orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(32)",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
         for table in Base.metadata.sorted_tables:
-            if table.name in {"vehicles", "org_settings", "expense_categories", "expenses"}:
+            if table.name in {"vehicles", "org_settings", "expense_categories", "expenses", "retailer_returns", "order_sequences"}:
                 await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))

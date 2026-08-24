@@ -180,7 +180,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
               
               <View className="flex-row items-center justify-between w-full">
                 <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-                  #{order.id.split("-")[0].toUpperCase()}
+                  {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}
                 </Text>
                 <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1`}>
                   <MaterialIcons name={statusColors.icon as any} size={14} color={statusColors.text === 'text-on-primary-fixed' ? '#002114' : (statusColors.text === 'text-on-error-container' ? '#93000a' : '#181c20')} />

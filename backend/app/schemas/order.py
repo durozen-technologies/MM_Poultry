@@ -21,6 +21,7 @@ class DailyOrderOut(BaseModel):
     id: UUID
     retailer_id: UUID
     order_date: IstDate
+    order_number: str | None = None
     requested_kg: Decimal
     bird_size: str | None = None
     notes: str | None
