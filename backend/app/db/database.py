@@ -19,10 +19,10 @@ def get_engine() -> AsyncEngine:
     global _engine, _session_factory
     if _engine is None:
         settings = get_settings()
-        
+
         # Use NullPool in tests to avoid cross-loop connection pooling issues
         poolclass = NullPool if settings.postgres_db.endswith("_test") else None
-        
+
         _engine = create_async_engine(
             settings.async_database_url,
             pool_pre_ping=True,

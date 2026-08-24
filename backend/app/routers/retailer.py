@@ -106,9 +106,7 @@ async def retailer_get_bill(
 async def retailer_profile(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.RETAILER))],
 ) -> RetailerProfileOut:
-    return await svc.get_retailer_profile(
-        auth.db, _require_retailer_id(auth), auth.user.username
-    )
+    return await svc.get_retailer_profile(auth.db, _require_retailer_id(auth), auth.user.username)
 
 
 @router.get("/retailer/ledger", response_model=LedgerOut)

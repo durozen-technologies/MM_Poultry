@@ -71,7 +71,9 @@ async def create_retailer(
 async def list_retailers(
     db: AsyncSession, *, cursor: str | None = None, limit: int = 50
 ) -> tuple[list[RetailerOut], bool, str | None]:
-    stmt = select(Retailer).order_by(Retailer.created_at.desc(), Retailer.id.desc()).limit(limit + 1)
+    stmt = (
+        select(Retailer).order_by(Retailer.created_at.desc(), Retailer.id.desc()).limit(limit + 1)
+    )
     if cursor:
         stmt = stmt.where(Retailer.id < UUID(cursor))
     rows = list(await db.scalars(stmt))
@@ -175,5 +177,3 @@ async def _create_portal_user(
     )
     await set_search_path(db, schema_name)
     return user
-
-

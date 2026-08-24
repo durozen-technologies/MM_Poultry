@@ -90,9 +90,7 @@ async def get_current_auth(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User account is inactive"
             )
 
-        yield AuthContext(
-            user=user, organization=organization, schema_name=schema_name, db=session
-        )
+        yield AuthContext(user=user, organization=organization, schema_name=schema_name, db=session)
         await session.commit()
     except Exception:
         await session.rollback()

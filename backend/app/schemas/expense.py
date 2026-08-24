@@ -38,11 +38,9 @@ class ExpenseOut(BaseModel):
     created_by_user_id: UUID | None
     created_at: datetime
     updated_at: datetime
-    
+
     # Optional nested info
     category_name: str | None = None
     created_by_user_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
-
-

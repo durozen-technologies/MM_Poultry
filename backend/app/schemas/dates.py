@@ -30,7 +30,11 @@ def _parse_datetime(value: Any) -> datetime:
     # DD/MM/YYYY HH:MM:SS or date-only
     for fmt in ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
         try:
-            parsed = datetime.strptime(text.replace("Z", "+0000"), fmt) if "%z" in fmt else datetime.strptime(text, fmt)
+            parsed = (
+                datetime.strptime(text.replace("Z", "+0000"), fmt)
+                if "%z" in fmt
+                else datetime.strptime(text, fmt)
+            )
             if parsed.tzinfo is None:
                 from app.core.timezone import IST
 

@@ -33,11 +33,7 @@ def create_app() -> FastAPI:
 
     @app.get("/", tags=["root"])
     async def root() -> dict[str, str]:
-        return {
-            "app_name": settings.app_name,
-            "status": "online",
-            "docs_url": "/docs"
-        }
+        return {"app_name": settings.app_name, "status": "online", "docs_url": "/docs"}
 
     return app
 

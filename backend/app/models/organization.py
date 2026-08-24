@@ -36,8 +36,6 @@ class UserAuthIndex(Base, BaseModelMixin):
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     username_lower: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
-    organization_id: Mapped[UUID | None] = mapped_column(
-        UUID_SQL_TYPE, nullable=True, index=True
-    )
+    organization_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True, index=True)
     schema_name: Mapped[str] = mapped_column(String(63), nullable=False)
     user_id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, nullable=False)

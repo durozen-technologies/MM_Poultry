@@ -38,7 +38,9 @@ async def create_organization(db: AsyncSession, payload: OrganizationCreate) -> 
     slug = payload.slug.strip().lower()
     existing = await db.scalar(select(Organization).where(Organization.slug == slug))
     if existing:
-        msg = "Organization with this name already exists. If it was deleted, you can reactivate it."
+        msg = (
+            "Organization with this name already exists. If it was deleted, you can reactivate it."
+        )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=msg)
     schema_name = derive_schema_name(slug)
     org = Organization(name=payload.name.strip(), slug=slug, schema_name=schema_name)
@@ -58,7 +60,9 @@ async def list_organizations(
     return [OrganizationOut.model_validate(r, from_attributes=True) for r in rows]
 
 
-async def update_organization(db: AsyncSession, org_id: UUID, payload: OrganizationUpdate) -> OrganizationOut:
+async def update_organization(
+    db: AsyncSession, org_id: UUID, payload: OrganizationUpdate
+) -> OrganizationOut:
     org = await db.scalar(select(Organization).where(Organization.id == org_id))
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -77,10 +81,12 @@ async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    auth_rows = await db.scalars(select(UserAuthIndex).where(UserAuthIndex.organization_id == org_id))
+    auth_rows = await db.scalars(
+        select(UserAuthIndex).where(UserAuthIndex.organization_id == org_id)
+    )
     for row in auth_rows:
         await db.delete(row)
-        
+
     org_users = await db.scalars(select(User).where(User.organization_id == org_id))
     for u in org_users:
         await db.delete(u)
@@ -91,6 +97,7 @@ async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
 
     if schema_name:
         from sqlalchemy import text
+
         await db.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
 
 
@@ -102,12 +109,18 @@ async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:
     from app.db.tenant_schema import set_search_path
 
     await set_search_path(db, org.schema_name)
-    rows = list(await db.scalars(select(User).where((User.role == UserRole.ADMIN) & (User.organization_id == org_id))))
+    rows = list(
+        await db.scalars(
+            select(User).where((User.role == UserRole.ADMIN) & (User.organization_id == org_id))
+        )
+    )
     await set_search_path(db, None)
     return [UserOut.model_validate(r, from_attributes=True) for r in rows]
 
 
-async def create_tenant_admin(db: AsyncSession, org_id: UUID, payload: TenantAdminCreate) -> UserOut:
+async def create_tenant_admin(
+    db: AsyncSession, org_id: UUID, payload: TenantAdminCreate
+) -> UserOut:
     org = await db.scalar(select(Organization).where(Organization.id == org_id))
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -141,7 +154,9 @@ async def create_tenant_admin(db: AsyncSession, org_id: UUID, payload: TenantAdm
     return UserOut.model_validate(user, from_attributes=True)
 
 
-async def create_delivery_user(db: AsyncSession, org_id: UUID, payload: DeliveryUserCreate) -> UserOut:
+async def create_delivery_user(
+    db: AsyncSession, org_id: UUID, payload: DeliveryUserCreate
+) -> UserOut:
     org = await db.scalar(select(Organization).where(Organization.id == org_id))
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")

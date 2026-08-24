@@ -69,9 +69,7 @@ async def weigh_stop(
     return await _stop_out(db, stop)
 
 
-def _preview_from_stop(
-    stop: DeliveryStop, payload: BillPreviewRequest
-) -> BillPreviewOut:
+def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillPreviewOut:
     if stop.delivered_weight_kg is None or stop.gross_amount is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop not weighed")
     cash = q_money(payload.cash_payment)
@@ -138,9 +136,7 @@ async def commit_bill(
     if by_checkout:
         return DeliveryBillOut.model_validate(by_checkout, from_attributes=True)
 
-    existing = await db.scalar(
-        select(DeliveryBill).where(DeliveryBill.delivery_stop_id == stop_id)
-    )
+    existing = await db.scalar(select(DeliveryBill).where(DeliveryBill.delivery_stop_id == stop_id))
     if existing:
         return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
@@ -236,29 +232,34 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     day = on_date or today_ist()
     settings = await _get_org_settings(db)
 
-    order_res = (await db.execute(
-        select(
-            func.count(RetailerDailyOrder.id),
-            func.coalesce(func.sum(RetailerDailyOrder.requested_kg), 0)
-        ).where(RetailerDailyOrder.order_date == day)
-    )).first()
-    
+    order_res = (
+        await db.execute(
+            select(
+                func.count(RetailerDailyOrder.id),
+                func.coalesce(func.sum(RetailerDailyOrder.requested_kg), 0),
+            ).where(RetailerDailyOrder.order_date == day)
+        )
+    ).first()
+
     order_count, ordered_kg_val = order_res or (0, ZERO)
     ordered_kg = q_kg(ordered_kg_val)
 
     loaded_kg_val = await db.scalar(
-        select(func.coalesce(func.sum(FarmLoad.loaded_weight_kg), 0))
-        .where(FarmLoad.load_date == day)
+        select(func.coalesce(func.sum(FarmLoad.loaded_weight_kg), 0)).where(
+            FarmLoad.load_date == day
+        )
     )
     loaded_kg = q_kg(loaded_kg_val or ZERO)
 
-    bill_row = (await db.execute(
-        select(
-            func.coalesce(func.sum(DeliveryBill.weight_kg), 0),
-            func.coalesce(func.sum(DeliveryBill.total_amount), 0),
-            func.coalesce(func.sum(DeliveryBill.cash_payment + DeliveryBill.upi_payment), 0),
-        ).where(DeliveryBill.bill_date == day)
-    )).first()
+    bill_row = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(DeliveryBill.weight_kg), 0),
+                func.coalesce(func.sum(DeliveryBill.total_amount), 0),
+                func.coalesce(func.sum(DeliveryBill.cash_payment + DeliveryBill.upi_payment), 0),
+            ).where(DeliveryBill.bill_date == day)
+        )
+    ).first()
 
     del_weight_kg, del_total_amt, del_coll = bill_row or (ZERO, ZERO, ZERO)
     delivered_kg = q_kg(del_weight_kg)
@@ -266,39 +267,40 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     total_collection = q_money(del_coll)
 
     pay_total_val = await db.scalar(
-        select(func.coalesce(func.sum(Payment.total_amount), 0))
-        .where(Payment.payment_date == day, Payment.type == PaymentType.RECEIVED)
+        select(func.coalesce(func.sum(Payment.total_amount), 0)).where(
+            Payment.payment_date == day, Payment.type == PaymentType.RECEIVED
+        )
     )
     pay_total = q_money(pay_total_val or ZERO)
     if pay_total > total_collection:
         total_collection = pay_total
 
     outstanding = q_money(
-        (
-            await db.scalar(select(func.coalesce(func.sum(Retailer.credit_balance), 0)))
-        )
-        or ZERO
+        (await db.scalar(select(func.coalesce(func.sum(Retailer.credit_balance), 0)))) or ZERO
     )
     retailer_count = int(
-        (await db.scalar(select(func.count()).select_from(Retailer).where(Retailer.is_active.is_(True))))
+        (
+            await db.scalar(
+                select(func.count()).select_from(Retailer).where(Retailer.is_active.is_(True))
+            )
+        )
         or 0
     )
 
     stops_res = await db.execute(
-        select(
-            DeliveryStop.status,
-            func.count(DeliveryStop.id)
-        )
+        select(DeliveryStop.status, func.count(DeliveryStop.id))
         .join(DeliveryRun, DeliveryStop.delivery_run_id == DeliveryRun.id)
         .where(DeliveryRun.run_date == day)
         .group_by(DeliveryStop.status)
     )
-    
+
     stops_counts = {row.status: row.count for row in stops_res.mappings()}
-    
+
     completed = stops_counts.get(DeliveryStopStatus.BILLED, 0)
     skipped = stops_counts.get(DeliveryStopStatus.SKIPPED, 0)
-    pending = stops_counts.get(DeliveryStopStatus.PENDING, 0) + stops_counts.get(DeliveryStopStatus.WEIGHED, 0)
+    pending = stops_counts.get(DeliveryStopStatus.PENDING, 0) + stops_counts.get(
+        DeliveryStopStatus.WEIGHED, 0
+    )
 
     loss_kg = q_kg(max(loaded_kg - delivered_kg, ZERO)) if loaded_kg > ZERO else ZERO
     loss_pct = (
@@ -341,5 +343,3 @@ async def mark_whatsapp_shared(db: AsyncSession, bill_id: UUID) -> DeliveryBillO
     bill.whatsapp_shared_at = now_ist()
     await db.flush()
     return DeliveryBillOut.model_validate(bill, from_attributes=True)
-
-

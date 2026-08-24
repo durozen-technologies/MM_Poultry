@@ -31,12 +31,12 @@ from app.services.wholesale.common import q_kg
 
 async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
     farm = Farm(
-        name=payload.name.strip(), 
+        name=payload.name.strip(),
         owner_name=payload.owner_name,
-        location=payload.location, 
+        location=payload.location,
         address=payload.address,
         contact_phone=payload.contact_phone,
-        capacity=payload.capacity
+        capacity=payload.capacity,
     )
     db.add(farm)
     await db.flush()
@@ -144,14 +144,14 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
 
 async def list_farm_loads(db: AsyncSession) -> list[FarmLoadOut]:
     rows = list(
-        await db.scalars(select(FarmLoad).order_by(FarmLoad.load_date.desc(), FarmLoad.created_at.desc()))
+        await db.scalars(
+            select(FarmLoad).order_by(FarmLoad.load_date.desc(), FarmLoad.created_at.desc())
+        )
     )
     return [FarmLoadOut.model_validate(r, from_attributes=True) for r in rows]
 
 
-async def update_farm_load(
-    db: AsyncSession, load_id: UUID, payload: FarmLoadUpdate
-) -> FarmLoadOut:
+async def update_farm_load(db: AsyncSession, load_id: UUID, payload: FarmLoadUpdate) -> FarmLoadOut:
     load = await db.scalar(select(FarmLoad).where(FarmLoad.id == load_id))
     if load is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
@@ -164,5 +164,3 @@ async def update_farm_load(
             setattr(load, key, value)
     await db.flush()
     return FarmLoadOut.model_validate(load, from_attributes=True)
-
-

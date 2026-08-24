@@ -38,11 +38,7 @@ def build_tracking_stages(
     run_in_progress: bool = False,
 ) -> list[OrderTrackingStage]:
     if order_status == OrderStatus.CANCELLED:
-        return [
-            OrderTrackingStage(
-                key="cancelled", label="Cancelled", completed=True, active=True
-            )
-        ]
+        return [OrderTrackingStage(key="cancelled", label="Cancelled", completed=True, active=True)]
 
     stage_defs = [
         ("pending", "Pending"),
@@ -171,13 +167,9 @@ async def get_retailer_order_detail(
 
     run_in_progress = False
     if order.id:
-        stop = await db.scalar(
-            select(DeliveryStop).where(DeliveryStop.daily_order_id == order.id)
-        )
+        stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.daily_order_id == order.id))
         if stop:
-            run = await db.scalar(
-                select(DeliveryRun).where(DeliveryRun.id == stop.delivery_run_id)
-            )
+            run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == stop.delivery_run_id))
             if run and run.status == DeliveryRunStatus.IN_PROGRESS:
                 run_in_progress = True
 
@@ -188,18 +180,16 @@ async def get_retailer_order_detail(
     return RetailerOrderDetailOut(
         **base.model_dump(),
         estimated_delivery_date=_estimated_delivery_date(order.order_date),
-        tracking_stages=build_tracking_stages(
-            order.status, run_in_progress=run_in_progress
-        ),
+        tracking_stages=build_tracking_stages(order.status, run_in_progress=run_in_progress),
     )
 
 
 async def _bills_summary(db: AsyncSession, retailer_id: UUID) -> RetailerBillsSummary:
     count = int(
         await db.scalar(
-            select(func.count()).select_from(DeliveryBill).where(
-                DeliveryBill.retailer_id == retailer_id
-            )
+            select(func.count())
+            .select_from(DeliveryBill)
+            .where(DeliveryBill.retailer_id == retailer_id)
         )
         or 0
     )
@@ -245,9 +235,7 @@ async def list_retailer_bills(
     )
 
 
-async def get_retailer_bill(
-    db: AsyncSession, retailer_id: UUID, bill_id: UUID
-) -> DeliveryBillOut:
+async def get_retailer_bill(db: AsyncSession, retailer_id: UUID, bill_id: UUID) -> DeliveryBillOut:
     bill = await db.scalar(
         select(DeliveryBill).where(
             DeliveryBill.id == bill_id,
@@ -259,7 +247,9 @@ async def get_retailer_bill(
     return DeliveryBillOut.model_validate(bill, from_attributes=True)
 
 
-async def get_retailer_profile(db: AsyncSession, retailer_id: UUID, username: str) -> RetailerProfileOut:
+async def get_retailer_profile(
+    db: AsyncSession, retailer_id: UUID, username: str
+) -> RetailerProfileOut:
     retailer = await get_retailer(db, retailer_id)
     return RetailerProfileOut(
         retailer=RetailerOut.model_validate(retailer, from_attributes=True),

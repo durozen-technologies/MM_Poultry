@@ -45,9 +45,7 @@ async def set_search_path(session: AsyncSession, schema_name: str | None) -> Non
 
 
 @asynccontextmanager
-async def tenant_schema_scope(
-    session: AsyncSession, schema_name: str
-) -> AsyncIterator[None]:
+async def tenant_schema_scope(session: AsyncSession, schema_name: str) -> AsyncIterator[None]:
     token = set_active_tenant_schema(schema_name)
     try:
         await set_search_path(session, schema_name)
@@ -100,10 +98,7 @@ async def reset_test_database_async() -> None:
                 await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
         await conn.execute(text("SET search_path TO public"))
         await conn.execute(
-            text(
-                "TRUNCATE TABLE user_auth_index, users, organizations "
-                "RESTART IDENTITY CASCADE"
-            )
+            text("TRUNCATE TABLE user_auth_index, users, organizations RESTART IDENTITY CASCADE")
         )
 
 
@@ -113,9 +108,7 @@ async def create_platform_tables() -> None:
 
     engine = get_engine()
     platform_tables = [
-        table
-        for table in Base.metadata.sorted_tables
-        if table.name in _platform_table_names()
+        table for table in Base.metadata.sorted_tables if table.name in _platform_table_names()
     ]
     async with engine.begin() as conn:
         await conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
@@ -130,10 +123,22 @@ async def repair_platform_schema_async() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
         await conn.execute(text("SET search_path TO public"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE"))
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)")
+        )
+        await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)")
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE"
+            )
+        )
         await conn.execute(
             text(
                 """
@@ -181,9 +186,7 @@ async def provision_tenant_schema_async(schema_name: str) -> None:
 
     engine = get_engine()
     tenant_tables = [
-        table
-        for table in Base.metadata.sorted_tables
-        if table.name in _tenant_table_names()
+        table for table in Base.metadata.sorted_tables if table.name in _tenant_table_names()
     ]
 
     async with engine.begin() as conn:
@@ -202,9 +205,7 @@ async def provision_tenant_schema_async(schema_name: str) -> None:
         )
         await conn.execute(text(f'DELETE FROM "{schema_name}".alembic_version'))
         await conn.execute(
-            text(
-                f"INSERT INTO \"{schema_name}\".alembic_version (version_num) VALUES (:v)"
-            ),
+            text(f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v)'),
             {"v": TENANT_MIGRATION_HEAD},
         )
         await conn.execute(text("SET search_path TO public"))
@@ -248,7 +249,14 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
         for table in Base.metadata.sorted_tables:
-            if table.name in {"vehicles", "org_settings", "expense_categories", "expenses", "retailer_returns", "order_sequences"}:
+            if table.name in {
+                "vehicles",
+                "org_settings",
+                "expense_categories",
+                "expenses",
+                "retailer_returns",
+                "order_sequences",
+            }:
                 await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))

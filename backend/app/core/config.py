@@ -12,7 +12,7 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     app_name: str = "Broiler Wholesale API"
     api_v1_prefix: str = "/api/v1"
-    
+
     # DATABASE
     postgres_user: str = "postgres"
     postgres_password: str = "root"
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     backup_secret_key: str = ""
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 720
-    
+
     cors_origins_raw: str = Field(default="*", alias="CORS_ORIGINS")
     allowed_hosts_raw: str = Field(default="localhost, 127.0.0.1", alias="ALLOWED_HOSTS")
 
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     @property
     def async_database_url(self) -> str:
         return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
-    
+
     @property
     def sync_database_url(self) -> str:
         return f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}@{self.postgres_server}:{self.postgres_port}/{self.postgres_db}"
@@ -82,12 +82,16 @@ class Settings(BaseSettings):
             raise ValueError(
                 "SECRET_KEY must be set to a strong value with at least 32 characters in production"
             )
-        
+
         if self.cors_origins == ["*"]:
-            raise ValueError("CORS_ORIGINS must be explicitly set to specific domains in production")
-            
+            raise ValueError(
+                "CORS_ORIGINS must be explicitly set to specific domains in production"
+            )
+
         if self.allowed_hosts == ["*"]:
-            raise ValueError("ALLOWED_HOSTS must be explicitly set to specific domains in production")
+            raise ValueError(
+                "ALLOWED_HOSTS must be explicitly set to specific domains in production"
+            )
 
         return self
 

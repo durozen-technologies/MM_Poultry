@@ -78,14 +78,14 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
-        
+
     stops_res = await db.execute(
         select(DeliveryStop, Retailer.name, Retailer.shop_name)
         .join(Retailer, Retailer.id == DeliveryStop.retailer_id)
         .where(DeliveryStop.delivery_run_id == run.id)
         .order_by(DeliveryStop.sequence.asc())
     )
-    
+
     out = DeliveryRunOut.model_validate(run, from_attributes=True)
     stops_out = []
     for stop, r_name, r_shop in stops_res:
@@ -93,7 +93,7 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
         s_out.retailer_name = r_name
         s_out.shop_name = r_shop
         stops_out.append(s_out)
-        
+
     out.stops = stops_out
     return out
 
@@ -101,11 +101,7 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
 async def get_active_run(db: AsyncSession) -> DeliveryRunOut | None:
     run = await db.scalar(
         select(DeliveryRun)
-        .where(
-            DeliveryRun.status.in_(
-                [DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS]
-            )
-        )
+        .where(DeliveryRun.status.in_([DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS]))
         .order_by(DeliveryRun.created_at.desc())
         .limit(1)
     )
@@ -133,5 +129,3 @@ async def skip_stop(db: AsyncSession, stop_id: UUID) -> DeliveryStopOut:
     stop.status = DeliveryStopStatus.SKIPPED
     await db.flush()
     return await _stop_out(db, stop)
-
-

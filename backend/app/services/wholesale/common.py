@@ -22,7 +22,6 @@ def q_kg(value: Decimal) -> Decimal:
     return value.quantize(KG_Q, rounding=ROUND_HALF_UP)
 
 
-
 async def _get_org_settings(db: AsyncSession) -> OrgSettings:
     settings = await db.scalar(select(OrgSettings).limit(1))
     if settings is None:
@@ -30,5 +29,3 @@ async def _get_org_settings(db: AsyncSession) -> OrgSettings:
         db.add(settings)
         await db.flush()
     return settings
-
-

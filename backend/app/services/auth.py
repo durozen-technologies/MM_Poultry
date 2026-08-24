@@ -55,7 +55,9 @@ async def check_global_username_available(db: AsyncSession, username: str) -> bo
 async def require_username_available(db: AsyncSession, username: str) -> str:
     username_lower = normalize_username(username)
     if not username_lower:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username is required")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username is required"
+        )
     if not await check_global_username_available(db, username_lower):
         raise_username_taken()
     return username_lower
@@ -124,9 +126,7 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User account is inactive"
             )
-        org = await db.scalar(
-            select(Organization).where(Organization.id == index.organization_id)
-        )
+        org = await db.scalar(select(Organization).where(Organization.id == index.organization_id))
         if org is None or not org.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

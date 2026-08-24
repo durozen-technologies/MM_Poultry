@@ -28,13 +28,13 @@ from app.services.wholesale.common import ZERO, q_money
 from app.services.wholesale.retailers import get_retailer
 
 
-async def create_payment(
-    db: AsyncSession, retailer_id: UUID, payload: PaymentCreate
-) -> PaymentOut:
+async def create_payment(db: AsyncSession, retailer_id: UUID, payload: PaymentCreate) -> PaymentOut:
     retailer = await get_retailer(db, retailer_id)
     total = q_money(payload.cash_amount + payload.upi_amount)
     if total <= ZERO and payload.type == PaymentType.RECEIVED:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment amount required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Payment amount required"
+        )
     payment = Payment(
         retailer_id=retailer_id,
         payment_date=payload.payment_date or today_ist(),
@@ -57,10 +57,8 @@ async def create_return(
 ) -> RetailerReturnOut:
     retailer = await get_retailer(db, retailer_id)
     if payload.total_amount <= ZERO:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Total amount required"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Total amount required")
+
     ret = RetailerReturn(
         retailer_id=retailer_id,
         return_date=payload.return_date or today_ist(),
@@ -72,10 +70,10 @@ async def create_return(
         reason=payload.reason,
     )
     db.add(ret)
-    
+
     # Credit the retailer's balance
     retailer.credit_balance = q_money(retailer.credit_balance - payload.total_amount)
-    
+
     await db.flush()
     return RetailerReturnOut.model_validate(ret, from_attributes=True)
 
@@ -135,7 +133,9 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
                 entry_date=payment.payment_date,
                 reference=str(payment.id),
                 debit=ZERO,
-                credit=payment.total_amount if payment.type == PaymentType.RECEIVED and payment.is_credit else ZERO,
+                credit=payment.total_amount
+                if payment.type == PaymentType.RECEIVED and payment.is_credit
+                else ZERO,
                 notes=payment.notes,
             )
         )
@@ -162,5 +162,3 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         credit_balance=retailer.credit_balance,
         entries=entries,
     )
-
-

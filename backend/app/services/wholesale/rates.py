@@ -18,9 +18,7 @@ from app.schemas import (
 from app.services.wholesale.common import q_money
 
 
-async def resolve_rate(
-    db: AsyncSession, retailer_id: UUID, on_date: date | None = None
-) -> Decimal:
+async def resolve_rate(db: AsyncSession, retailer_id: UUID, on_date: date | None = None) -> Decimal:
     day = on_date or today_ist()
     retailer_rate = await db.scalar(
         select(RetailerItemRate)
@@ -67,5 +65,3 @@ async def list_rates(db: AsyncSession) -> list[RateOut]:
         await db.scalars(select(RetailerItemRate).order_by(RetailerItemRate.effective_from.desc()))
     )
     return [RateOut.model_validate(r, from_attributes=True) for r in rows]
-
-

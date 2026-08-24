@@ -44,5 +44,7 @@ async def check_username(
 ) -> UsernameAvailableOut:
     available = await check_global_username_available(db, username)
     if not available:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username is already taken globally")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Username is already taken globally"
+        )
     return UsernameAvailableOut(available=True)

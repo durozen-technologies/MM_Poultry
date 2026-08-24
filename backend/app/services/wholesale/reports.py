@@ -45,17 +45,13 @@ async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeight
     delivered = await db.scalar(
         select(func.coalesce(func.sum(DeliveryStop.delivered_weight_kg), 0)).where(
             DeliveryStop.delivery_run_id == run_id,
-            DeliveryStop.status.in_(
-                [DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED]
-            ),
+            DeliveryStop.status.in_([DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED]),
         )
     )
     delivered_kg = q_kg(Decimal(str(delivered or 0)))
     loaded_kg = q_kg(load.loaded_weight_kg)
     loss_kg = q_kg(loaded_kg - delivered_kg)
-    loss_pct = (
-        q_money((loss_kg / loaded_kg) * Decimal("100")) if loaded_kg > 0 else Decimal("0.00")
-    )
+    loss_pct = q_money((loss_kg / loaded_kg) * Decimal("100")) if loaded_kg > 0 else Decimal("0.00")
 
     existing = await db.scalar(
         select(TripWeightLoss).where(TripWeightLoss.delivery_run_id == run_id)

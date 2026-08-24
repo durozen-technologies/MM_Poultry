@@ -89,7 +89,9 @@ class RetailerDailyOrder(Base, BaseModelMixin):
     )
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
-    order_number: Mapped[str | None] = mapped_column(String(32), unique=True, index=True, nullable=True)
+    order_number: Mapped[str | None] = mapped_column(
+        String(32), unique=True, index=True, nullable=True
+    )
     retailer_id: Mapped[UUID] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("retailers.id"), nullable=False, index=True
     )
@@ -278,7 +280,6 @@ class RetailerReturn(Base, BaseModelMixin):
     reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
-
 class Payment(Base, BaseModelMixin):
     __tablename__ = "payments"
 
@@ -310,9 +311,7 @@ class Payment(Base, BaseModelMixin):
 
 class TripWeightLoss(Base, BaseModelMixin):
     __tablename__ = "trip_weight_losses"
-    __table_args__ = (
-        UniqueConstraint("delivery_run_id", name="uq_trip_weight_loss_run"),
-    )
+    __table_args__ = (UniqueConstraint("delivery_run_id", name="uq_trip_weight_loss_run"),)
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     farm_load_id: Mapped[UUID] = mapped_column(
