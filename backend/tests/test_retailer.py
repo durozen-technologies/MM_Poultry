@@ -14,6 +14,7 @@ from app.db.tenant_schema import set_search_path
 # Shared IDs for testing
 TEST_RETAILER_ID = UUID("00000000-0000-0000-0000-000000000100")
 TEST_ORG_ID = UUID("00000000-0000-0000-0000-000000000002")
+TEST_ITEM_ID = UUID("00000000-0000-0000-0000-000000000999")
 
 @pytest.fixture
 def mock_retailer_auth() -> Generator[None, None, None]:
@@ -57,6 +58,20 @@ def mock_retailer_auth() -> Generator[None, None, None]:
                 await session.commit()
                 # Re-apply search path because commit() releases the connection
                 await set_search_path(session, "tenant_test")
+            
+            from app.models.domain import Item
+            from sqlalchemy import text
+            res2 = await session.execute(select(Item).where(Item.id == TEST_ITEM_ID))
+            if not res2.scalar_one_or_none():
+                res3 = await session.execute(select(Item).where(Item.name == "Test Bird"))
+                existing = res3.scalar_one_or_none()
+                if existing:
+                    await session.execute(text("DELETE FROM items WHERE name = 'Test Bird'"))
+                    await session.commit()
+                it = Item(id=TEST_ITEM_ID, name="Test Bird", default_price=100.0, uom="KG")
+                session.add(it)
+                await session.commit()
+                await set_search_path(session, "tenant_test")
 
             yield AuthContext(
                 user=retailer_user,
@@ -86,14 +101,19 @@ def test_retailer_dashboard(client: TestClient, mock_retailer_auth: None):
 
 def test_retailer_upsert_today_order(client: TestClient, mock_retailer_auth: None):
     payload = {
-        "requested_kg": "50.5",
-        "bird_size": "LARGE",
-        "notes": "Testing order"
+        "items": [
+            {
+                "item_id": str(TEST_ITEM_ID),
+                "requested_kg": "50.5",
+                "bird_size": "LARGE",
+                "notes": "Testing order"
+            }
+        ]
     }
     response = client.post("/api/v1/retailer/orders/today", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert data["requested_kg"] == "50.500"
+    assert data["items"][0]["requested_kg"] == "50.500"
     assert data["status"] == "PLACED"
 
 
@@ -103,7 +123,7 @@ def test_retailer_get_today_order(client: TestClient, mock_retailer_auth: None):
     data = response.json()
     # Should fetch the one we just placed
     assert data is not None
-    assert data["requested_kg"] == "50.500"
+    assert data["items"][0]["requested_kg"] == "50.500"
 
 
 def test_retailer_list_orders(client: TestClient, mock_retailer_auth: None):

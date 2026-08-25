@@ -1,134 +1,40 @@
-import { useCallback, useState } from "react";
-import { FlatList, Pressable, Text, TextInput, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { View, Text, FlatList, Pressable, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { completeRun, getActiveRun, markWhatsAppShared, previewBill, commitBill, skipStop, startRun, updatePrintStatus, weighStop } from "../../api/delivery";
-import { readScaleWeight } from "../../services/ble-scale";
-import { printThermalReceipt, shareWhatsAppBill } from "../../services/printer";
-import { useAuthStore } from "../../store/auth-store";
-import type { DeliveryBill, DeliveryRun, DeliveryStop } from "../../types/api";
-import { formatIstDate } from "../../utils/ist-date";
-import { getTripWeightLoss } from "../../api/reports";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "../../store/auth-store";
+import { formatIstDate } from "../../utils/ist-date";
 import { apiItems } from "../../api/items";
+import { useDeliveryRun } from "../../hooks/use-delivery-run";
 
 export function DeliveryHomeScreen() {
   const logout = useAuthStore((s) => s.logout);
-  const [run, setRun] = useState<DeliveryRun | null>(null);
-  const [activeStop, setActiveStop] = useState<DeliveryStop | null>(null);
-  const [weights, setWeights] = useState<Record<string, string>>({});
-  const [cash, setCash] = useState("0");
-  const [upi, setUpi] = useState("0");
-  const [msg, setMsg] = useState<string | null>(null);
-  const [lastBill, setLastBill] = useState<DeliveryBill | null>(null);
+  const {
+    run,
+    activeStop,
+    setActiveStop,
+    weights,
+    setWeights,
+    cash,
+    setCash,
+    upi,
+    setUpi,
+    msg,
+    lastBill,
+    onStartRun,
+    onCompleteRun,
+    simulateScale,
+    weighAndBill,
+    onSkipStop,
+    shareBill,
+  } = useDeliveryRun();
 
   const { data: itemsPage } = useQuery({
     queryKey: ["retailer_items"],
     queryFn: () => apiItems.list(),
   });
   const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i) => i.id === id)?.name || "Unknown Item";
-
-  const refresh = useCallback(async () => {
-    const data = await getActiveRun();
-    setRun(data);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh])
-  );
-
-  async function onStartRun() {
-    if (!run) return;
-    await startRun(run.id);
-    await refresh();
-  }
-
-  async function simulateScale(itemId: string) {
-    const reading = await readScaleWeight();
-    setWeights(prev => ({ ...prev, [itemId]: String(reading.kg) }));
-    setMsg(`Scale ${reading.source}: ${reading.kg} kg`);
-  }
-
-  async function weighAndBill() {
-    if (!activeStop) return;
-    try {
-      const itemsPayload = (activeStop.items || []).map(item => ({
-        item_id: item.item_id,
-        delivered_weight_kg: weights[item.item_id] || "0",
-        delivered_bird_count: 0
-      }));
-
-      await weighStop(activeStop.id, {
-        scale_device_id: "SIM-SCALE",
-        items: itemsPayload
-      });
-
-      const preview = await previewBill(activeStop.id, { cash_payment: cash, upi_payment: upi });
-      const checkoutId = `chk-${activeStop.id}-${Date.now()}`;
-      const bill = await commitBill(activeStop.id, {
-        cash_payment: cash,
-        upi_payment: upi,
-        print_status: "PENDING",
-        checkout_id: checkoutId,
-      });
-
-      const printStatus = await printThermalReceipt({
-        shopName: "Demo Wholesaler",
-        billNumber: bill.bill_number,
-        retailerName: activeStop.retailer_name || "",
-        weightKg: String(bill.items?.reduce((sum: number, it: any) => sum + Number(it.weight_kg), 0) || 0),
-        rate: "Mixed",
-        total: bill.total_amount,
-        cash: bill.cash_payment,
-        upi: bill.upi_payment,
-        balance: bill.balance_amount,
-      });
-
-      const updated = await updatePrintStatus(bill.id, printStatus);
-      setLastBill(updated);
-      setMsg(`Billed ${updated.bill_number} → print ${updated.print_status}`);
-      setActiveStop(null);
-      setWeights({});
-      await refresh();
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
-    }
-  }
-
-  async function onSkipStop() {
-    if (!activeStop) return;
-    try {
-      await skipStop(activeStop.id);
-      setMsg(`Skipped stop for ${activeStop.retailer_name}`);
-      setActiveStop(null);
-      setWeights({});
-      await refresh();
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to skip");
-    }
-  }
-
-  async function onCompleteRun() {
-    if (!run) return;
-    await completeRun(run.id);
-    const loss = await getTripWeightLoss(run.id);
-    setMsg(`Run complete. Loss ${loss.loss_kg} kg (${loss.loss_pct}%)`);
-    await refresh();
-  }
-
-  async function shareBill() {
-    if (!lastBill) return;
-    const totalWeight = lastBill.items?.reduce((sum: number, it: any) => sum + Number(it.weight_kg), 0) || 0;
-    await shareWhatsAppBill(
-      `Bill ${lastBill.bill_number}\nWeight ${totalWeight} kg\nTotal ₹${lastBill.total_amount}\nBalance ₹${lastBill.balance_amount}`
-    );
-    await markWhatsAppShared(lastBill.id);
-    setMsg("WhatsApp share marked");
-  }
+  const getItemName = (id: string) => allItems.find((i: any) => i.id === id)?.name || "Unknown Item";
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>

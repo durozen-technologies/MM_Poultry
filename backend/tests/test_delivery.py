@@ -64,8 +64,13 @@ def test_delivery_weigh_invalid_stop(client: TestClient, mock_delivery_auth: Non
     # UUID that doesn't exist
     bad_id = "00000000-0000-0000-0000-000000000999"
     payload = {
-        "delivered_weight_kg": "50",
-        "delivered_bird_count": 20
+        "items": [
+            {
+                "item_id": "00000000-0000-0000-0000-000000000999",
+                "delivered_weight_kg": "50",
+                "delivered_bird_count": 20
+            }
+        ]
     }
     response = client.post(f"/api/v1/delivery/stops/{bad_id}/weigh", json=payload)
     # Service raises 404
@@ -76,7 +81,7 @@ def test_delivery_weigh_invalid_stop(client: TestClient, mock_delivery_auth: Non
 def test_delivery_bill_preview_invalid_stop(client: TestClient, mock_delivery_auth: None):
     bad_id = "00000000-0000-0000-0000-000000000999"
     payload = {
-        "rate_per_kg": "120.0"
+        "cash_payment": 0
     }
     response = client.post(f"/api/v1/delivery/stops/{bad_id}/bill/preview", json=payload)
     assert response.status_code == 404
@@ -96,7 +101,7 @@ def test_delivery_run_not_found(client: TestClient, mock_delivery_auth: None) ->
 
 def test_delivery_stop_not_found(client: TestClient, mock_delivery_auth: None) -> None:
     nid = str(uuid.uuid4())
-    res = client.post(f"/api/v1/delivery/stops/{nid}/weigh", json={"delivered_weight_kg": 10})
+    res = client.post(f"/api/v1/delivery/stops/{nid}/weigh", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "delivered_weight_kg": 10}]})
     assert res.status_code == 404
     res = client.post(f"/api/v1/delivery/stops/{nid}/skip")
     assert res.status_code == 404
@@ -142,6 +147,20 @@ def test_delivery_full_lifecycle(client: TestClient, mock_admin_auth: None) -> N
         session = get_session_factory()()
         await set_search_path(session, "tenant_test")
         try:
+            from sqlalchemy import text, select
+            from app.models.domain import Item
+            test_item_id = uuid.UUID("00000000-0000-0000-0000-000000000999")
+            it = await session.scalar(select(Item).where(Item.id == test_item_id))
+            if not it:
+                it2 = await session.scalar(select(Item).where(Item.name == "Test Bird"))
+                if it2:
+                    await session.execute(text("DELETE FROM items WHERE name = 'Test Bird'"))
+                    await session.commit()
+                it = Item(id=test_item_id, name="Test Bird", default_price=100.0, uom="KG")
+                session.add(it)
+                await session.commit()
+                await set_search_path(session, "tenant_test")
+            
             yield AuthContext(
                 user=User(id=uuid.uuid4(), username="ret", password_hash="", role=UserRole.RETAILER, is_active=True, retailer_id=uuid.UUID(ret_id)),
                 organization=None,
@@ -156,7 +175,7 @@ def test_delivery_full_lifecycle(client: TestClient, mock_admin_auth: None) -> N
             await session.close()
 
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"requested_kg": "50", "bird_size": "LARGE"})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "50", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
 
     if old_override:
@@ -202,7 +221,8 @@ def test_delivery_full_lifecycle(client: TestClient, mock_admin_auth: None) -> N
     # Test skipping stop
     skip_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/skip")
     assert skip_resp.status_code == 200
-    assert skip_resp.json()["delivered_weight_kg"] is None
+    assert len(skip_resp.json()["items"]) > 0
+    assert skip_resp.json()["items"][0]["delivered_weight_kg"] is None
 
     # Wait, if we skipped it, we cannot weigh it without overriding.
     # Actually, we can't weigh a skipped stop in the current logic.
@@ -221,7 +241,7 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
     # 2. Setup Retailer and rate
     ret_resp = client.post("/api/v1/admin/retailers", json={"name": "Billing Ret"})
     ret_id = ret_resp.json()["id"]
-    client.put("/api/v1/admin/rates", json={"retailer_id": ret_id, "rate_per_kg": 150.0})
+    client.put("/api/v1/admin/rates", json={"retailer_id": ret_id, "item_id": "00000000-0000-0000-0000-000000000999", "rate_per_kg": 150.0})
 
     from app.main import app
     from app.auth.dependencies import get_current_auth, AuthContext
@@ -236,6 +256,20 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
         session = get_session_factory()()
         await set_search_path(session, "tenant_test")
         try:
+            from sqlalchemy import text, select
+            from app.models.domain import Item
+            test_item_id = uuid.UUID("00000000-0000-0000-0000-000000000999")
+            it = await session.scalar(select(Item).where(Item.id == test_item_id))
+            if not it:
+                it2 = await session.scalar(select(Item).where(Item.name == "Test Bird"))
+                if it2:
+                    await session.execute(text("DELETE FROM items WHERE name = 'Test Bird'"))
+                    await session.commit()
+                it = Item(id=test_item_id, name="Test Bird", default_price=100.0, uom="KG")
+                session.add(it)
+                await session.commit()
+                await set_search_path(session, "tenant_test")
+
             yield AuthContext(
                 user=User(id=uuid.uuid4(), username="retb", password_hash="", role=UserRole.RETAILER, is_active=True, retailer_id=uuid.UUID(ret_id)),
                 organization=None,
@@ -250,7 +284,7 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
             await session.close()
 
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"requested_kg": "100", "bird_size": "LARGE"})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
 
     if old_override:
@@ -268,19 +302,23 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
 
     # 5. Weigh stop
     weigh_payload = {
-        "delivered_weight_kg": 95.5,
-        "delivered_bird_count": 50,
+        "items": [
+            {
+                "item_id": "00000000-0000-0000-0000-000000000999",
+                "delivered_weight_kg": 95.5,
+                "delivered_bird_count": 50
+            }
+        ],
         "scale_device_id": "test_scale_1"
     }
     weigh_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/weigh", json=weigh_payload)
     assert weigh_resp.status_code == 200
-    assert float(weigh_resp.json()["delivered_weight_kg"]) == 95.5
+    assert float(weigh_resp.json()["items"][0]["delivered_weight_kg"]) == 95.5
 
     # 6. Bill preview
     preview_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/bill/preview", json={
         "cash_payment": 1000.0,
-        "upi_payment": 500.0,
-        "rate_per_kg": 150.0
+        "upi_payment": 500.0
     })
     assert preview_resp.status_code == 200
     p_data = preview_resp.json()
@@ -297,15 +335,14 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
     # 7. Bill commit
     commit_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/bill/commit", json={
         "cash_payment": 1000.0,
-        "upi_payment": 500.0,
-        "rate_per_kg": 150.0
+        "upi_payment": 500.0
     })
     assert commit_resp.status_code == 200
     assert "id" in commit_resp.json()
 
     # Admin weigh override test
     err_override = client.post(f"/api/v1/delivery/stops/{stop_id}/weigh", json={
-        "delivered_weight_kg": 100.0,
+        "items": [{"item_id": "00000000-0000-0000-0000-000000000999", "delivered_weight_kg": 100.0}],
         "weight_override_reason": "Testing admin override"
     })
     # Cannot weigh after billed! Should be 409

@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "0003_user_profile_fields"
+TENANT_MIGRATION_HEAD = "a1b2c3d4e5f6"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import today_ist
@@ -83,6 +84,7 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
     bills = list(
         await db.scalars(
             select(DeliveryBill)
+            .options(selectinload(DeliveryBill.items))
             .where(DeliveryBill.retailer_id == retailer_id)
             .order_by(DeliveryBill.bill_date.asc(), DeliveryBill.created_at.asc())
         )
@@ -103,6 +105,8 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
     )
     entries: list[LedgerEntry] = []
     for bill in bills:
+        total_wt = sum((i.weight_kg for i in bill.items), ZERO)
+        rate_str = f"@ {bill.items[0].rate_per_kg}" if len(bill.items) == 1 else ("(Mixed Rates)" if len(bill.items) > 1 else "")
         entries.append(
             LedgerEntry(
                 entry_type="BILL",
@@ -110,7 +114,7 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
                 reference=bill.bill_number,
                 debit=bill.total_amount,
                 credit=ZERO,
-                notes=f"Wt {bill.weight_kg} kg @ {bill.rate_per_kg}",
+                notes=f"Wt {total_wt} kg {rate_str}".strip(),
             )
         )
         collected = bill.cash_payment + bill.upi_payment

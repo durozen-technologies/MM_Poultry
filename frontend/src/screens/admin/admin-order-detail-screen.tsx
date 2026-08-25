@@ -15,7 +15,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
   });
   
   const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i) => i.id === id)?.name || "Unknown Item";
+  const getItemName = (id: string) => allItems.find((i: any) => i.id === id)?.name || "Unknown Item";
 
   if (!order) {
     return (

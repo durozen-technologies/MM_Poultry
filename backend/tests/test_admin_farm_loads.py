@@ -85,6 +85,20 @@ def test_create_delivery_run(client: TestClient, mock_admin_auth: None) -> None:
         session = get_session_factory()()
         await set_search_path(session, "tenant_test")
         try:
+            from sqlalchemy import text, select
+            from app.models.domain import Item
+            test_item_id = uuid.UUID("00000000-0000-0000-0000-000000000999")
+            it = await session.scalar(select(Item).where(Item.id == test_item_id))
+            if not it:
+                it2 = await session.scalar(select(Item).where(Item.name == "Test Bird"))
+                if it2:
+                    await session.execute(text("DELETE FROM items WHERE name = 'Test Bird'"))
+                    await session.commit()
+                it = Item(id=test_item_id, name="Test Bird", default_price=100.0, uom="KG")
+                session.add(it)
+                await session.commit()
+                await set_search_path(session, "tenant_test")
+                
             yield AuthContext(
                 user=User(id=uuid.uuid4(), username="ret", password_hash="", role=UserRole.RETAILER, is_active=True, retailer_id=uuid.UUID(ret_id)),
                 organization=None,
@@ -99,7 +113,7 @@ def test_create_delivery_run(client: TestClient, mock_admin_auth: None) -> None:
             await session.close()
         
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"requested_kg": "50.5", "bird_size": "LARGE"})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "50.5", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
     
     if old_override:
@@ -148,6 +162,20 @@ def test_delivery_run_lifecycle(client: TestClient, mock_admin_auth: None) -> No
         session = get_session_factory()()
         await set_search_path(session, "tenant_test")
         try:
+            from sqlalchemy import text, select
+            from app.models.domain import Item
+            test_item_id = uuid.UUID("00000000-0000-0000-0000-000000000999")
+            it = await session.scalar(select(Item).where(Item.id == test_item_id))
+            if not it:
+                it2 = await session.scalar(select(Item).where(Item.name == "Test Bird"))
+                if it2:
+                    await session.execute(text("DELETE FROM items WHERE name = 'Test Bird'"))
+                    await session.commit()
+                it = Item(id=test_item_id, name="Test Bird", default_price=100.0, uom="KG")
+                session.add(it)
+                await session.commit()
+                await set_search_path(session, "tenant_test")
+                
             yield AuthContext(
                 user=User(id=uuid.uuid4(), username="ret", password_hash="", role=UserRole.RETAILER, is_active=True, retailer_id=uuid.UUID(ret_id2)),
                 organization=None,
@@ -162,7 +190,7 @@ def test_delivery_run_lifecycle(client: TestClient, mock_admin_auth: None) -> No
             await session.close()
     
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db2
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"requested_kg": "100", "bird_size": "LARGE"})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
     
     if old_override:

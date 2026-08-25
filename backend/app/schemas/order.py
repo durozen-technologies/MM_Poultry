@@ -20,11 +20,11 @@ class DailyOrderCreate(BaseModel):
     items: list[OrderItemCreate]
 
 
-class OrderItemOut(BaseModel):
+class DailyOrderItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    daily_order_id: UUID
+    order_id: UUID
     item_id: UUID
     requested_kg: Decimal
     bird_size: str | None = None
@@ -41,11 +41,11 @@ class DailyOrderOut(BaseModel):
     status: OrderStatus
     retailer_name: str | None = None
     shop_name: str | None = None
-    
-    items: list[OrderItemOut] = []
+    items: list[DailyOrderItemOut] = []
 
 
 class TodayOrdersResponse(BaseModel):
     items: list[DailyOrderOut]
     has_more: bool = False
     next_cursor: str | None = None
+    total_requested_kg: Decimal = Decimal("0.000")

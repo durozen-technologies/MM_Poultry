@@ -95,3 +95,12 @@ async def create_org_with_admin(
         organization_slug=slug,
     )
     return org, admin_login
+
+async def create_default_item(client: AsyncClient, admin_token: str) -> dict:
+    resp = await client.post(
+        "/admin/items",
+        json={"name": "Live Bird", "default_price": "180.00"},
+        headers=auth_headers(admin_token),
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()

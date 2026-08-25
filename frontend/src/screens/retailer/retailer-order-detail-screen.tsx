@@ -20,7 +20,7 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
     queryFn: () => apiItems.list(),
   });
   const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i) => i.id === id)?.name || "Unknown Item";
+  const getItemName = (id: string) => allItems.find((i: any) => i.id === id)?.name || "Unknown Item";
 
   const refresh = useCallback(async () => {
     if (!orderId) return;

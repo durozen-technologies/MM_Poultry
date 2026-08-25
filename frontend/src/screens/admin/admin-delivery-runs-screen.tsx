@@ -120,7 +120,7 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
             />
             <View className="flex-1">
               <Text className="font-body-md text-on-surface font-semibold">{order.shop_name || order.retailer_name}</Text>
-              <Text className="font-label-md text-on-surface-variant">{order.requested_kg} kg · {order.status}</Text>
+              <Text className="font-label-md text-on-surface-variant">{order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0} kg · {order.status}</Text>
             </View>
           </Pressable>
         )}

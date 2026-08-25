@@ -90,7 +90,6 @@ async def upsert_today_order(
             notes=item_in.notes
         )
         db.add(order_item)
-        order.items.append(order_item)
 
     await db.flush()
     
@@ -99,6 +98,7 @@ async def upsert_today_order(
         select(RetailerDailyOrder)
         .options(selectinload(RetailerDailyOrder.items))
         .where(RetailerDailyOrder.id == order.id)
+        .execution_options(populate_existing=True)
     )
     assert order is not None
     

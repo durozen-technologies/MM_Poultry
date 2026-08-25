@@ -319,7 +319,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       <Text className="font-body-md text-on-surface font-semibold">{formatIstDate(order.order_date)}</Text>
                       <Text className="font-label-md text-on-surface-variant">{order.status}</Text>
                     </View>
-                    <Text className="font-headline-sm text-primary mt-1">{order.requested_kg} kg</Text>
+                    <Text className="font-headline-sm text-primary mt-1">{order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0} kg</Text>
                   </Pressable>
                 ))
               )}

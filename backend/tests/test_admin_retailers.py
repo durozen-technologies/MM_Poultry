@@ -70,8 +70,11 @@ def test_create_portal_user(client: TestClient, mock_admin_auth: None) -> None:
 
 def test_upsert_and_list_rates(client: TestClient, mock_admin_auth: None) -> None:
     # Upsert rate
+    import uuid
+    item_id = client.post("/api/v1/admin/items", json={"name": f"Live Bird {uuid.uuid4()}", "default_price": "180.00"}).json()["id"]
     rate_payload = {
-        "rate_per_kg": 150.50
+        "rate_per_kg": 150.50,
+        "item_id": item_id
     }
     put_resp = client.put("/api/v1/admin/rates", json=rate_payload)
     assert put_resp.status_code == 200

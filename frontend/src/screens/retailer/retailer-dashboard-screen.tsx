@@ -82,9 +82,9 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
               </Text>
               {todayOrder ? (
                 <View className="flex-col gap-2">
-                  <Text className="font-display-md text-primary">{todayOrder.requested_kg} kg</Text>
+                  <Text className="font-display-md text-primary">{todayOrder.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0} kg</Text>
                   <Text className="font-body-md text-on-surface-variant">
-                    {todayOrder.bird_size || "Any size"} · {todayOrder.status}
+                    {todayOrder.items?.map(it => it.bird_size).filter(Boolean).join(", ") || "Any size"} · {todayOrder.status}
                   </Text>
                   <Text className="font-label-md text-on-surface-variant">
                     Est. delivery {estimatedDeliveryLabel(todayOrder.order_date)}

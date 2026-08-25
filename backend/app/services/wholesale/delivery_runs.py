@@ -82,7 +82,6 @@ async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> D
                 rate_per_kg=rate,
             )
             db.add(stop_item)
-            stop.items.append(stop_item)
             
         order.status = OrderStatus.ACKNOWLEDGED
 

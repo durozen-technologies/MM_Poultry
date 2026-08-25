@@ -1,12 +1,13 @@
 import pytest
 from httpx import AsyncClient
 
-from test.factories import auth_headers, create_org_with_admin
+from test.factories import auth_headers, create_org_with_admin, create_default_item
 
 
 @pytest.mark.asyncio
 async def test_farm_vehicle_and_delivery_run(client: AsyncClient) -> None:
     _, admin = await create_org_with_admin(client, slug="farmorg")
+    item = await create_default_item(client, admin["access_token"])
     headers = auth_headers(admin["access_token"])
     farm = await client.post(
         "/admin/farms",
@@ -33,7 +34,7 @@ async def test_farm_vehicle_and_delivery_run(client: AsyncClient) -> None:
     r_headers = auth_headers(login.json()["access_token"])
     order = await client.post(
         "/retailer/orders/today",
-        json={"requested_kg": "30.000"},
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000"}]},
         headers=r_headers,
     )
     assert order.status_code == 200

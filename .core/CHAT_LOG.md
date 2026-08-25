@@ -767,3 +767,68 @@ All backend APIs are heavily covered for the happy paths, exceptions, and valida
 [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 3 : 0 0 + 0 5 : 3 0 ]   R a n   g r e p _ s e a r c h   a n d   G e t - C o n t e n t   t o   i n s p e c t   a p p / d b / t e n a n t _ s c h e m a . p y ,   a p p / m o d e l s / d o m a i n . p y ,   a p p / s e r v i c e s / w h o l e s a l e / b i l l i n g . p y ,   a p p / s e r v i c e s / w h o l e s a l e / o r d e r s . p y .   M o d i f i e d   t e n a n t _ s c h e m a . p y   t o   a d d   m i s s i n g   m u l t i - i t e m   t a b l e s .   R e - r a n   p y t h o n   f i x _ a l e m b i c . p y .   A d d e d   r e l a t i o n s h i p   ' i t e m s '   t o   R e t a i l e r D a i l y O r d e r ,   D e l i v e r y S t o p ,   D e l i v e r y B i l l   i n   d o m a i n . p y .   F i x e d   i n c o r r e c t   p a r a m e t e r   ' d a i l y _ o r d e r _ i d '   t o   ' o r d e r _ i d '   i n   o r d e r s . p y   a n d   b i l l i n g . p y .  
  [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 5 : 3 0 + 0 5 : 3 0 ]   A d d r e s s e d   N a m e E r r o r   b y   i m p o r t i n g   ' r e l a t i o n s h i p '   i n   d o m a i n . p y .   A d d r e s s e d   I D E   i s s u e   f o r   ' O p s D a s h b o a r d '   m i s s i n g   n a m e   b y   i m p o r t i n g   i t   i n   b i l l i n g . p y .  
  
+[2026-08-25T09:19:17+05:30] User: pull
+[2026-08-25T09:19:17+05:30] Agent: Executed git pull to update the repository with the latest changes.
+### [2026-08-25 05:18:30] Agent execution
+- Investigated `test_delivery_weigh_and_bill` assertion failure (expecting `9550.0 == 95.5 * 150.0`). Found that `client.put("/api/v1/admin/rates")` test setup was missing the `item_id`, so it silently failed to map the retailer rate to the item, resulting in using the default rate (100).
+- Fixed `tests/test_delivery.py` to include `item_id` in the rate payload. Tests now pass fully (88/88).
+- Investigated Alembic schema consistency. Discovered `backend/app/db/tenant_schema.py` had a hardcoded `TENANT_MIGRATION_HEAD = "0003_user_profile_fields"`, which is an invalid revision (a leftover or incorrect stub). Updated it to the actual head `a1b2c3d4e5f6`. 
+- Validated tenant databases `tenant_test` and `tenant_demo`, confirming their `alembic_version` tables are correctly stamped with `a1b2c3d4e5f6`.
+
+### [2026-08-25 05:27:30] Agent execution - E2E tests fixed
+- The user pointed out that `test/` (E2E API tests) were failing.
+- Discovered that the E2E tests were still sending the old payload format (`delivered_weight_kg: ...`) instead of the new `items` array format.
+- Updated payloads in `test/api/test_billing_api.py`, `test/api/test_retailer_api.py`, and `test/smoke/test_wholesale_flow.py` to match the new nested item schemas.
+- Found another instance of `MissingGreenlet` in `backend/app/services/wholesale/orders.py`. Fixed it by removing `.append(order_item)` on the un-loaded `order.items` collection and properly using `populate_existing=True` to fetch relationships cleanly via `.scalar()`.
+- Successfully ran all 26 E2E tests in the `test/` directory, confirming that both the `backend/tests/` suite and `test/` suite now pass successfully.
+
+## [2026-08-25 06:22:00] Frontend Audit & Plan
+**Agent Action:**
+- Explored frontend structure and ran `bun run tsc --noEmit`
+- Ran `node .agents/skills/impeccable/scripts/context.mjs`
+- Audited `delivery-home-screen.tsx`, `retailer-place-order-screen.tsx`, `admin-home-screen.tsx`
+- Created `implementation_plan.md` addressing fat components, entangled logic, missing documentation, and inline AI aesthetic styling.
+- Waiting for user approval on the plan before execution.
+
+## [2026-08-25 06:31:00] Frontend Refactoring Execution
+**Agent Action:**
+- Extracted hooks: `use-delivery-run.ts` and `use-retailer-cart.ts`.
+- Extracted components: `metric-card.tsx`.
+- Refactored `delivery-home-screen.tsx`, `retailer-place-order-screen.tsx`, and `admin-home-screen.tsx` to be under 200 lines and use separated concerns.
+- Replaced inline layout hardcodes (e.g., `paddingBottom: 100`) with standard NativeWind spacing classes (`pb-24`).
+- Confirmed `createReturn` API aligns with backend schema (does not use an `items` array).
+- Ran `tsc --noEmit` which completed successfully with no errors.
+- Saved a `walkthrough.md`.
+
+## [2026-08-25 13:18:03] Fix 500 error on retailer profile
+**Agent Action:**
+- Investigated frontend `Failed to load retailer profile` error.
+- Traced to backend `/admin/retailers/{retailer_id}/ledger` 500 error.
+- Fixed `get_ledger` in `backend/app/services/wholesale/ledger.py` to sum `weight_kg` from `bill.items` and safely read `rate_per_kg`.
+- Ran `pytest test/api/test_retailer_api.py` which passed.
+
+## [2026-08-25 13:29:40] Fix MissingGreenletError in Retailer Ledger
+**Agent Action:**
+- Traced secondary 500 error on `/admin/retailers/{retailer_id}/ledger`.
+- Identified SQLAlchemy lazy-loading constraint violation on `bill.items`.
+- Injected `selectinload` option in `get_ledger` for `DeliveryBill.items`.
+- Verified changes with strict typing and ran pytest.
+
+## [2026-08-25 13:56:11] Fix Local DB Schema Missing Columns
+**Agent Action:**
+- Investigated the `UndefinedColumnError: column retailer_returns.item_id does not exist`.
+- Root cause: earlier changes to `RetailerReturn` model were not migrated. Alembic state was inconsistent on the local machine due to deleted intermediate migrations.
+- Bypassed Alembic local state issues by running `ALTER TABLE` statements on `tenant_test` and `tenant_demo` schemas directly.
+- Created the Alembic migration script manually in `migrations/versions/tenant/` so the staging/production deployments will properly apply it.
+
+## [2026-08-25 17:23:43] Restore Accidentally Deleted ledger.py
+**Agent Action:**
+- Investigated the `ModuleNotFoundError: No module named 'app.services.wholesale.ledger'` error in the Uvicorn logs.
+- Confirmed `ledger.py` was deleted from the filesystem (visible in `git status`).
+- Used `git restore` to bring it back.
+- Re-applied the recent fixes to avoid reintroducing the `MissingGreenletError` bug.
+- `uvicorn --reload` will automatically recover now.
+
+## [2026-08-25 17:27:20] Push Changes
+**Agent Action:**
+- Initiating `git add`, `git commit`, and `git push` for all pending fixes (ledger MissingGreenletError fix, local DB migrations fix, UI refactors).

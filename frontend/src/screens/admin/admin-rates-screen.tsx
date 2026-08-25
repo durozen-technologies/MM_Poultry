@@ -38,11 +38,11 @@ export function AdminRatesScreen({ navigation }: { navigation: any }) {
       if (global) {
         setDefaultRateInput(global.rate_per_kg);
       } else {
-        const item = items.find(i => i.id === selectedItemId);
+        const item = items.find((i: any) => i.id === selectedItemId);
         if (item) setDefaultRateInput(item.default_price);
       }
     } else if (selectedItemId) {
-        const item = items.find(i => i.id === selectedItemId);
+        const item = items.find((i: any) => i.id === selectedItemId);
         if (item) setDefaultRateInput(item.default_price);
     }
   }, [rates, selectedItemId, items]);
@@ -64,7 +64,7 @@ export function AdminRatesScreen({ navigation }: { navigation: any }) {
     saveRateMutation.mutate({ item_id: selectedItemId, rate_per_kg: defaultRateInput });
   };
 
-  const selectedItem = items.find((i) => i.id === selectedItemId);
+  const selectedItem = items.find((i: any) => i.id === selectedItemId);
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>

@@ -1,4 +1,4 @@
-import { client } from "./client";
+import { api as client } from "./client";
 import type { Item } from "../types/api";
 
 type Page<T> = {

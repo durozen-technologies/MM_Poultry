@@ -39,6 +39,8 @@ class Item(Base, BaseModelMixin):
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    uom: Mapped[str] = mapped_column(String(20), nullable=False, server_default="KG")
+    default_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, server_default=text("0.00"))
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )

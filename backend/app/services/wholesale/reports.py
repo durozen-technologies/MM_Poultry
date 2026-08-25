@@ -16,6 +16,7 @@ from app.models.domain import (
     FarmLoad,
     Payment,
     RetailerDailyOrder,
+    RetailerDailyOrderItem,
     TripWeightLoss,
 )
 from app.models.enums import (
@@ -42,8 +43,11 @@ async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeight
     if load is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
 
+    from app.models.domain import DeliveryStopItem
     delivered = await db.scalar(
-        select(func.coalesce(func.sum(DeliveryStop.delivered_weight_kg), 0)).where(
+        select(func.coalesce(func.sum(DeliveryStopItem.delivered_weight_kg), 0))
+        .join(DeliveryStop, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
+        .where(
             DeliveryStop.delivery_run_id == run_id,
             DeliveryStop.status.in_([DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED]),
         )
@@ -93,14 +97,19 @@ async def complete_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOu
 
 async def report_summary(db: AsyncSession, start: date, end: date) -> ReportSummary:
     ordered = await db.scalar(
-        select(func.coalesce(func.sum(RetailerDailyOrder.requested_kg), 0)).where(
+        select(func.coalesce(func.sum(RetailerDailyOrderItem.requested_kg), 0))
+        .join(RetailerDailyOrder, RetailerDailyOrder.id == RetailerDailyOrderItem.order_id)
+        .where(
             RetailerDailyOrder.order_date >= start,
             RetailerDailyOrder.order_date <= end,
             RetailerDailyOrder.status != OrderStatus.CANCELLED,
         )
     )
+    from app.models.domain import DeliveryBillItem
     delivered = await db.scalar(
-        select(func.coalesce(func.sum(DeliveryBill.weight_kg), 0)).where(
+        select(func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0))
+        .join(DeliveryBill, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
+        .where(
             DeliveryBill.bill_date >= start,
             DeliveryBill.bill_date <= end,
         )

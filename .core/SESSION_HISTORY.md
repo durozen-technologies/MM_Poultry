@@ -684,3 +684,48 @@
 [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 3 : 0 0 + 0 5 : 3 0 ]   F i x e d   S Q L A l c h e m y   A t t r i b u t e E r r o r   i n   b a c k e n d   m o d e l s   a n d   b i l l i n g / o r d e r s   s e r v i c e s .   A d d e d   m i s s i n g   ' i t e m s '   r e l a t i o n s h i p s   f o r   R e t a i l e r D a i l y O r d e r ,   D e l i v e r y S t o p ,   D e l i v e r y B i l l   i n   d o m a i n . p y .   R e n a m e d   d a i l y _ o r d e r _ i d   t o   o r d e r _ i d   f o r   R e t a i l e r D a i l y O r d e r I t e m   i n   b i l l i n g . p y   a n d   o r d e r s . p y .   A d d e d   n e w   i t e m s   t a b l e s   t o   t e n a n t _ s c h e m a . p y   a n d   r a n   s c h e m a   f i x .  
  [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 5 : 3 0 + 0 5 : 3 0 ]   F i x e d   m i s s i n g   i m p o r t   ' r e l a t i o n s h i p '   i n   d o m a i n . p y   a n d   m i s s i n g   i m p o r t   ' O p s D a s h b o a r d '   i n   b i l l i n g . p y .  
  
+[2026-08-25T09:19:17+05:30] Executed git pull as requested by the user, updating 33 files.
+### [2026-08-25 05:18:00] Fixed Delivery test assertions and Alembic history
+- **Request:** "Fix it" (resolve integration test failures and Alembic inconsistency).
+- **Action:** 
+  - Traced `AttributeError` for `delivered_weight_kg` in `reports.py` and updated query to join `DeliveryStopItem`.
+  - Identified `test_delivery_weigh_and_bill` assertion failure was due to missing `item_id` in test rate payload. Added `item_id` to `client.put("/api/v1/admin/rates")`.
+  - All 88 backend tests now pass successfully.
+  - Investigated Alembic inconsistency: Found `TENANT_MIGRATION_HEAD` in `app/db/tenant_schema.py` was hardcoded to an invalid revision `0003_user_profile_fields`. Updated it to the correct head `a1b2c3d4e5f6` so new tenants get correctly stamped.
+
+### [2026-08-25 05:27:30] Fixed E2E API tests and additional MissingGreenlet
+- **Request:** "fix it" referring to the root `test/` API tests failures.
+- **Action:** 
+  - Updated payloads across the integration test suite in `test/` to match the new `items` JSON structure for weighing and ordering.
+  - Resolved `MissingGreenlet` in `orders.py` caused by `order.items.append()` on a newly created un-loaded instance. Fixed it by letting SQLAlchemy track the item directly and reloading the order with `populate_existing=True`.
+  - All 26 E2E tests in `test/` passed.
+
+### [2026-08-25 06:22:00] Frontend Audit & Refactoring Plan
+- **Request:** "find the frontend issues" using frontend-ui-engineering, code-simplification, ponytail, planning-and-task-breakdown, impeccable.
+- **Action Taken:** Audited frontend files (`delivery-home-screen.tsx`, `retailer-place-order-screen.tsx`, `admin-home-screen.tsx`). Ran `tsc --noEmit` which succeeded, and `impeccable` context script which flagged missing product/design documentation. Generated an implementation plan to decompose fat components, remove inline styling, and fix state management spaghetti.
+- **Next Steps:** Await user approval on the implementation plan, including whether to run `impeccable init` to establish product specs before refactoring the UI.
+
+### [2026-08-25 06:31:00] Frontend Refactoring Execution
+- **Request:** Approval of Frontend Refactoring Plan
+- **Action Taken:** Extracted `hooks/use-delivery-run.ts` from `delivery-home-screen.tsx`, shrinking the UI file from 239 lines down to ~140 lines. Extracted `hooks/use-retailer-cart.ts` from `retailer-place-order-screen.tsx`. Created `components/metric-card.tsx` to simplify `admin-home-screen.tsx` and removed inline padding constants in favor of standard Tailwind spacing. Verified the `createReturn` payload aligns with backend schema, and ran `tsc --noEmit` yielding zero errors. Created a `walkthrough.md` to summarize the changes.
+- **Next Steps:** UI components are now decoupled and modular. Ready for further visual updates or new feature requests.
+
+### [2026-08-25 13:18:03] Fix 500 error on retailer profile
+- **Request:** Fix "Failed to load retailer profile [Error: Request failed with status code 500]"
+- **Action Taken:** Found the error in the `admin-retailer-profile-screen.tsx` which calls the `/admin/retailers/{retailer_id}/ledger` endpoint. The backend `get_ledger` service was still trying to read `bill.weight_kg` and `bill.rate_per_kg` which were moved to `bill.items` during the previous backend refactor. Updated the ledger note generation to dynamically sum weight from `bill.items` and determine the rate string. Verified via `pytest test/api/test_retailer_api.py`.
+
+### [2026-08-25 13:29:40] Fix MissingGreenletError in Retailer Ledger
+- **Request:** User reported same 500 error when loading retailer ledger.
+- **Action Taken:** Found that `DeliveryBill.items` was being accessed in an async context without eager loading, resulting in a SQLAlchemy `MissingGreenletError`. Added `.options(selectinload(DeliveryBill.items))` to the `DeliveryBill` query inside `get_ledger` in `backend/app/services/wholesale/ledger.py`. This eagerly loads the items and resolves the 500 error.
+
+### [2026-08-25 13:56:11] Fix Local Alembic and PostgreSQL Missing Columns
+- **Request:** User reported 500 error caused by missing `item_id` column in `retailer_returns`.
+- **Action Taken:** Diagnosed that earlier domain model changes were not migrated to the local PostgreSQL database. Executed direct `ALTER TABLE` commands to add `item_id` and `total_amount` columns to the tenant schemas to unblock local development. Generated the missing Alembic migration manually (`b2c3d4e5f6g7`) in `backend/migrations/versions/tenant` to ensure schema consistency for future deployments.
+
+### [2026-08-25 17:23:43] Restore Accidentally Deleted ledger.py
+- **Request:** User reported a backend server crash (ModuleNotFoundError for `app.services.wholesale.ledger`).
+- **Action Taken:** Discovered `backend/app/services/wholesale/ledger.py` was deleted from the filesystem (likely by an earlier git command or rogue script). Restored the file using `git restore` and immediately re-applied the two critical bug fixes (`selectinload` for `DeliveryBill.items` and the `total_wt` logic) using `replace_file_content`. Confirmed local tests pass.
+
+### [2026-08-25 17:27:20] Push Changes
+- **Request:** User requested to push the current branch.
+- **Action Taken:** Preparing to add, commit, and push all recent fixes to the repository.
