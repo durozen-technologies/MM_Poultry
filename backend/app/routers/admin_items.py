@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.future import select
+from sqlalchemy.exc import IntegrityError
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.domain import Item, RetailerItemRate
@@ -20,16 +21,17 @@ async def admin_create_item(
     """Create a new item."""
     new_item = Item(**payload.model_dump())
     # Associate item with organization if applicable, though it's tenant-bound implicitly
-    # Wait, the model Item might have organization_id? Yes, ItemResponse requires it.
-    new_item.organization_id = auth.organization.id if auth.organization else None
     
     auth.db.add(new_item)
-    await auth.db.flush()
+    try:
+        await auth.db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="An item with this name already exists.")
     return ItemResponse.model_validate(new_item, from_attributes=True)
 
 @router.get("/admin/items", response_model=Page[ItemResponse])
 async def admin_list_items(
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.RETAILER, UserRole.DELIVERY))],
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=100),
     active_only: bool = Query(False),
@@ -64,7 +66,7 @@ async def admin_list_items(
 @router.get("/admin/items/{item_id}", response_model=ItemResponse)
 async def admin_get_item(
     item_id: UUID,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.RETAILER, UserRole.DELIVERY))],
 ):
     """Get an item by ID."""
     item = await auth.db.get(Item, item_id)
@@ -87,7 +89,10 @@ async def admin_update_item(
     for field, value in update_data.items():
         setattr(item, field, value)
     
-    await auth.db.flush()
+    try:
+        await auth.db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="An item with this name already exists.")
     return ItemResponse.model_validate(item, from_attributes=True)
 
 @router.delete("/admin/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -210,6 +210,7 @@ class FarmLoad(Base, BaseModelMixin):
     driver_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
     loaded_weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     total_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)

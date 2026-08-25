@@ -21,6 +21,5 @@ class ItemUpdate(BaseModel):
 
 class ItemResponse(ItemBase):
     id: UUID
-    organization_id: UUID
 
     model_config = ConfigDict(from_attributes=True)

@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "a1b2c3d4e5f6"
+TENANT_MIGRATION_HEAD = "b2c3d4e5f6g7"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -239,8 +239,17 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS owner_name VARCHAR(120)",
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS capacity INTEGER",
-        "ALTER TABLE retailer_daily_orders ADD COLUMN IF NOT EXISTS bird_size VARCHAR(50)",
-        "ALTER TABLE delivery_stops ADD COLUMN IF NOT EXISTS delivered_bird_count INTEGER",
+        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS total_boxes INTEGER",
+        "ALTER TABLE retailer_daily_orders DROP COLUMN IF EXISTS requested_kg",
+        "ALTER TABLE retailer_daily_orders DROP COLUMN IF EXISTS bird_size",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS ordered_kg",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS delivered_weight_kg",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS rate_per_kg",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS gross_amount",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS delivered_bird_count",
+        "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS weight_override_reason",
+        "ALTER TABLE delivery_bills DROP COLUMN IF EXISTS weight_kg",
+        "ALTER TABLE delivery_bills DROP COLUMN IF EXISTS rate_per_kg",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)",
@@ -250,6 +259,8 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailer_daily_orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(32)",
         "ALTER TABLE retailer_item_rates ADD COLUMN IF NOT EXISTS item_id UUID",
         "ALTER TABLE retailer_returns ADD COLUMN IF NOT EXISTS item_id UUID",
+        "ALTER TABLE items ADD COLUMN IF NOT EXISTS uom VARCHAR(20) NOT NULL DEFAULT 'KG'",
+        "ALTER TABLE items ADD COLUMN IF NOT EXISTS default_price NUMERIC(12,2) NOT NULL DEFAULT 0.00",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))

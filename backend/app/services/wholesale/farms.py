@@ -130,6 +130,7 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
         driver_user_id=payload.driver_user_id,
         loaded_weight_kg=q_kg(payload.loaded_weight_kg),
         bird_count=payload.bird_count,
+        total_boxes=payload.total_boxes,
         rate_per_kg=payload.rate_per_kg,
         total_amount=payload.total_amount,
         paid_amount=payload.paid_amount,
