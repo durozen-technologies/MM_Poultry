@@ -15,6 +15,19 @@ class DeliveryRunCreate(BaseModel):
     run_date: IstDateOptional = None
 
 
+class DeliveryStopItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: UUID
+    delivery_stop_id: UUID
+    item_id: UUID
+    ordered_kg: Decimal
+    delivered_weight_kg: Decimal | None = None
+    rate_per_kg: Decimal
+    gross_amount: Decimal | None = None
+    delivered_bird_count: int | None = None
+
+
 class DeliveryStopOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -23,14 +36,10 @@ class DeliveryStopOut(BaseModel):
     retailer_id: UUID
     daily_order_id: UUID | None
     sequence: int
-    ordered_kg: Decimal
-    delivered_weight_kg: Decimal | None
-    rate_per_kg: Decimal
-    gross_amount: Decimal | None
     status: DeliveryStopStatus
-    delivered_bird_count: int | None = None
     retailer_name: str | None = None
     shop_name: str | None = None
+    items: list[DeliveryStopItemOut] = []
 
 
 class DeliveryRunOut(BaseModel):
@@ -45,8 +54,13 @@ class DeliveryRunOut(BaseModel):
     stops: list[DeliveryStopOut] = []
 
 
-class WeighRequest(BaseModel):
+class WeighItemRequest(BaseModel):
+    item_id: UUID
     delivered_weight_kg: Decimal = Field(gt=0)
+    delivered_bird_count: int | None = None
+
+
+class WeighRequest(BaseModel):
+    items: list[WeighItemRequest]
     scale_device_id: str | None = None
     weight_override_reason: str | None = None
-    delivered_bird_count: int | None = None

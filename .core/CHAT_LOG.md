@@ -746,3 +746,24 @@ All backend APIs are heavily covered for the happy paths, exceptions, and valida
 ### [2026-08-24 16:45:00] Fix CI Pipeline
 **User**: Fix it (provided CI logs showing mypy and postgres errors)
 **Agent**: Updated `pyproject.toml` to include `mypy` in dev dependencies and updated `.github/workflows/backend-ci.yml` with the correct `pg_isready -U postgres` health check flag. Validated mypy locally and pushed to `origin/main`.
+
+### [2026-08-25 07:02:00] Continuation of Multi-Item wholesale system
+- Resolved lembic migration mismatch by updating 	enant_schema.py natively instead of relying on broken autogenerate histories.
+- Ran migrate.py to add tables: items, etailer_daily_order_items, delivery_stop_items, delivery_bill_items, and updated item_id in rates.
+- Added Pydantic schemas for Item in pp/schemas/item.py.
+- Added API endpoints in pp/routers/admin_items.py and included in pi_router.
+- Updated RateUpsert and RateOut schemas to use item_id.
+- Refactored pp/services/wholesale/rates.py to filter rates by item_id and added fallback to default_price.
+
+### [2026-08-25 07:11:00] Fixed backend error & completed backend logic
+- User reported an ImportError caused by using \get_db\ instead of \AuthContext\ in \dmin_items.py\. Fixed it.
+- Updated all schema payloads (\DailyOrderCreate\, \WeighRequest\) and response schemas in \order.py\, \delivery.py\, \illing.py\ to support multiple items.
+- Rewrote \orders.py\, \delivery_runs.py\, \illing.py\ to loop through \DeliveryStopItem\ and \DeliveryBillItem\ correctly.
+- Adjusted \ops_dashboard\ to avoid double counting totals from the new line items table.
+
+### [2026-08-25 07:24:22] Update Frontend Screens
+- **User:** where the frontend upadation
+- **Agent:** Replaced UI code in place-order, delivery, and billing screens to handle new item structures. Logged tasks and closed out the frontend update.
+[ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 3 : 0 0 + 0 5 : 3 0 ]   R a n   g r e p _ s e a r c h   a n d   G e t - C o n t e n t   t o   i n s p e c t   a p p / d b / t e n a n t _ s c h e m a . p y ,   a p p / m o d e l s / d o m a i n . p y ,   a p p / s e r v i c e s / w h o l e s a l e / b i l l i n g . p y ,   a p p / s e r v i c e s / w h o l e s a l e / o r d e r s . p y .   M o d i f i e d   t e n a n t _ s c h e m a . p y   t o   a d d   m i s s i n g   m u l t i - i t e m   t a b l e s .   R e - r a n   p y t h o n   f i x _ a l e m b i c . p y .   A d d e d   r e l a t i o n s h i p   ' i t e m s '   t o   R e t a i l e r D a i l y O r d e r ,   D e l i v e r y S t o p ,   D e l i v e r y B i l l   i n   d o m a i n . p y .   F i x e d   i n c o r r e c t   p a r a m e t e r   ' d a i l y _ o r d e r _ i d '   t o   ' o r d e r _ i d '   i n   o r d e r s . p y   a n d   b i l l i n g . p y .  
+ [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 5 : 3 0 + 0 5 : 3 0 ]   A d d r e s s e d   N a m e E r r o r   b y   i m p o r t i n g   ' r e l a t i o n s h i p '   i n   d o m a i n . p y .   A d d r e s s e d   I D E   i s s u e   f o r   ' O p s D a s h b o a r d '   m i s s i n g   n a m e   b y   i m p o r t i n g   i t   i n   b i l l i n g . p y .  
+ 

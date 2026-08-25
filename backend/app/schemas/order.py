@@ -9,8 +9,24 @@ from app.models.enums import OrderStatus
 from app.schemas.dates import IstDate
 
 
-class DailyOrderCreate(BaseModel):
+class OrderItemCreate(BaseModel):
+    item_id: UUID
     requested_kg: Decimal = Field(gt=0)
+    bird_size: str | None = None
+    notes: str | None = None
+
+
+class DailyOrderCreate(BaseModel):
+    items: list[OrderItemCreate]
+
+
+class OrderItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    daily_order_id: UUID
+    item_id: UUID
+    requested_kg: Decimal
     bird_size: str | None = None
     notes: str | None = None
 
@@ -22,16 +38,14 @@ class DailyOrderOut(BaseModel):
     retailer_id: UUID
     order_date: IstDate
     order_number: str | None = None
-    requested_kg: Decimal
-    bird_size: str | None = None
-    notes: str | None
     status: OrderStatus
     retailer_name: str | None = None
     shop_name: str | None = None
+    
+    items: list[OrderItemOut] = []
 
 
 class TodayOrdersResponse(BaseModel):
     items: list[DailyOrderOut]
-    total_requested_kg: Decimal
     has_more: bool = False
     next_cursor: str | None = None

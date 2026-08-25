@@ -25,6 +25,7 @@ import { AdminReportsScreen } from "../screens/admin/admin-reports-screen";
 import { AdminExpensesScreen } from "../screens/admin/admin-expenses-screen";
 import { AdminAddExpenseScreen } from "../screens/admin/admin-add-expense-screen";
 import { AdminRetailerPortalAccessScreen } from "../screens/admin/admin-retailer-portal-access-screen";
+import { AdminItemsScreen } from "../screens/admin/admin-items-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
@@ -142,6 +143,7 @@ export function AppNavigator() {
         ) : user.role === "ADMIN" ? (
           <>
             <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
+            <Stack.Screen name="Items" component={AdminItemsScreen} />
             <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
             <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
             <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />

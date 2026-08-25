@@ -5,17 +5,20 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import today_ist
 from app.models.domain import (
     OrderSequence,
     RetailerDailyOrder,
+    RetailerDailyOrderItem,
+    Retailer
 )
 from app.models.enums import (
     OrderStatus,
 )
-from app.schemas import (
+from app.schemas.order import (
     DailyOrderCreate,
     DailyOrderOut,
     TodayOrdersResponse,
@@ -47,7 +50,9 @@ async def upsert_today_order(
 ) -> DailyOrderOut:
     day = today_ist()
     existing = await db.scalar(
-        select(RetailerDailyOrder).where(
+        select(RetailerDailyOrder)
+        .options(selectinload(RetailerDailyOrder.items))
+        .where(
             RetailerDailyOrder.retailer_id == retailer_id,
             RetailerDailyOrder.order_date == day,
         )
@@ -55,26 +60,48 @@ async def upsert_today_order(
     if existing:
         if existing.status == OrderStatus.CANCELLED:
             existing.status = OrderStatus.PLACED
-        existing.requested_kg = q_kg(payload.requested_kg)
-        existing.bird_size = payload.bird_size
-        existing.notes = payload.notes
         if not existing.order_number:
             existing.order_number = await _next_order_number(db, day)
         order = existing
+        
+        # Clear existing items and replace with new cart payload
+        for item in existing.items:
+            await db.delete(item)
+        existing.items.clear()
+        await db.flush()
     else:
         order_number = await _next_order_number(db, day)
         order = RetailerDailyOrder(
             retailer_id=retailer_id,
             order_date=day,
             order_number=order_number,
-            requested_kg=q_kg(payload.requested_kg),
-            bird_size=payload.bird_size,
-            notes=payload.notes,
             status=OrderStatus.PLACED,
             created_by_user_id=user_id,
         )
         db.add(order)
+        await db.flush()
+        
+    for item_in in payload.items:
+        order_item = RetailerDailyOrderItem(
+            order_id=order.id,
+            item_id=item_in.item_id,
+            requested_kg=q_kg(item_in.requested_kg),
+            bird_size=item_in.bird_size,
+            notes=item_in.notes
+        )
+        db.add(order_item)
+        order.items.append(order_item)
+
     await db.flush()
+    
+    # Reload to ensure all relationships are fresh
+    order = await db.scalar(
+        select(RetailerDailyOrder)
+        .options(selectinload(RetailerDailyOrder.items))
+        .where(RetailerDailyOrder.id == order.id)
+    )
+    assert order is not None
+    
     retailer = await get_retailer(db, retailer_id)
     out = DailyOrderOut.model_validate(order, from_attributes=True)
     out.retailer_name = retailer.name
@@ -85,7 +112,9 @@ async def upsert_today_order(
 async def get_today_order_for_retailer(db: AsyncSession, retailer_id: UUID) -> DailyOrderOut | None:
     day = today_ist()
     order = await db.scalar(
-        select(RetailerDailyOrder).where(
+        select(RetailerDailyOrder)
+        .options(selectinload(RetailerDailyOrder.items))
+        .where(
             RetailerDailyOrder.retailer_id == retailer_id,
             RetailerDailyOrder.order_date == day,
         )
@@ -102,10 +131,9 @@ async def get_today_order_for_retailer(db: AsyncSession, retailer_id: UUID) -> D
 async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
     day = today_ist()
 
-    from app.models.domain import Retailer
-
     res = await db.execute(
         select(RetailerDailyOrder, Retailer.name, Retailer.shop_name)
+        .options(selectinload(RetailerDailyOrder.items))
         .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
         .where(
             RetailerDailyOrder.order_date == day,
@@ -121,6 +149,7 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
         out.retailer_name = r_name
         out.shop_name = r_shop
         items.append(out)
-        total += order.requested_kg
+        for i in order.items:
+            total += i.requested_kg
 
     return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total))

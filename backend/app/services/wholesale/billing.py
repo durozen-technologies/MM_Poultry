@@ -6,18 +6,22 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import now_ist, today_ist
 from app.models.domain import (
     BillSequence,
     DeliveryBill,
+    DeliveryBillItem,
     DeliveryRun,
     DeliveryStop,
+    DeliveryStopItem,
     FarmLoad,
     Payment,
     Retailer,
     RetailerDailyOrder,
+    RetailerDailyOrderItem,
 )
 from app.models.enums import (
     DeliveryStopStatus,
@@ -26,16 +30,16 @@ from app.models.enums import (
     PrintStatus,
     UserRole,
 )
-from app.schemas import (
+from app.schemas.billing import (
     BillCommitRequest,
+    BillItemPreviewOut,
     BillPreviewOut,
     BillPreviewRequest,
     DeliveryBillOut,
-    DeliveryStopOut,
-    OpsDashboard,
     PrintStatusUpdate,
-    WeighRequest,
 )
+from app.schemas.delivery import WeighRequest, DeliveryStopOut
+from app.schemas.report import OpsDashboard
 from app.services.wholesale.common import ZERO, _get_org_settings, q_kg, q_money
 from app.services.wholesale.delivery_runs import _stop_out
 from app.services.wholesale.retailers import get_retailer
@@ -48,7 +52,11 @@ async def weigh_stop(
     *,
     actor_role: UserRole,
 ) -> DeliveryStopOut:
-    stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.id == stop_id))
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
+    )
     if stop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
     if stop.status in {DeliveryStopStatus.BILLED, DeliveryStopStatus.SKIPPED}:
@@ -58,11 +66,15 @@ async def weigh_stop(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin may override weight with reason",
         )
-    stop.delivered_weight_kg = q_kg(payload.delivered_weight_kg)
-    stop.scale_device_id = payload.scale_device_id
-    stop.weight_override_reason = payload.weight_override_reason
-    stop.delivered_bird_count = payload.delivered_bird_count
-    stop.gross_amount = q_money(stop.delivered_weight_kg * stop.rate_per_kg)
+    
+    payload_item_map = {pi.item_id: pi for pi in payload.items}
+    for item in stop.items:
+        pi = payload_item_map.get(item.item_id)
+        if pi:
+            item.delivered_weight_kg = q_kg(pi.delivered_weight_kg)
+            item.delivered_bird_count = pi.delivered_bird_count
+            item.gross_amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
+    
     stop.status = DeliveryStopStatus.WEIGHED
     stop.weighed_at = now_ist()
     await db.flush()
@@ -70,12 +82,24 @@ async def weigh_stop(
 
 
 def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillPreviewOut:
-    if stop.delivered_weight_kg is None or stop.gross_amount is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop not weighed")
+    items_out = []
+    total_amount = ZERO
+    for item in stop.items:
+        if item.delivered_weight_kg is None or item.gross_amount is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop items not weighed fully")
+        total_amount += item.gross_amount
+        items_out.append(
+            BillItemPreviewOut(
+                item_id=item.item_id,
+                weight_kg=item.delivered_weight_kg,
+                rate_per_kg=item.rate_per_kg,
+                amount=item.gross_amount
+            )
+        )
+    
     cash = q_money(payload.cash_payment)
     upi = q_money(payload.upi_payment)
-    total = q_money(stop.gross_amount)
-    balance = q_money(total - cash - upi)
+    balance = q_money(total_amount - cash - upi)
     if balance < ZERO:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,9 +108,8 @@ def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillP
     return BillPreviewOut(
         stop_id=stop.id,
         retailer_id=stop.retailer_id,
-        weight_kg=stop.delivered_weight_kg,
-        rate_per_kg=stop.rate_per_kg,
-        total_amount=total,
+        items=items_out,
+        total_amount=total_amount,
         cash_payment=cash,
         upi_payment=upi,
         balance_amount=balance,
@@ -96,7 +119,11 @@ def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillP
 async def preview_bill(
     db: AsyncSession, stop_id: UUID, payload: BillPreviewRequest
 ) -> BillPreviewOut:
-    stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.id == stop_id))
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
+    )
     if stop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
     if stop.status != DeliveryStopStatus.WEIGHED and stop.status != DeliveryStopStatus.BILLED:
@@ -120,23 +147,29 @@ async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
 async def commit_bill(
     db: AsyncSession, stop_id: UUID, payload: BillCommitRequest
 ) -> DeliveryBillOut:
-    """Persist bill first (PRINT_PENDING allowed), then client prints and PATCHes status.
-
-    checkout_id makes retries idempotent across network blips.
-    """
-    stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.id == stop_id))
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
+    )
     if stop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
 
     checkout_id = (payload.checkout_id or "").strip() or str(uuid4())
 
     by_checkout = await db.scalar(
-        select(DeliveryBill).where(DeliveryBill.checkout_id == checkout_id)
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.checkout_id == checkout_id)
     )
     if by_checkout:
         return DeliveryBillOut.model_validate(by_checkout, from_attributes=True)
 
-    existing = await db.scalar(select(DeliveryBill).where(DeliveryBill.delivery_stop_id == stop_id))
+    existing = await db.scalar(
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.delivery_stop_id == stop_id)
+    )
     if existing:
         return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
@@ -159,22 +192,21 @@ async def commit_bill(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Credit limit exceeded (limit ₹{retailer.credit_limit}, "
-                f"would be ₹{q_money(retailer.credit_balance + preview.balance_amount)})"
+                f"Credit limit exceeded (limit ,1{retailer.credit_limit}, "
+                f"would be ,1{q_money(retailer.credit_balance + preview.balance_amount)})"
             ),
         )
 
     bill_date = today_ist()
     bill_number = await _next_bill_number(db, bill_date)
     print_status = payload.print_status or PrintStatus.PENDING
+    
     bill = DeliveryBill(
         bill_number=bill_number,
         checkout_id=checkout_id,
         delivery_stop_id=stop.id,
         retailer_id=stop.retailer_id,
         bill_date=bill_date,
-        weight_kg=preview.weight_kg,
-        rate_per_kg=preview.rate_per_kg,
         total_amount=preview.total_amount,
         cash_payment=preview.cash_payment,
         upi_payment=preview.upi_payment,
@@ -182,6 +214,17 @@ async def commit_bill(
         print_status=print_status,
     )
     db.add(bill)
+    await db.flush()
+    
+    for prev_item in preview.items:
+        bill_item = DeliveryBillItem(
+            delivery_bill_id=bill.id,
+            item_id=prev_item.item_id,
+            weight_kg=prev_item.weight_kg,
+            rate_per_kg=prev_item.rate_per_kg,
+            amount=prev_item.amount,
+        )
+        db.add(bill_item)
 
     retailer.credit_balance = q_money(retailer.credit_balance + preview.balance_amount)
 
@@ -214,13 +257,23 @@ async def commit_bill(
         payment.delivery_bill_id = bill.id
 
     await db.flush()
+    
+    bill = await db.scalar(
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.id == bill.id)
+    )
     return DeliveryBillOut.model_validate(bill, from_attributes=True)
 
 
 async def update_bill_print_status(
     db: AsyncSession, bill_id: UUID, payload: PrintStatusUpdate
 ) -> DeliveryBillOut:
-    bill = await db.scalar(select(DeliveryBill).where(DeliveryBill.id == bill_id))
+    bill = await db.scalar(
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.id == bill_id)
+    )
     if bill is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found")
     bill.print_status = payload.print_status
@@ -235,9 +288,11 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     order_res = (
         await db.execute(
             select(
-                func.count(RetailerDailyOrder.id),
-                func.coalesce(func.sum(RetailerDailyOrder.requested_kg), 0),
-            ).where(RetailerDailyOrder.order_date == day)
+                func.count(func.distinct(RetailerDailyOrder.id)),
+                func.coalesce(func.sum(RetailerDailyOrderItem.requested_kg), 0),
+            )
+            .outerjoin(RetailerDailyOrderItem, RetailerDailyOrder.id == RetailerDailyOrderItem.order_id)
+            .where(RetailerDailyOrder.order_date == day)
         )
     ).first()
 
@@ -254,14 +309,25 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     bill_row = (
         await db.execute(
             select(
-                func.coalesce(func.sum(DeliveryBill.weight_kg), 0),
+                func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0),
+                func.coalesce(func.sum(DeliveryBill.total_amount), 0), # Note: this might double count if joined naively, so we separate it.
+            ).select_from(DeliveryBill)
+             .outerjoin(DeliveryBillItem, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
+             .where(DeliveryBill.bill_date == day)
+        )
+    ).first()
+    
+    bill_totals = (
+        await db.execute(
+            select(
                 func.coalesce(func.sum(DeliveryBill.total_amount), 0),
                 func.coalesce(func.sum(DeliveryBill.cash_payment + DeliveryBill.upi_payment), 0),
             ).where(DeliveryBill.bill_date == day)
         )
     ).first()
 
-    del_weight_kg, del_total_amt, del_coll = bill_row or (ZERO, ZERO, ZERO)
+    del_weight_kg = bill_row[0] if bill_row else ZERO
+    del_total_amt, del_coll = bill_totals or (ZERO, ZERO)
     delivered_kg = q_kg(del_weight_kg)
     total_sales = q_money(del_total_amt)
     total_collection = q_money(del_coll)
@@ -337,7 +403,11 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
 
 
 async def mark_whatsapp_shared(db: AsyncSession, bill_id: UUID) -> DeliveryBillOut:
-    bill = await db.scalar(select(DeliveryBill).where(DeliveryBill.id == bill_id))
+    bill = await db.scalar(
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.id == bill_id)
+    )
     if bill is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found")
     bill.whatsapp_shared_at = now_ist()

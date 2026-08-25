@@ -1,11 +1,21 @@
 import { Text, View, Pressable, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { apiItems } from "../../api/items";
 import type { DailyOrder } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
 
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const order = route.params?.order as DailyOrder;
+
+  const { data: itemsPage } = useQuery({
+    queryKey: ["admin_items"],
+    queryFn: () => apiItems.list(),
+  });
+  
+  const allItems = itemsPage?.items || [];
+  const getItemName = (id: string) => allItems.find((i) => i.id === id)?.name || "Unknown Item";
 
   if (!order) {
     return (
@@ -39,13 +49,26 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           </View>
 
           <DetailRow icon="event" label="Order Date" value={formatIstDate(order.order_date)} />
-          <DetailRow icon="scale" label="Requested" value={`${order.requested_kg} kg`} />
-          <DetailRow icon="egg" label="Bird Size" value={order.bird_size || "Any"} />
-          <DetailRow icon="notes" label="Notes" value={order.notes || "—"} />
+          <DetailRow icon="scale" label="Total Requested" value={`${order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg`} />
         </View>
 
+        <Text className="font-headline-sm text-on-surface font-semibold mt-6 mb-3">Order Items</Text>
+        
+        {order.items?.map((item) => (
+          <View key={item.id} className="bg-surface-container-lowest rounded-xl p-4 mb-2 border border-outline-variant/20">
+             <Text className="font-body-lg text-on-surface font-semibold mb-2">
+               {getItemName(item.item_id)}
+             </Text>
+             <DetailRow icon="scale" label="Requested" value={`${item.requested_kg} kg`} />
+             <DetailRow icon="egg" label="Bird Size" value={item.bird_size || "Any"} />
+             {item.notes ? (
+                <DetailRow icon="notes" label="Notes" value={item.notes} />
+             ) : null}
+          </View>
+        ))}
+
         <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="bg-primary h-12 rounded-xl items-center justify-center mt-4"
+          className="bg-primary h-12 rounded-xl items-center justify-center mt-6 mb-8"
           onPress={() => navigation.navigate("DeliveryRuns")}
         >
           <Text className="text-on-primary font-semibold">Create Delivery Run</Text>

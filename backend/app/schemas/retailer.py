@@ -74,6 +74,7 @@ class RetailerPortalUserCreate(BaseModel):
 
 class RateUpsert(BaseModel):
     retailer_id: UUID | None = None
+    item_id: UUID
     rate_per_kg: Decimal
     effective_from: IstDateOptional = None
     effective_to: IstDateOptional = None
@@ -84,6 +85,7 @@ class RateOut(BaseModel):
 
     id: UUID
     retailer_id: UUID | None
+    item_id: UUID
     rate_per_kg: Decimal
     effective_from: IstDate
     effective_to: IstDateOptional = None

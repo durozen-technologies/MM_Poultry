@@ -60,15 +60,19 @@ def _tenant_table_names() -> set[str]:
     return {
         "users",
         "retailers",
+        "items",
         "retailer_item_rates",
         "retailer_daily_orders",
+        "retailer_daily_order_items",
         "farms",
         "vehicles",
         "org_settings",
         "farm_loads",
         "delivery_runs",
         "delivery_stops",
+        "delivery_stop_items",
         "delivery_bills",
+        "delivery_bill_items",
         "payments",
         "trip_weight_losses",
         "bill_sequences",
@@ -244,6 +248,8 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE",
         "ALTER TABLE payments ADD COLUMN IF NOT EXISTS is_credit BOOLEAN NOT NULL DEFAULT false",
         "ALTER TABLE retailer_daily_orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(32)",
+        "ALTER TABLE retailer_item_rates ADD COLUMN IF NOT EXISTS item_id UUID",
+        "ALTER TABLE retailer_returns ADD COLUMN IF NOT EXISTS item_id UUID",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
@@ -256,6 +262,10 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                 "expenses",
                 "retailer_returns",
                 "order_sequences",
+                "items",
+                "retailer_daily_order_items",
+                "delivery_stop_items",
+                "delivery_bill_items",
             }:
                 await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:

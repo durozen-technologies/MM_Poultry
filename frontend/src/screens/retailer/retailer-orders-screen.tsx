@@ -90,10 +90,10 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
             <View className="flex-row justify-between items-start mb-2">
               <View>
                 <Text className="font-headline-sm text-on-surface font-semibold">
-                  {order.requested_kg} kg
+                  {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg Total
                 </Text>
                 <Text className="font-body-md text-on-surface-variant">
-                  {formatIstDate(order.order_date)} · {order.bird_size || "Any"}
+                  {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
                 </Text>
               </View>
               <View className="bg-surface-variant px-3 py-1 rounded-full">

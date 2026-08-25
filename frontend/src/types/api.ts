@@ -39,6 +39,14 @@ export type Retailer = {
   is_active: boolean;
 };
 
+export type Item = {
+  id: string;
+  name: string;
+  description?: string | null;
+  default_price: string;
+  is_active: boolean;
+};
+
 export type OrderStatus =
   | "PLACED"
   | "ACKNOWLEDGED"
@@ -46,17 +54,24 @@ export type OrderStatus =
   | "FULFILLED"
   | "CANCELLED";
 
+export type OrderItem = {
+  id: string;
+  daily_order_id: string;
+  item_id: string;
+  requested_kg: string;
+  bird_size?: string | null;
+  notes?: string | null;
+};
+
 export type DailyOrder = {
   id: string;
   retailer_id: string;
   order_date: string;
   order_number?: string | null;
-  requested_kg: string;
-  bird_size?: string | null;
-  notes?: string | null;
   status: OrderStatus;
   retailer_name?: string | null;
   shop_name?: string | null;
+  items: OrderItem[];
 };
 
 export type DailyOrderOut = DailyOrder;
@@ -98,6 +113,7 @@ export type FarmLoad = {
 
 export type Rate = {
   id: string;
+  item_id: string;
   retailer_id: string | null;
   rate_per_kg: string;
   effective_from: string;
@@ -142,20 +158,27 @@ export type Vehicle = {
   is_active: boolean;
 };
 
+export type DeliveryStopItem = {
+  id: string;
+  delivery_stop_id: string;
+  item_id: string;
+  ordered_kg: string;
+  delivered_weight_kg: string | null;
+  rate_per_kg: string;
+  gross_amount: string | null;
+  delivered_bird_count?: number | null;
+};
+
 export type DeliveryStop = {
   id: string;
   delivery_run_id: string;
   retailer_id: string;
   daily_order_id?: string | null;
   sequence: number;
-  ordered_kg: string;
-  delivered_weight_kg: string | null;
-  rate_per_kg: string;
-  gross_amount: string | null;
   status: string;
-  delivered_bird_count?: number | null;
   retailer_name?: string | null;
   shop_name?: string | null;
+  items: DeliveryStopItem[];
 };
 
 export type DeliveryRun = {
@@ -168,6 +191,15 @@ export type DeliveryRun = {
   stops: DeliveryStop[];
 };
 
+export type DeliveryBillItem = {
+  id: string;
+  delivery_bill_id: string;
+  item_id: string;
+  weight_kg: string;
+  rate_per_kg: string;
+  amount: string;
+};
+
 export type DeliveryBill = {
   id: string;
   bill_number: string;
@@ -175,14 +207,13 @@ export type DeliveryBill = {
   delivery_stop_id?: string;
   retailer_id?: string;
   bill_date?: string;
-  weight_kg: string;
-  rate_per_kg: string;
   total_amount: string;
   cash_payment: string;
   upi_payment: string;
   balance_amount: string;
   print_status: string;
   whatsapp_shared_at: string | null;
+  items: DeliveryBillItem[];
 };
 
 export type OpsDashboard = {
@@ -271,10 +302,15 @@ export type RetailerProfile = {
   username: string;
 };
 
-export type DailyOrderCreate = {
+export type OrderItemCreate = {
+  item_id: string;
   requested_kg: string;
   bird_size?: string | null;
   notes?: string | null;
+};
+
+export type DailyOrderCreate = {
+  items: OrderItemCreate[];
 };
 
 export type TripWeightLoss = {

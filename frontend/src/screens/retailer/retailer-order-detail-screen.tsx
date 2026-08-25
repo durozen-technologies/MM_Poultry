@@ -3,7 +3,9 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
 import { getRetailerOrder } from "../../api/retailer";
+import { apiItems } from "../../api/items";
 import type { RetailerOrderDetail } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
 
@@ -12,6 +14,13 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
   const [order, setOrder] = useState<RetailerOrderDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const { data: itemsPage } = useQuery({
+    queryKey: ["retailer_items"],
+    queryFn: () => apiItems.list(),
+  });
+  const allItems = itemsPage?.items || [];
+  const getItemName = (id: string) => allItems.find((i) => i.id === id)?.name || "Unknown Item";
 
   const refresh = useCallback(async () => {
     if (!orderId) return;
@@ -33,6 +42,8 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
     }, [refresh])
   );
 
+  const totalKg = order?.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
+
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
@@ -49,20 +60,40 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
           <>
             <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4">
               <Text className="font-headline-md text-on-surface font-semibold">
-                {order.requested_kg} kg
+                {totalKg} kg Total
               </Text>
               <Text className="font-body-md text-on-surface-variant mt-1">
-                {formatIstDate(order.order_date)} · {order.bird_size || "Any"}
+                {formatIstDate(order.order_date)}
               </Text>
               <Text className="font-label-md text-on-surface-variant mt-2">
                 Est. delivery {formatIstDate(order.estimated_delivery_date)}
               </Text>
-              {order.notes ? (
-                <Text className="font-body-md text-on-surface mt-3">Notes: {order.notes}</Text>
-              ) : null}
             </View>
 
-            <Text className="font-headline-sm text-on-surface mb-3">Tracking</Text>
+            <Text className="font-headline-sm text-on-surface mb-3">Order Items</Text>
+            {order.items?.map((item) => (
+              <View key={item.id} className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-3">
+                <Text className="font-body-lg text-on-surface font-semibold mb-2">
+                  {getItemName(item.item_id)}
+                </Text>
+                <View className="flex-row items-center gap-3 py-1">
+                  <MaterialIcons name="scale" size={18} className="text-on-surface-variant" />
+                  <Text className="font-body-md text-on-surface font-semibold">{item.requested_kg} kg</Text>
+                </View>
+                <View className="flex-row items-center gap-3 py-1">
+                  <MaterialIcons name="egg" size={18} className="text-on-surface-variant" />
+                  <Text className="font-body-md text-on-surface">{item.bird_size || "Any"}</Text>
+                </View>
+                {item.notes ? (
+                  <View className="flex-row items-center gap-3 py-1 mt-1 border-t border-surface-variant/30">
+                    <MaterialIcons name="notes" size={18} className="text-on-surface-variant" />
+                    <Text className="font-body-md text-on-surface flex-1">{item.notes}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))}
+
+            <Text className="font-headline-sm text-on-surface mt-2 mb-3">Tracking</Text>
             <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20">
               {order.tracking_stages.map((stage, idx) => (
                 <View key={stage.key} className="flex-row gap-3">

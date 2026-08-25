@@ -663,3 +663,24 @@
   - Added `mypy>=1.11.0` to `[dependency-groups] dev` in `pyproject.toml` so `uv run mypy app/` resolves successfully.
   - Reverted `options` under `postgres` service in `.github/workflows/backend-ci.yml` to use `--health-cmd "pg_isready -U postgres"` because it was defaulting to `root` and causing the database health check to fail.
   - Committed and pushed to `origin/main`.
+
+### [2026-08-25 07:02:00] Generated DB Migration & Added Item endpoints
+- Executed database migrations for multi-item architecture.
+- Created CRUD API endpoints for Items at /items.
+- Updated RetailerItemRate logic and schemas to use item_id.
+- Updated 	ask.md with Phase 1 and 2 completions.
+
+### [2026-08-25 07:11:00] Completed Backend API Refactoring for Multi-Item
+- Fixed ImportError: cannot import name 'get_db' in dmin_items.py by converting to AuthContext.
+- Refactored orders.py to support multi-item cart payload for placing orders (RetailerDailyOrderItem).
+- Refactored delivery_runs.py to support DeliveryStopItem.
+- Refactored illing.py to calculate weights and amounts per DeliveryBillItem instead of flat stop rates.
+
+### [2026-08-25 07:24:09] Frontend Update - Multi-Item Refactoring
+- Completed Phase 4: Refactored \etailer-place-order-screen.tsx\ to support multi-item cart-style orders.
+- Updated \etailer-order-detail-screen.tsx\ and \etailer-orders-screen.tsx\ to show item arrays and sum of quantities.
+- Updated \delivery-home-screen.tsx\ to support weighing individual items and submitting the multi-item payload.
+- Updated \etailer-bill-detail-screen.tsx\ and \etailer-bills-screen.tsx\ to display multiple line items.
+[ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 3 : 0 0 + 0 5 : 3 0 ]   F i x e d   S Q L A l c h e m y   A t t r i b u t e E r r o r   i n   b a c k e n d   m o d e l s   a n d   b i l l i n g / o r d e r s   s e r v i c e s .   A d d e d   m i s s i n g   ' i t e m s '   r e l a t i o n s h i p s   f o r   R e t a i l e r D a i l y O r d e r ,   D e l i v e r y S t o p ,   D e l i v e r y B i l l   i n   d o m a i n . p y .   R e n a m e d   d a i l y _ o r d e r _ i d   t o   o r d e r _ i d   f o r   R e t a i l e r D a i l y O r d e r I t e m   i n   b i l l i n g . p y   a n d   o r d e r s . p y .   A d d e d   n e w   i t e m s   t a b l e s   t o   t e n a n t _ s c h e m a . p y   a n d   r a n   s c h e m a   f i x .  
+ [ 2 0 2 6 - 0 8 - 2 5 T 0 7 : 3 5 : 3 0 + 0 5 : 3 0 ]   F i x e d   m i s s i n g   i m p o r t   ' r e l a t i o n s h i p '   i n   d o m a i n . p y   a n d   m i s s i n g   i m p o r t   ' O p s D a s h b o a r d '   i n   b i l l i n g . p y .  
+ 

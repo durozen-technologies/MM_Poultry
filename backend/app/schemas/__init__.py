@@ -29,6 +29,11 @@ from app.schemas.farm import (
     VehicleOut,
     VehicleUpdate,
 )
+from app.schemas.item import (
+    ItemCreate,
+    ItemResponse,
+    ItemUpdate,
+)
 from app.schemas.ledger import (
     LedgerEntry,
     LedgerOut,
@@ -125,4 +130,7 @@ __all__ = [
     "RetailerOrderDetailOut",
     "RetailerOrdersPage",
     "RetailerProfileOut",
+    "ItemCreate",
+    "ItemUpdate",
+    "ItemResponse",
 ]

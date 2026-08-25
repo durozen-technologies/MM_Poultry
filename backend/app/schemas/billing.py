@@ -14,11 +14,17 @@ class BillPreviewRequest(BaseModel):
     upi_payment: Decimal = Decimal("0.00")
 
 
+class BillItemPreviewOut(BaseModel):
+    item_id: UUID
+    weight_kg: Decimal
+    rate_per_kg: Decimal
+    amount: Decimal
+
+
 class BillPreviewOut(BaseModel):
     stop_id: UUID
     retailer_id: UUID
-    weight_kg: Decimal
-    rate_per_kg: Decimal
+    items: list[BillItemPreviewOut]
     total_amount: Decimal
     cash_payment: Decimal
     upi_payment: Decimal
@@ -32,6 +38,17 @@ class BillCommitRequest(BaseModel):
     checkout_id: str | None = None
 
 
+class DeliveryBillItemOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: UUID
+    delivery_bill_id: UUID
+    item_id: UUID
+    weight_kg: Decimal
+    rate_per_kg: Decimal
+    amount: Decimal
+
+
 class DeliveryBillOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -41,14 +58,13 @@ class DeliveryBillOut(BaseModel):
     delivery_stop_id: UUID
     retailer_id: UUID
     bill_date: IstDate
-    weight_kg: Decimal
-    rate_per_kg: Decimal
     total_amount: Decimal
     cash_payment: Decimal
     upi_payment: Decimal
     balance_amount: Decimal
     print_status: PrintStatus
     whatsapp_shared_at: IstDateTime | None = None
+    items: list[DeliveryBillItemOut] = []
 
 
 class PrintStatusUpdate(BaseModel):

@@ -4,12 +4,14 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.timezone import now_ist, today_ist
 from app.models.domain import (
     DeliveryRun,
     DeliveryStop,
+    DeliveryStopItem,
     FarmLoad,
     Retailer,
     RetailerDailyOrder,
@@ -20,7 +22,7 @@ from app.models.enums import (
     FarmLoadStatus,
     OrderStatus,
 )
-from app.schemas import (
+from app.schemas.delivery import (
     DeliveryRunCreate,
     DeliveryRunOut,
     DeliveryStopOut,
@@ -53,20 +55,35 @@ async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> D
     await db.flush()
 
     for idx, order_id in enumerate(payload.order_ids, start=1):
-        order = await db.scalar(select(RetailerDailyOrder).where(RetailerDailyOrder.id == order_id))
+        order = await db.scalar(
+            select(RetailerDailyOrder)
+            .options(selectinload(RetailerDailyOrder.items))
+            .where(RetailerDailyOrder.id == order_id)
+        )
         if order is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-        rate = await resolve_rate(db, order.retailer_id, run.run_date)
+        
         stop = DeliveryStop(
             delivery_run_id=run.id,
             retailer_id=order.retailer_id,
             daily_order_id=order.id,
             sequence=idx,
-            ordered_kg=order.requested_kg,
-            rate_per_kg=rate,
             status=DeliveryStopStatus.PENDING,
         )
         db.add(stop)
+        await db.flush()
+        
+        for item in order.items:
+            rate = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
+            stop_item = DeliveryStopItem(
+                delivery_stop_id=stop.id,
+                item_id=item.item_id,
+                ordered_kg=item.requested_kg,
+                rate_per_kg=rate,
+            )
+            db.add(stop_item)
+            stop.items.append(stop_item)
+            
         order.status = OrderStatus.ACKNOWLEDGED
 
     load.status = FarmLoadStatus.IN_TRANSIT
@@ -81,6 +98,7 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
 
     stops_res = await db.execute(
         select(DeliveryStop, Retailer.name, Retailer.shop_name)
+        .options(selectinload(DeliveryStop.items))
         .join(Retailer, Retailer.id == DeliveryStop.retailer_id)
         .where(DeliveryStop.delivery_run_id == run.id)
         .order_by(DeliveryStop.sequence.asc())
@@ -121,7 +139,11 @@ async def start_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
 
 
 async def skip_stop(db: AsyncSession, stop_id: UUID) -> DeliveryStopOut:
-    stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.id == stop_id))
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
+    )
     if stop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
     if stop.status == DeliveryStopStatus.BILLED:

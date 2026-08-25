@@ -96,7 +96,7 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
               <View>
                 <Text className="font-headline-sm text-on-surface font-semibold">{bill.bill_number}</Text>
                 <Text className="font-body-md text-on-surface-variant">
-                  {bill.bill_date ? formatIstDate(bill.bill_date) : "—"} · {bill.weight_kg} kg
+                  {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0} kg Total
                 </Text>
               </View>
               <Text className="font-headline-sm text-primary font-semibold">₹{bill.total_amount}</Text>

@@ -18,12 +18,13 @@ from app.schemas import (
 from app.services.wholesale.common import q_money
 
 
-async def resolve_rate(db: AsyncSession, retailer_id: UUID, on_date: date | None = None) -> Decimal:
+async def resolve_rate(db: AsyncSession, item_id: UUID, retailer_id: UUID, on_date: date | None = None) -> Decimal:
     day = on_date or today_ist()
     retailer_rate = await db.scalar(
         select(RetailerItemRate)
         .where(
             RetailerItemRate.retailer_id == retailer_id,
+            RetailerItemRate.item_id == item_id,
             RetailerItemRate.effective_from <= day,
             (RetailerItemRate.effective_to.is_(None)) | (RetailerItemRate.effective_to >= day),
         )
@@ -36,6 +37,7 @@ async def resolve_rate(db: AsyncSession, retailer_id: UUID, on_date: date | None
         select(RetailerItemRate)
         .where(
             RetailerItemRate.retailer_id.is_(None),
+            RetailerItemRate.item_id == item_id,
             RetailerItemRate.effective_from <= day,
             (RetailerItemRate.effective_to.is_(None)) | (RetailerItemRate.effective_to >= day),
         )
@@ -44,6 +46,13 @@ async def resolve_rate(db: AsyncSession, retailer_id: UUID, on_date: date | None
     )
     if default_rate:
         return default_rate.rate_per_kg
+    
+    # Optional fallback to item.default_price if no rate exists
+    from app.models.domain import Item
+    item = await db.get(Item, item_id)
+    if item:
+        return Decimal(str(item.default_price))
+        
     return Decimal("0.00")
 
 
@@ -51,6 +60,7 @@ async def upsert_rate(db: AsyncSession, payload: RateUpsert) -> RateOut:
     day = payload.effective_from or today_ist()
     row = RetailerItemRate(
         retailer_id=payload.retailer_id,
+        item_id=payload.item_id,
         rate_per_kg=q_money(payload.rate_per_kg),
         effective_from=day,
         effective_to=payload.effective_to,

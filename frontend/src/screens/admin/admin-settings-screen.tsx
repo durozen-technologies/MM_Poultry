@@ -12,6 +12,7 @@ type SettingsItem = {
 };
 
 const ITEMS: SettingsItem[] = [
+  { title: "Items", subtitle: "Manage products & prices", icon: "category", screen: "Items" },
   { title: "Rates", subtitle: "Default & retailer-specific rates", icon: "currency-rupee", screen: "Rates" },
   { title: "Vehicles", subtitle: "Fleet & driver details", icon: "local-shipping", screen: "Vehicles" },
   { title: "Delivery Users", subtitle: "Driver app logins", icon: "badge", screen: "DeliveryUsers" },
