@@ -12,7 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
-import type { DailyOrder, LedgerOut } from "../../types/api";
+import { apiItems } from "../../api/items";
+import { listRates, upsertRate } from "../../api/rates";
+import type { DailyOrder, LedgerOut, Rate } from "../../types/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 import { DatePickerField } from "../../components/date-picker-field";
 import { FormField } from "../../components/form-field";
@@ -36,6 +39,40 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const [returnWeight, setReturnWeight] = useState("");
   const [returnRate, setReturnRate] = useState("");
   const [returnReason, setReturnReason] = useState("");
+
+  const queryClient = useQueryClient();
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [customRateInput, setCustomRateInput] = useState("");
+  const [rateMsg, setRateMsg] = useState<string | null>(null);
+
+  const { data: itemsPage, isLoading: loadingItems } = useQuery({
+    queryKey: ["admin_items", { activeOnly: true }],
+    queryFn: () => apiItems.list(true),
+  });
+  const items = itemsPage?.items || [];
+
+  const { data: rates = [], isLoading: loadingRates } = useQuery({
+    queryKey: ["admin_rates"],
+    queryFn: () => listRates(),
+  });
+
+  const saveRateMutation = useMutation({
+    mutationFn: (payload: { item_id: string; retailer_id: string; rate_per_kg: string }) => upsertRate(payload),
+    onSuccess: () => {
+      setRateMsg("Custom rate saved successfully");
+      queryClient.invalidateQueries({ queryKey: ["admin_rates"] });
+      setTimeout(() => setRateMsg(null), 3000);
+    },
+    onError: (e) => {
+      setRateMsg(e instanceof Error ? e.message : "Failed to save rate");
+      setTimeout(() => setRateMsg(null), 3000);
+    }
+  });
+
+  const saveCustomRate = () => {
+    if (!selectedItemId || !customRateInput) return;
+    saveRateMutation.mutate({ item_id: selectedItemId, retailer_id: retailerId, rate_per_kg: customRateInput });
+  };
 
   const refresh = useCallback(async () => {
     try {
@@ -199,16 +236,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               </Text>
               <Text className="font-headline-sm text-on-error-container font-semibold mt-1">₹{bal}</Text>
             </View>
-            <View className="w-40 bg-surface-container-lowest p-3 rounded-2xl shadow-sm flex-col justify-between min-h-[96px] mr-3">
-              <Text className="font-label-md text-secondary uppercase font-semibold text-[10px]">Credit Limit</Text>
-              <Text className="font-headline-sm text-on-surface font-semibold mt-1">₹{retailer.credit_limit || 0}</Text>
-            </View>
           </ScrollView>
         </View>
 
         <View className="bg-surface border-b border-surface-container-high mt-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
-            {["OVERVIEW", "ORDERS", "BILLS", "ACTIONS", "LEDGER"].map((tab) => (
+            {["OVERVIEW", "ORDERS", "BILLS", "RATES", "LEDGER"].map((tab) => (
               <Pressable accessibilityRole="button" accessibilityLabel="Button"
                 key={tab}
                 onPress={() => setActiveTab(tab)}
@@ -260,47 +293,49 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                 <InfoRow label="Notes" value={retailer.notes || "—"} />
               </View>
 
-              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
-                <View className="flex-row items-center gap-2 mb-2">
-                  <MaterialIcons name="security" size={20} className="text-primary" />
-                  <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-                    Portal Access
-                  </Text>
-                </View>
-                {portalMessage && (
-                  <Text className={`font-label-md p-2 rounded ${portalMessage.includes("success") ? "text-primary bg-primary-container" : "text-error bg-error-container"}`}>
-                    {portalMessage}
-                  </Text>
-                )}
-                <View className="flex-col gap-2">
-                  <FormField
-                    label="Username"
-                    placeholder="Username"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={portalUsername}
-                    onChangeText={setPortalUsername}
-                  />
-                  <FormField
-                    label="Password"
-                    placeholder="Password"
-                    secureTextEntry
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={portalPassword}
-                    onChangeText={setPortalPassword}
-                  />
-                  <Pressable accessibilityRole="button" accessibilityLabel="Button"
-                    className="w-full bg-primary h-12 rounded-lg flex items-center justify-center mt-2 active:scale-95"
-                    onPress={createPortalAccount}
-                    disabled={portalLoading}
-                  >
-                    <Text className="text-on-primary font-semibold font-label-md">
-                      {portalLoading ? "Creating..." : "Create Login Account"}
+              {!retailer.has_portal_access && (
+                <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex-col gap-3">
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <MaterialIcons name="security" size={20} className="text-primary" />
+                    <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                      Portal Access
                     </Text>
-                  </Pressable>
+                  </View>
+                  {portalMessage && (
+                    <Text className={`font-label-md p-2 rounded ${portalMessage.includes("success") ? "text-primary bg-primary-container" : "text-error bg-error-container"}`}>
+                      {portalMessage}
+                    </Text>
+                  )}
+                  <View className="flex-col gap-2">
+                    <FormField
+                      label="Username"
+                      placeholder="Username"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={portalUsername}
+                      onChangeText={setPortalUsername}
+                    />
+                    <FormField
+                      label="Password"
+                      placeholder="Password"
+                      secureTextEntry
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={portalPassword}
+                      onChangeText={setPortalPassword}
+                    />
+                    <Pressable accessibilityRole="button" accessibilityLabel="Button"
+                      className="w-full bg-primary h-12 rounded-lg flex items-center justify-center mt-2 active:scale-95"
+                      onPress={createPortalAccount}
+                      disabled={portalLoading}
+                    >
+                      <Text className="text-on-primary font-semibold font-label-md">
+                        {portalLoading ? "Creating..." : "Create Login Account"}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
+              )}
             </View>
           )}
 
@@ -344,73 +379,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             </View>
           )}
 
-          {activeTab === "ACTIONS" && (
-            <View className="flex-col gap-4">
-              <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm">
-                
-                <View className="flex-row bg-surface-container rounded-lg p-1 mb-4">
-                  {(["PAYMENT", "RETURN", "ADJUSTMENT"] as const).map((type) => (
-                    <Pressable
-                      key={type}
-                      onPress={() => setActionType(type)}
-                      className={`flex-1 py-2 items-center justify-center rounded-md ${actionType === type ? "bg-surface shadow-sm" : ""}`}
-                    >
-                      <Text className={`font-label-md font-semibold ${actionType === type ? "text-primary" : "text-on-surface-variant"}`}>
-                        {type}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
 
-                {actionType === "RETURN" ? (
-                  <View className="flex-col gap-3">
-                    <View className="flex-row gap-2">
-                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnWeight} onChangeText={setReturnWeight} placeholder="Weight (kg)" keyboardType="decimal-pad" />
-                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnRate} onChangeText={setReturnRate} placeholder="Rate (₹/kg)" keyboardType="decimal-pad" />
-                    </View>
-                    <TextInput placeholderTextColor="#737373" className="w-full bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={returnReason} onChangeText={setReturnReason} placeholder="Reason (e.g., Spoiled, Dead on arrival)" />
-                    {returnWeight && returnRate ? (
-                      <Text className="text-on-surface-variant font-label-md">Total Credit: ₹{(Number(returnWeight) * Number(returnRate)).toFixed(2)}</Text>
-                    ) : null}
-                  </View>
-                ) : (
-                  <View className="flex-col gap-3">
-                    <DatePickerField label="Date" value={paymentDate} onChange={setPaymentDate} />
-                    <View className="flex-row gap-2">
-                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={cash} onChangeText={setCash} placeholder="Cash (₹)" keyboardType="decimal-pad" />
-                      <TextInput placeholderTextColor="#737373" className="flex-1 bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md text-on-surface" value={upi} onChangeText={setUpi} placeholder="UPI (₹)" keyboardType="decimal-pad" />
-                    </View>
-                    {actionType === "ADJUSTMENT" && (
-                      <Pressable className="flex-row items-center gap-2 mt-2" onPress={() => setIsCredit(!isCredit)}>
-                        <View className={`w-5 h-5 rounded border ${isCredit ? "bg-primary border-primary" : "border-outline"} items-center justify-center`}>
-                          {isCredit && <MaterialIcons name="check" size={16} color="white" />}
-                        </View>
-                        <Text className="text-on-surface font-body-md">Credit Balance (Reduces Outstanding)</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                )}
-
-                <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary-container h-12 mt-4 rounded-lg items-center justify-center active:scale-95" onPress={collect}>
-                  <Text className="text-on-primary-container font-semibold text-label-md">
-                    Submit {actionType}
-                  </Text>
-                </Pressable>
-              </View>
-
-              {actionEntries.map((item, idx) => (
-                <View key={idx} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 flex-row justify-between">
-                  <View>
-                    <Text className="font-body-md text-on-surface-variant">{formatIstDate(item.entry_date)}</Text>
-                    <Text className="font-label-md text-on-surface font-semibold mt-1">{item.entry_type} {item.notes ? ` - ${item.notes}` : ""}</Text>
-                  </View>
-                  <Text className={`font-body-md font-semibold ${item.entry_type === "RETURN" || Number(item.credit) > 0 ? "text-primary" : "text-error"}`}>
-                    ₹{item.entry_type === "RETURN" || Number(item.credit) > 0 ? item.credit : item.debit}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
 
           {activeTab === "LEDGER" && (
             <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm">
@@ -429,6 +398,86 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               {entries.length === 0 && (
                 <Text className="text-on-surface-variant text-center py-4">No ledger entries found.</Text>
               )}
+            </View>
+          )}
+
+          {activeTab === "RATES" && (
+            <View className="flex-col gap-4">
+              <View className="bg-surface border border-outline-variant/20 rounded-2xl p-4">
+                <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-3">Select Item</Text>
+                {loadingItems ? (
+                  <MaterialIcons name="loop" size={24} className="text-primary animate-spin" />
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pb-2">
+                    {items.map((item) => (
+                      <Pressable accessibilityRole="button"
+                        key={item.id}
+                        onPress={() => {
+                          setSelectedItemId(item.id);
+                          const existingRate = rates.find((r) => r.item_id === item.id && r.retailer_id === retailerId);
+                          setCustomRateInput(existingRate ? String(existingRate.rate_per_kg) : "");
+                        }}
+                        className={`px-4 py-2 rounded-full mr-2 border ${
+                          selectedItemId === item.id 
+                            ? "bg-primary border-primary" 
+                            : "bg-surface border-outline-variant"
+                        }`}
+                      >
+                        <Text className={`font-semibold ${
+                          selectedItemId === item.id ? "text-on-primary" : "text-on-surface"
+                        }`}>
+                          {item.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+
+              {selectedItemId && (
+                <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20">
+                  <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-3">
+                    Custom Rate (₹/kg)
+                  </Text>
+                  {rateMsg && (
+                    <Text className={`mb-3 font-semibold ${rateMsg.includes("success") ? "text-primary" : "text-error"}`}>
+                      {rateMsg}
+                    </Text>
+                  )}
+                  <TextInput
+                    placeholderTextColor="#737373"
+                    className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-body-md mb-3 text-on-surface"
+                    value={customRateInput}
+                    onChangeText={setCustomRateInput}
+                    placeholder="Enter special rate"
+                    keyboardType="decimal-pad"
+                  />
+                  <Pressable accessibilityRole="button" className="bg-primary h-11 rounded-lg items-center justify-center active:scale-95" onPress={saveCustomRate}>
+                    <Text className="text-on-primary font-semibold">Save Custom Rate</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              <Text className="font-headline-sm text-on-surface font-semibold mt-2">Active Rates</Text>
+              <View className="flex-col gap-2">
+                {items.map((item) => {
+                  const customRate = rates.find((r) => r.item_id === item.id && r.retailer_id === retailerId);
+                  const globalRate = rates.find((r) => r.item_id === item.id && !r.retailer_id);
+                  if (!customRate && !globalRate) return null;
+
+                  return (
+                    <View key={item.id} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 flex-row justify-between items-center">
+                      <View>
+                        <Text className="font-body-md text-on-surface font-semibold">{item.name}</Text>
+                        <Text className="font-label-md text-on-surface-variant mt-1">
+                          {customRate ? "Custom Retailer Rate" : "Global Default Rate"}
+                        </Text>
+                      </View>
+                      <Text className="font-headline-sm text-primary">₹{customRate ? customRate.rate_per_kg : globalRate?.rate_per_kg}/kg</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
         </View>

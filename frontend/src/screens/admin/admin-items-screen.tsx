@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, Pressable, TextInput, Switch } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiItems } from "../../api/items";
 import type { Item } from "../../types/api";
 import { Ionicons } from "@expo/vector-icons";
 
-export function AdminItemsScreen() {
+export function AdminItemsScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [defaultPrice, setDefaultPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const { data: page, isLoading, refetch } = useQuery({
@@ -41,7 +42,6 @@ export function AdminItemsScreen() {
     setIsAdding(false);
     setName("");
     setDescription("");
-    setDefaultPrice("");
     setIsActive(true);
   };
 
@@ -49,166 +49,157 @@ export function AdminItemsScreen() {
     setEditingItem(item);
     setName(item.name);
     setDescription(item.description || "");
-    setDefaultPrice(item.default_price);
     setIsActive(item.is_active);
     setIsAdding(false);
   };
 
   const handleSave = () => {
-    if (!name || !defaultPrice) return;
+    if (!name) return;
     
     if (editingItem) {
       updateMutation.mutate({
         id: editingItem.id,
         name,
         description,
-        default_price: defaultPrice,
         is_active: isActive,
       });
     } else {
       createMutation.mutate({
         name,
         description,
-        default_price: defaultPrice,
       });
     }
   };
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
+      <SafeAreaView className="flex-1 items-center justify-center bg-background" edges={["top", "bottom"]}>
+        <ActivityIndicator size="large" className="text-primary" />
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900 p-4">
-      <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white">Items</Text>
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/90 border-b border-outline-variant/20">
+        <View className="flex-row items-center">
+          <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full active:bg-surface-variant/50" onPress={() => navigation.goBack()}>
+            <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
+          </Pressable>
+          <Text className="font-headline-sm text-on-surface font-semibold ml-2">Items</Text>
+        </View>
         {!isAdding && !editingItem && (
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
+            className="bg-primary px-4 h-10 rounded-full flex-row items-center active:scale-95"
           >
-            <Ionicons name="add" size={20} color="white" />
-            <Text className="text-white font-medium ml-1">Add Item</Text>
+            <MaterialIcons name="add" size={20} className="text-on-primary" />
+            <Text className="text-on-primary font-semibold ml-1">Add Item</Text>
           </Pressable>
         )}
       </View>
 
-      {(isAdding || editingItem) && (
-        <View className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            {editingItem ? "Edit Item" : "New Item"}
-          </Text>
-          
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</Text>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Broiler Chicken"
-              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white"
-            />
-          </View>
-          
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</Text>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Optional description"
-              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white"
-            />
-          </View>
-          
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Price (₹/kg)</Text>
-            <TextInput
-              value={defaultPrice}
-              onChangeText={setDefaultPrice}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 150.00"
-              className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-gray-900 dark:text-white"
-            />
-          </View>
-
-          {editingItem && (
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</Text>
-              <Switch value={isActive} onValueChange={setIsActive} />
+      <View className="flex-1 p-4">
+        {(isAdding || editingItem) && (
+          <View className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm mb-4 border border-outline-variant/20">
+            <Text className="font-headline-sm text-on-surface mb-4">
+              {editingItem ? "Edit Item" : "New Item"}
+            </Text>
+            
+            <View className="mb-4">
+              <Text className="font-label-md text-on-surface-variant mb-1 uppercase font-semibold">Name</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Broiler Chicken"
+                placeholderTextColor="#717973"
+                className="bg-surface border border-outline-variant rounded-lg p-3 text-on-surface font-body-md h-12"
+              />
             </View>
-          )}
+            
+            <View className="mb-4">
+              <Text className="font-label-md text-on-surface-variant mb-1 uppercase font-semibold">Description</Text>
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Optional description"
+                placeholderTextColor="#717973"
+                className="bg-surface border border-outline-variant rounded-lg p-3 text-on-surface font-body-md h-12"
+              />
+            </View>
 
-          <View className="flex-row space-x-3">
-            <Pressable
-              onPress={resetForm}
-              className="flex-1 bg-gray-200 dark:bg-gray-700 p-3 rounded-lg items-center"
-            >
-              <Text className="text-gray-700 dark:text-gray-200 font-medium">Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={handleSave}
-              disabled={createMutation.isPending || updateMutation.isPending || !name || !defaultPrice}
-              className={`flex-1 p-3 rounded-lg items-center ${
-                !name || !defaultPrice ? "bg-blue-400" : "bg-blue-600"
-              }`}
-            >
-              {createMutation.isPending || updateMutation.isPending ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-medium">Save</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      <FlatList
-        data={page?.items || []}
-        keyExtractor={(item) => item.id}
-        refreshing={isLoading}
-        onRefresh={refetch}
-        renderItem={({ item }) => (
-          <View className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm mb-3 flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                {item.name}
-              </Text>
-              {item.description ? (
-                <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {item.description}
-                </Text>
-              ) : null}
-              <View className="flex-row mt-2">
-                <View className="bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">
-                  <Text className="text-blue-700 dark:text-blue-400 text-xs font-medium">
-                    ₹{item.default_price}/kg
-                  </Text>
-                </View>
-                {!item.is_active && (
-                  <View className="bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded ml-2">
-                    <Text className="text-red-700 dark:text-red-400 text-xs font-medium">Inactive</Text>
-                  </View>
-                )}
+            {editingItem && (
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="font-label-md text-on-surface-variant uppercase font-semibold">Active</Text>
+                <Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: "#e0e3e8", true: "#1B4332" }} thumbColor={isActive ? "#ffffff" : "#717973"} />
               </View>
+            )}
+
+            <View className="flex-row gap-3">
+              <Pressable
+                onPress={resetForm}
+                className="flex-1 bg-surface-variant p-3 rounded-xl items-center justify-center active:scale-95 h-12"
+              >
+                <Text className="text-on-surface-variant font-semibold">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSave}
+                disabled={createMutation.isPending || updateMutation.isPending || !name}
+                className={`flex-1 p-3 rounded-xl items-center justify-center h-12 active:scale-95 ${
+                  !name ? "bg-surface-variant opacity-50" : "bg-primary"
+                }`}
+              >
+                {createMutation.isPending || updateMutation.isPending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className={`font-semibold ${!name ? "text-on-surface-variant" : "text-on-primary"}`}>Save</Text>
+                )}
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => handleEdit(item)}
-              className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full"
-            >
-              <Ionicons name="pencil" size={18} color="#4b5563" />
-            </Pressable>
           </View>
         )}
-        ListEmptyComponent={
-          <View className="items-center justify-center py-8">
-            <Ionicons name="cube-outline" size={48} color="#9ca3af" />
-            <Text className="text-gray-500 dark:text-gray-400 mt-4">No items found.</Text>
-          </View>
-        }
-      />
-    </View>
+
+        <FlatList
+          data={page?.items || []}
+          contentContainerStyle={{ paddingBottom: 80 }}
+          keyExtractor={(item) => item.id}
+          refreshing={isLoading}
+          onRefresh={refetch}
+          renderItem={({ item }) => (
+            <View className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm mb-3 flex-row items-center justify-between border border-outline-variant/20">
+              <View className="flex-1">
+                <Text className="font-headline-sm text-on-surface">
+                  {item.name}
+                </Text>
+                {item.description ? (
+                  <Text className="font-body-md text-on-surface-variant mt-1">
+                    {item.description}
+                  </Text>
+                ) : null}
+                <View className="flex-row mt-2">
+                  {!item.is_active && (
+                    <View className="bg-error-container px-2 py-1 rounded-md">
+                      <Text className="text-on-error-container text-[10px] uppercase font-semibold">Inactive</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              <Pressable
+                onPress={() => handleEdit(item)}
+                className="p-3 bg-primary-container/10 rounded-full active:bg-primary-container/30"
+              >
+                <Ionicons name="pencil" size={18} className="text-primary" />
+              </Pressable>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View className="items-center justify-center py-8">
+              <Ionicons name="cube-outline" size={48} className="text-outline" />
+              <Text className="font-body-md text-on-surface-variant mt-4">No items found.</Text>
+            </View>
+          }
+        />
+      </View>
+    </SafeAreaView>
   );
 }

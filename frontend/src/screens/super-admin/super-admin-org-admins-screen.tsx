@@ -21,6 +21,7 @@ function AdminCard({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editPassword, setEditPassword] = useState("");
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   return (
     <Animated.View 
@@ -58,13 +59,16 @@ function AdminCard({
             <View className="flex-1 flex-row items-center bg-surface-container-low rounded-full px-4 h-12 border border-[rgba(1,45,29,0.2)]">
               <MaterialCommunityIcons name="lock-reset" size={18} className="text-[rgba(65,72,68,0.7)] mr-2" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)] pr-2"
                 placeholder="New password"
-                secureTextEntry
+                secureTextEntry={!showEditPassword}
                 value={editPassword}
                 onChangeText={setEditPassword}
                 autoFocus
               />
+              <Pressable accessibilityRole="button" onPress={() => setShowEditPassword(!showEditPassword)} className="p-1 -ml-1 mr-1 active:opacity-70">
+                <MaterialCommunityIcons name={showEditPassword ? "eye-off-outline" : "eye-outline"} size={20} className="text-[rgba(65,72,68,0.7)]" />
+              </Pressable>
             </View>
             <Pressable accessibilityRole="button" onPress={() => { onUpdatePassword(item.id, editPassword); setIsEditing(false); }} className="bg-brand-ink w-12 h-12 rounded-full items-center justify-center active:opacity-80">
               <MaterialCommunityIcons name="check" size={20} className="text-white" />
@@ -111,6 +115,7 @@ export function SuperAdminOrgAdminsScreen() {
   const [msg, setMsg] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -150,6 +155,7 @@ export function SuperAdminOrgAdminsScreen() {
       await api.post(`/super-admin/organizations/${orgId}/admins`, payload);
       setUsername("");
       setPassword("");
+      setShowPassword(false);
       setIsFormVisible(false);
       showMessage("Admin created successfully.");
       await refresh();
@@ -277,10 +283,13 @@ export function SuperAdminOrgAdminsScreen() {
               <TextInput
                 className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
                 placeholder="Secure Password"
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
               />
+              <Pressable accessibilityRole="button" onPress={() => setShowPassword(!showPassword)} className="p-2 -mr-2 active:opacity-70">
+                <MaterialCommunityIcons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} className="text-[rgba(65,72,68,0.7)]" />
+              </Pressable>
             </View>
             
             <Pressable accessibilityRole="button" 
@@ -303,7 +312,7 @@ export function SuperAdminOrgAdminsScreen() {
           keyExtractor={(a) => a.id}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isFormVisible ? "#012d1d" : "#ffffff"} colors={['#012d1d']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isFormVisible ? "#012D1D" : "#ffffff"} colors={['#012D1D']} />}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-2xl mt-12 bg-[rgba(255,255,255,0.05)] rounded-[40px]">
               <View className="bg-[rgba(255,255,255,0.1)] w-28 h-28 rounded-full items-center justify-center mb-6 border border-[rgba(255,255,255,0.1)]">

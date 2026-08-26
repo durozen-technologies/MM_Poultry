@@ -19,6 +19,23 @@ export async function updateDeliveryUser(
   return data;
 }
 
-export async function deleteDeliveryUser(userId: string) {
+export async function deleteDeliveryUser(userId: string): Promise<void> {
   await api.delete(`/admin/users/delivery/${userId}`);
+}
+
+export async function listRetailerUsers(): Promise<User[]> {
+  const { data } = await api.get<User[]>("/admin/users/retailer");
+  return data;
+}
+
+export async function updateRetailerUser(
+  userId: string,
+  payload: { is_active?: boolean; password?: string }
+): Promise<User> {
+  const { data } = await api.patch<User>(`/admin/users/retailer/${userId}`, payload);
+  return data;
+}
+
+export async function deleteRetailerUser(userId: string): Promise<void> {
+  await api.delete(`/admin/users/retailer/${userId}`);
 }

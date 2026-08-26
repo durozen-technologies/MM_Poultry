@@ -304,7 +304,7 @@ export function SuperAdminHomeScreen() {
           keyExtractor={(o) => o.id}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isFormVisible ? "#012d1d" : "#ffffff"} colors={['#012d1d']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={isFormVisible ? "#012D1D" : "#ffffff"} colors={['#012D1D']} />}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-2xl mt-12 bg-white/5 rounded-[40px]">
               <View className="bg-white/10 w-28 h-28 rounded-full items-center justify-center mb-6 border border-white/10">

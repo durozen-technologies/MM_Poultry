@@ -87,10 +87,6 @@ async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     for row in auth_rows:
         await db.delete(row)
 
-    org_users = await db.scalars(select(User).where(User.organization_id == org_id))
-    for u in org_users:
-        await db.delete(u)
-
     schema_name = org.schema_name
     await db.delete(org)
     await db.flush()

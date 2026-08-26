@@ -78,29 +78,6 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
         scrollEventThrottle={16}
         ListHeaderComponent={
           <>
-            {/* Summary Chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3 mb-4">
-              <View className="flex-row items-center gap-2 bg-surface-container px-3 py-2 rounded-full">
-                <Text className="text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-                  Total
-                </Text>
-                <Text className="text-headline-sm text-primary font-semibold">{farms.length}</Text>
-              </View>
-              <View className="flex-row items-center gap-2 bg-primary-container/20 px-3 py-2 rounded-full">
-                <View className="w-2 h-2 rounded-full bg-primary" />
-                <Text className="text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-                  Active
-                </Text>
-                <Text className="text-headline-sm text-primary font-semibold">{activeCount}</Text>
-              </View>
-              <View className="flex-row items-center gap-2 bg-error-container/40 px-3 py-2 rounded-full">
-                <View className="w-2 h-2 rounded-full bg-error" />
-                <Text className="text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
-                  Inactive
-                </Text>
-                <Text className="text-headline-sm text-error font-semibold">{inactiveCount}</Text>
-              </View>
-            </ScrollView>
 
             {/* Search & Filters */}
             <View className="flex-col gap-3 mb-6">

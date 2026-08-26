@@ -40,16 +40,14 @@ export function RetailerProfileScreen() {
   );
 
   const retailer = profile?.retailer;
-  const limit = Number(retailer?.credit_limit || 0);
   const outstanding = Number(retailer?.credit_balance || 0);
-  const usedPct = limit > 0 ? Math.min(100, Math.round((outstanding / limit) * 100)) : 0;
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
-        <Text className="font-headline-sm text-on-surface font-semibold">Profile</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full" onPress={logout}>
-          <MaterialIcons name="logout" size={24} className="text-on-surface" />
+      <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
+        <Text className="font-headline-sm text-white font-semibold">Profile</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={logout}>
+          <MaterialIcons name="logout" size={24} className="text-white" />
         </Pressable>
       </View>
 
@@ -63,27 +61,27 @@ export function RetailerProfileScreen() {
 
         {retailer ? (
           <View className="flex-col gap-4">
-            <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20">
-              <Text className="font-headline-md text-on-surface font-semibold">
-                {retailer.shop_name || retailer.name}
-              </Text>
-              <Text className="font-body-md text-on-surface-variant mt-1">@{profile?.username}</Text>
-              {retailer.owner_name ? (
-                <Text className="font-body-md text-on-surface mt-2">{retailer.owner_name}</Text>
-              ) : null}
-            </View>
-
-            <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20">
-              <Text className="font-label-md text-on-surface-variant mb-2">Credit limit usage</Text>
-              <View className="h-2 bg-surface-variant rounded-full overflow-hidden mb-2">
-                <View className="h-full bg-primary" style={{ width: `${usedPct}%` }} />
+            <View className="bg-[#0052CC] rounded-[20px] p-6 shadow-sm elevation-sm flex-row items-center justify-between">
+              <View>
+                <Text className="font-headline-md text-white font-bold">
+                  {retailer.shop_name || retailer.name}
+                </Text>
+                <Text className="font-body-md text-white/70 mt-1">@{profile?.username}</Text>
+                {retailer.owner_name ? (
+                  <Text className="font-body-md text-white mt-3 font-semibold">{retailer.owner_name}</Text>
+                ) : null}
               </View>
-              <Text className="font-body-md text-on-surface">
-                ₹{retailer.credit_balance} of ₹{retailer.credit_limit || "—"} used
-              </Text>
+              <View className="w-16 h-16 rounded-full bg-white/20 items-center justify-center border border-white/30">
+                <MaterialIcons name="store" size={32} className="text-white" />
+              </View>
             </View>
 
-            <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 flex-col gap-2">
+            <View className="bg-white rounded-[20px] p-6 border border-black/5 shadow-sm elevation-sm flex-col gap-2">
+              <Text className="font-label-md text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Current Balance</Text>
+              <Text className="font-display-lg text-error font-bold">₹{outstanding}</Text>
+            </View>
+
+            <View className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm flex-col">
               <InfoRow icon="phone" label="Phone" value={retailer.phone || "—"} />
               <InfoRow icon="chat" label="WhatsApp" value={retailer.whatsapp || "—"} />
               <InfoRow icon="place" label="Address" value={retailer.address || "—"} />

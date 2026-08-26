@@ -11,6 +11,8 @@ export type User = {
   organization_name?: string | null;
   full_name?: string | null;
   mobile_number?: string | null;
+  retailer_name?: string | null;
+  retailer_shop_name?: string | null;
 };
 
 export type LoginResponse = {
@@ -37,6 +39,7 @@ export type Retailer = {
   credit_limit?: string;
   preferred_delivery_time?: string | null;
   is_active: boolean;
+  has_portal_access?: boolean;
 };
 
 export type Item = {

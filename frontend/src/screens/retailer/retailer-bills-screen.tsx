@@ -48,10 +48,10 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
-        <Text className="font-headline-sm text-on-surface font-semibold">Bills</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full" onPress={refresh}>
-          <MaterialIcons name="refresh" size={24} className="text-on-surface" />
+      <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
+        <Text className="font-headline-sm text-white font-semibold">Bills</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={refresh}>
+          <MaterialIcons name="refresh" size={24} className="text-white" />
         </Pressable>
       </View>
 
@@ -65,49 +65,57 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
         ListHeaderComponent={
           <>
             {summary ? (
-              <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4">
-                <Text className="font-headline-sm text-on-surface font-semibold mb-3">Overview</Text>
-                <View className="flex-row flex-wrap gap-y-2">
-                  <Summary label="Bills" value={String(summary.count)} />
-                  <Summary label="Total" value={`₹${summary.total_amount}`} />
-                  <Summary label="Paid" value={`₹${summary.total_paid}`} />
+              <View className="bg-[#0052CC] rounded-2xl p-5 mb-5 shadow-sm elevation-sm">
+                <Text className="font-headline-sm text-white font-bold mb-4">Overview</Text>
+                <View className="flex-row flex-wrap gap-y-4">
+                  <Summary label="Total Bills" value={String(summary.count)} />
+                  <Summary label="Total Amount" value={`₹${summary.total_amount}`} />
+                  <Summary label="Paid Amount" value={`₹${summary.total_paid}`} />
                   <Summary label="Outstanding" value={`₹${summary.outstanding}`} />
                 </View>
               </View>
             ) : null}
 
             <TextInput
-              className="bg-surface border border-outline-variant rounded-xl px-3 py-3 text-body-md text-on-surface mb-3 placeholder:text-on-surface-variant"
+              className="bg-white border border-black/5 shadow-sm elevation-sm rounded-xl px-4 py-4 text-body-md text-on-surface mb-4 placeholder:text-on-surface-variant"
               placeholder="Search bill number"
               value={query}
               onChangeText={setQuery}
- />
+            />
 
             {message ? <Text className="text-error text-center mb-3">{message}</Text> : null}
             {busy && bills.length === 0 ? <ActivityIndicator className="text-primary mt-6" /> : null}
           </>
         }
-        renderItem={({ item: bill }) => (
-          <Pressable accessibilityRole="button" accessibilityLabel="Button"
-            className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-3"
-            onPress={() => navigation.navigate("BillDetail", { billId: bill.id })}
-          >
-            <View className="flex-row justify-between items-start">
-              <View>
-                <Text className="font-headline-sm text-on-surface font-semibold">{bill.bill_number}</Text>
-                <Text className="font-body-md text-on-surface-variant">
-                  {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0} kg Total
-                </Text>
+        renderItem={({ item: bill }) => {
+          const isPaid = Number(bill.balance_amount) <= 0;
+          return (
+            <Pressable accessibilityRole="button" accessibilityLabel="Button"
+              className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
+              onPress={() => navigation.navigate("BillDetail", { billId: bill.id })}
+            >
+              <View className="flex-row justify-between items-start">
+                <View>
+                  <Text className="font-headline-sm text-on-surface font-bold">{bill.bill_number}</Text>
+                  <Text className="font-body-sm text-on-surface-variant mt-1">
+                    {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0} kg Total
+                  </Text>
+                </View>
+                <Text className="font-headline-sm text-[#0052CC] font-bold">₹{bill.total_amount}</Text>
               </View>
-              <Text className="font-headline-sm text-primary font-semibold">₹{bill.total_amount}</Text>
-            </View>
-            {Number(bill.balance_amount) > 0 ? (
-              <Text className="font-label-md text-error mt-2">Balance ₹{bill.balance_amount}</Text>
-            ) : (
-              <Text className="font-label-md text-on-surface-variant mt-2">Paid</Text>
-            )}
-          </Pressable>
-        )}
+              <View className="flex-row items-center justify-between mt-4">
+                <View className={`px-3 py-1.5 rounded-md ${isPaid ? "bg-[#e8f5e9]" : "bg-error-container"}`}>
+                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${isPaid ? "text-[#2e7d32]" : "text-error"}`}>
+                    {isPaid ? "Paid" : "Due"}
+                  </Text>
+                </View>
+                {!isPaid && (
+                  <Text className="font-label-md text-error font-bold">Bal: ₹{bill.balance_amount}</Text>
+                )}
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -116,8 +124,8 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
 function Summary({ label, value }: { label: string; value: string }) {
   return (
     <View className="w-1/2">
-      <Text className="font-label-md text-on-surface-variant">{label}</Text>
-      <Text className="font-body-md text-on-surface font-semibold">{value}</Text>
+      <Text className="font-label-xs text-white/70 uppercase tracking-wider mb-1">{label}</Text>
+      <Text className="font-headline-sm text-white font-bold">{value}</Text>
     </View>
   );
 }

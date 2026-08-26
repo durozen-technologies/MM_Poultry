@@ -729,3 +729,32 @@
 ### [2026-08-25 17:27:20] Push Changes
 - **Request:** User requested to push the current branch.
 - **Action Taken:** Preparing to add, commit, and push all recent fixes to the repository.
+
+### [2026-08-26 10:45:00] Implement Retailer User Management
+- **Request:** 'in the retailer when an user is added then the portal access should disappear ok... in the setting i want an option to see and manage the retialer user account ok like the delivery users ok'
+- **Action Taken:** Updated backend API (RetailerOut, UserOut, ledger.py, etailers.py, dmin_users.py) to expose Retailer User endpoints (List, Update, Delete) with has_portal_access flag. Updated frontend API typings and route methods. Created AdminRetailerUsersScreen duplicating Delivery User logic for Retailer Users. Updated pp-navigator.tsx to register it and dmin-settings-screen.tsx to link to it.
+
+### [2026-08-26 11:44:29] Retailer App Redesign
+- User requested a professional, stable, non-flashy UI for the Retailer App.
+- Updated Retailer Dashboard with deep navy architectural header and professional financial cards.
+- Refactored Place Order screen with cleaner quantity steppers and styled checkout button.
+- Restyled Orders, Bills, and Ledger lists with pill-shaped status indicators, cleaner tabs, and shadow-elevation cards.
+- Updated Retailer Profile screen to match the deep navy branding and removed the credit limit progress bar.
+
+### [2026-08-26 12:02:25] Applied Logo Color Theme
+- Inspected assets/logo.jpeg and extracted the primary colors: Cobalt Blue (#0052CC) and Golden Orange (#F57C00).
+- Replaced the old Forest Green/Navy colors with these logo colors globally across all Retailer and Admin screens.
+- Updated tailwind.config.js to reflect the new brand colors.
+
+### [2026-08-26 12:04:47] Applied Corporate Slate Theme
+- Replaced vibrant logo colors with a highly professional B2B Corporate Slate template.
+- Primary headers: Deep Slate Navy (#0F172A).
+- Action buttons: Azure Blue (#2563EB).
+
+### [2026-08-26 12:07:22] Applied Monochrome Executive Theme
+- Swapped the UI color scheme to an ultra-modern, minimalist Monochrome Executive palette.
+- Primary headers: Pure Black (#000000).
+- Action buttons: Dark Gray (#171717).
+
+### [2026-08-26 12:11:42] Applied Blue & White Theme to Retailer UI
+- Per user request, applied a crisp Cobalt Blue (#0052CC) and White theme exclusively to the Retailer screens.

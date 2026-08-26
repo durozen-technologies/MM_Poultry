@@ -177,3 +177,71 @@ async def _create_portal_user(
     )
     await set_search_path(db, schema_name)
     return user
+
+
+async def list_retailer_users(db: AsyncSession, organization_id: UUID) -> list[UserOut]:
+    from sqlalchemy.orm import aliased
+    from app.db.tenant_schema import set_search_path
+
+    # Assuming we are already in the tenant schema when this is called, but we don't have to be if we use set_search_path. 
+    # Actually, the router will set the search path if it requires AuthContext.
+    # We will fetch users with role RETAILER and join Retailer.
+    stmt = (
+        select(User, Retailer)
+        .join(Retailer, User.retailer_id == Retailer.id)
+        .where(User.role == UserRole.RETAILER)
+    )
+    rows = await db.execute(stmt)
+    results = []
+    for user_obj, retailer_obj in rows:
+        out = UserOut.model_validate(user_obj, from_attributes=True)
+        out.retailer_name = retailer_obj.name
+        out.retailer_shop_name = retailer_obj.shop_name
+        results.append(out)
+    return results
+
+
+async def update_retailer_user(
+    db: AsyncSession, organization_id: UUID, user_id: UUID, payload: dict
+) -> UserOut:
+    user = await db.scalar(select(User).where(User.id == user_id, User.role == UserRole.RETAILER))
+    if not user:
+        raise HTTPException(status_code=404, detail="Retailer portal user not found")
+
+    if "is_active" in payload and payload["is_active"] is not None:
+        user.is_active = payload["is_active"]
+        user.permissions_version = int(user.permissions_version or 0) + 1
+    if "password" in payload and payload["password"] is not None:
+        user.password_hash = get_password_hash(payload["password"])
+        user.permissions_version = int(user.permissions_version or 0) + 1
+
+    await db.flush()
+
+    retailer = await db.scalar(select(Retailer).where(Retailer.id == user.retailer_id))
+    out = UserOut.model_validate(user, from_attributes=True)
+    if retailer:
+        out.retailer_name = retailer.name
+        out.retailer_shop_name = retailer.shop_name
+    return out
+
+
+async def delete_retailer_user(
+    db: AsyncSession, organization_id: UUID, user_id: UUID, schema_name: str
+) -> None:
+    user = await db.scalar(select(User).where(User.id == user_id, User.role == UserRole.RETAILER))
+    if not user:
+        raise HTTPException(status_code=404, detail="Retailer portal user not found")
+
+    await db.delete(user)
+    await db.flush()
+
+    from app.db.tenant_schema import set_search_path
+    from app.models.organization import UserAuthIndex
+
+    await set_search_path(db, None)
+    auth_index = await db.scalar(select(UserAuthIndex).where(UserAuthIndex.user_id == user_id))
+    if auth_index:
+        await db.delete(auth_index)
+    await db.flush()
+    await set_search_path(db, schema_name)
+

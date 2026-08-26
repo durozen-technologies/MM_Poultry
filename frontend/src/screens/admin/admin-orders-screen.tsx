@@ -64,7 +64,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
             onPress={() => refetch()}
           >
             {isRefetching ? (
-              <ActivityIndicator size="small" color="#012d1d" />
+              <ActivityIndicator size="small" color="#012D1D" />
             ) : (
               <MaterialIcons name="refresh" size={24} className="text-on-surface" />
             )}

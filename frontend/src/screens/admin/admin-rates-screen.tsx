@@ -78,7 +78,7 @@ export function AdminRatesScreen({ navigation }: { navigation: any }) {
       <View className="p-4 bg-surface border-b border-outline-variant/20">
         <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Select Item</Text>
         {loadingItems ? (
-          <ActivityIndicator color="#012d1d" />
+          <ActivityIndicator color="#012D1D" />
         ) : (
           <FlatList
             horizontal

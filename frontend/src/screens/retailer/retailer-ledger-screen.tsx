@@ -49,10 +49,10 @@ export function RetailerLedgerScreen() {
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
-        <Text className="font-headline-sm text-on-surface font-semibold">Ledger</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full" onPress={refresh}>
-          <MaterialIcons name="refresh" size={24} className="text-on-surface" />
+      <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
+        <Text className="font-headline-sm text-white font-semibold">Ledger</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={refresh}>
+          <MaterialIcons name="refresh" size={24} className="text-white" />
         </Pressable>
       </View>
 
@@ -70,12 +70,12 @@ export function RetailerLedgerScreen() {
 
             {ledger ? (
               <>
-                <View className="bg-primary rounded-2xl p-5 mb-4">
-                  <Text className="font-label-md text-on-primary/80">Outstanding</Text>
-                  <Text className="font-display-lg text-on-primary mt-1">₹{ledger.credit_balance}</Text>
+                <View className="bg-[#0052CC] rounded-[20px] p-6 mb-5 shadow-sm elevation-sm">
+                  <Text className="font-label-md text-white/80 uppercase tracking-wide">Outstanding Balance</Text>
+                  <Text className="font-display-lg text-white font-bold mt-2">₹{ledger.credit_balance}</Text>
                 </View>
 
-                <View className="flex-row gap-3 mb-4">
+                <View className="flex-row gap-4 mb-5">
                   <Chip label="Purchases" value={`₹${totals.purchases}`} />
                   <Chip label="Payments" value={`₹${totals.payments}`} />
                 </View>
@@ -84,10 +84,10 @@ export function RetailerLedgerScreen() {
           </>
         }
         renderItem={({ item: entry }) => (
-          <View className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/20 mb-2">
+          <View className="bg-white rounded-[16px] p-4 border border-black/5 shadow-sm elevation-sm mb-3">
             <View className="flex-row justify-between">
               <View>
-                <Text className="font-body-md text-on-surface font-semibold">{entry.entry_type}</Text>
+                <Text className="font-headline-sm text-on-surface font-semibold mb-1">{entry.entry_type}</Text>
                 <Text className="font-label-md text-on-surface-variant">
                   {formatIstDate(entry.entry_date)}
                   {entry.reference ? ` · ${entry.reference}` : ""}
@@ -95,12 +95,12 @@ export function RetailerLedgerScreen() {
               </View>
               <View className="items-end">
                 {Number(entry.debit) > 0 ? (
-                  <Text className="font-body-md text-error">-₹{entry.debit}</Text>
+                  <Text className="font-headline-sm text-error font-bold">-₹{entry.debit}</Text>
                 ) : null}
                 {Number(entry.credit) > 0 ? (
-                  <Text className="font-body-md text-primary">+₹{entry.credit}</Text>
+                  <Text className="font-headline-sm text-[#0052CC] font-bold">+₹{entry.credit}</Text>
                 ) : null}
-                <Text className="font-label-md text-on-surface-variant mt-1">
+                <Text className="font-label-md text-on-surface-variant mt-1 font-semibold">
                   Bal ₹{entry.balance_after ?? "—"}
                 </Text>
               </View>
@@ -114,9 +114,9 @@ export function RetailerLedgerScreen() {
 
 function Chip({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-1 bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/20">
-      <Text className="font-label-md text-on-surface-variant">{label}</Text>
-      <Text className="font-body-md text-on-surface font-semibold">{value}</Text>
+    <View className="flex-1 bg-white rounded-[16px] p-4 border border-black/5 shadow-sm elevation-sm">
+      <Text className="font-label-xs text-on-surface-variant uppercase tracking-wide mb-1">{label}</Text>
+      <Text className="font-headline-sm text-on-surface font-bold">{value}</Text>
     </View>
   );
 }

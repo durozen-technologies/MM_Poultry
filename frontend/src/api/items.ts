@@ -17,7 +17,7 @@ export const apiItems = {
     return res.data;
   },
 
-  create: async (data: { name: string; default_price: string; description?: string }) => {
+  create: async (data: { name: string; default_price?: string; description?: string }) => {
     const res = await client.post<Item>("/admin/items", data);
     return res.data;
   },

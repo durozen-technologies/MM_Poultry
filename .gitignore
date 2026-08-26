@@ -113,3 +113,6 @@ secrets/
 *.keystore
 tasks/
 .github/workflows/acesskey.txt
+
+# Tracked Issues
+.core/pending_issues/

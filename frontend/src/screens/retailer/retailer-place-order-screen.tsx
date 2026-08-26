@@ -20,11 +20,11 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
-      <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
-        <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full" onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
+      <View className="h-16 px-4 flex-row items-center bg-[#0052CC] border-b border-black/10">
+        <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full active:bg-white/10" onPress={() => navigation.goBack()}>
+          <MaterialIcons name="arrow-back" size={24} className="text-white" />
         </Pressable>
-        <Text className="font-headline-sm text-on-surface font-semibold ml-2">Place Order</Text>
+        <Text className="font-headline-sm text-white font-semibold ml-2">Place Order</Text>
       </View>
 
       <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 100 }}>
@@ -35,7 +35,7 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
         ) : null}
 
         {loadingItems ? (
-          <ActivityIndicator color="#012d1d" size="large" className="mt-8" />
+          <ActivityIndicator color="#0052CC" size="large" className="mt-8" />
         ) : items.length === 0 ? (
           <Text className="text-center text-on-surface-variant mt-8">No items available to order.</Text>
         ) : (
@@ -45,29 +45,29 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
             const isSelected = Number(qty) > 0;
 
             return (
-              <View key={item.id} className={`bg-surface-container-lowest rounded-2xl p-4 border mb-4 ${isSelected ? "border-primary" : "border-outline-variant/20"}`}>
+              <View key={item.id} className={`bg-white rounded-2xl p-5 mb-4 shadow-sm elevation-sm border ${isSelected ? "border-[#0052CC] border-[2px]" : "border-black/5"}`}>
                 <Text className="font-headline-sm text-on-surface mb-1">{item.name}</Text>
                 {item.description ? <Text className="font-body-sm text-on-surface-variant mb-3">{item.description}</Text> : <View className="mb-2" />}
 
-                <Text className="font-label-md text-on-surface-variant mb-2">Quantity (kg)</Text>
+                <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Quantity (kg)</Text>
                 <View className="flex-row items-center justify-between mb-4">
                   <Pressable accessibilityRole="button"
-                    className="w-12 h-12 rounded-full bg-surface-variant items-center justify-center"
+                    className="w-14 h-14 rounded-full bg-surface-container-highest items-center justify-center active:opacity-70"
                     onPress={() => adjustKg(item.id, -5)}
                   >
-                    <MaterialIcons name="remove" size={24} className="text-on-surface" />
+                    <MaterialIcons name="remove" size={28} className="text-on-surface" />
                   </Pressable>
                   <TextInput
-                    className="flex-1 mx-3 text-center font-display-md text-on-surface border border-outline-variant rounded-xl py-3"
+                    className="flex-1 mx-4 text-center font-display-sm font-bold text-[#0052CC] border border-outline-variant/50 bg-surface-container-lowest rounded-xl py-4"
                     value={qty}
                     onChangeText={(v) => updateCartItem(item.id, "requested_kg", v)}
                     keyboardType="decimal-pad"
                   />
                   <Pressable accessibilityRole="button"
-                    className="w-12 h-12 rounded-full bg-surface-variant items-center justify-center"
+                    className="w-14 h-14 rounded-full bg-[#0052CC] items-center justify-center active:opacity-70 shadow-sm"
                     onPress={() => adjustKg(item.id, 5)}
                   >
-                    <MaterialIcons name="add" size={24} className="text-on-surface" />
+                    <MaterialIcons name="add" size={28} className="text-white" />
                   </Pressable>
                 </View>
 
@@ -80,12 +80,12 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
                         return (
                           <Pressable accessibilityRole="button"
                             key={size}
-                            className={`px-4 py-2 rounded-full border ${
-                              active ? "bg-primary border-primary" : "bg-surface border-outline-variant"
+                            className={`px-5 py-2.5 rounded-full border ${
+                              active ? "bg-[#0052CC] border-[#0052CC]" : "bg-surface-container-lowest border-outline-variant/40"
                             }`}
                             onPress={() => updateCartItem(item.id, "bird_size", size)}
                           >
-                            <Text className={active ? "text-on-primary font-semibold" : "text-on-surface"}>
+                            <Text className={active ? "text-white font-bold tracking-wide" : "text-on-surface"}>
                               {size}
                             </Text>
                           </Pressable>
@@ -111,7 +111,7 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
       {/* Floating Action Button for total summary */}
       <View className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto">
         <Pressable accessibilityRole="button"
-          className="bg-primary h-14 rounded-2xl flex-row items-center justify-between px-6 shadow-md"
+          className="bg-[#0052CC] h-[60px] rounded-[20px] flex-row items-center justify-between px-6 shadow-md elevation-sm"
           onPress={onSubmit}
           disabled={busy || totalKg === 0}
         >

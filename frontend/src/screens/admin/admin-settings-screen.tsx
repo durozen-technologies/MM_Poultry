@@ -12,13 +12,12 @@ type SettingsItem = {
 };
 
 const ITEMS: SettingsItem[] = [
-  { title: "Items", subtitle: "Manage products & prices", icon: "category", screen: "Items" },
-  { title: "Rates", subtitle: "Default & retailer-specific rates", icon: "currency-rupee", screen: "Rates" },
+  { title: "Items", subtitle: "Manage products", icon: "category", screen: "Items" },
   { title: "Vehicles", subtitle: "Fleet & driver details", icon: "local-shipping", screen: "Vehicles" },
   { title: "Delivery Users", subtitle: "Driver app logins", icon: "badge", screen: "DeliveryUsers" },
   { title: "Delivery Runs", subtitle: "Build runs from farm loads", icon: "route", screen: "DeliveryRuns" },
   { title: "Reports", subtitle: "Sales summary & PDF export", icon: "assessment", screen: "Reports" },
-  { title: "Portal Access", subtitle: "Manage retailer login accounts", icon: "security", screen: "RetailerPortalAccess" },
+  { title: "Retailer Users", subtitle: "Manage portal logins", icon: "security", screen: "AdminRetailerUsers" },
 ];
 
 export function AdminSettingsScreen({ navigation }: { navigation: any }) {

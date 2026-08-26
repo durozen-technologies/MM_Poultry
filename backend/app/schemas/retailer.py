@@ -65,6 +65,7 @@ class RetailerOut(BaseModel):
     credit_balance: Decimal
     credit_limit: Decimal = Decimal("0.00")
     preferred_delivery_time: str | None = None
+    has_portal_access: bool = False
 
 
 class RetailerPortalUserCreate(BaseModel):

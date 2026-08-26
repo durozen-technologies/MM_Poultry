@@ -110,7 +110,7 @@ export function AdminRetailerPortalAccessScreen({ navigation }: { navigation: an
 
             {isLoading ? (
               <View className="flex-1 items-center justify-center">
-                <ActivityIndicator color="#012d1d" />
+                <ActivityIndicator color="#012D1D" />
               </View>
             ) : (
               <FlatList

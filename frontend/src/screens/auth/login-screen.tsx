@@ -41,7 +41,7 @@ export function LoginScreen() {
   return (
     <View className="flex-1 bg-surface relative">
       {/* Background Architectural Header in Deep Navy Blue */}
-      <View className="absolute top-0 left-0 right-0 h-[320px] bg-[#01256C] rounded-b-[48px] overflow-hidden" />
+      <View className="absolute top-0 left-0 right-0 h-[320px] bg-[#012D1D] rounded-b-[48px] overflow-hidden" />
 
       <KeyboardAwareScrollView 
         className="flex-1 z-10"
@@ -71,9 +71,9 @@ export function LoginScreen() {
               <Animated.View entering={FadeInUp.delay(100).springify().damping(22)} className="w-full bg-white rounded-[32px] shadow-sm border border-black/5 elevation-md p-8 flex-col gap-6 mb-8">
                 <View className="flex-col gap-2">
                   <Text className="text-label-md text-on-surface font-semibold ml-1">USERNAME</Text>
-                  <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#01256C]">
+                  <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#012D1D]">
                     <View className="absolute left-4 z-10">
-                      <MaterialIcons name="person-outline" size={22} className="text-[#01256C]/70" />
+                      <MaterialIcons name="person-outline" size={22} className="text-[#012D1D]/70" />
                     </View>
                     <TextInput
                       className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
@@ -87,9 +87,9 @@ export function LoginScreen() {
 
                 <View className="flex-col gap-2">
                   <Text className="text-label-md text-on-surface font-semibold ml-1">PASSWORD</Text>
-                  <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#01256C]">
+                  <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#012D1D]">
                     <View className="absolute left-4 z-10">
-                      <MaterialIcons name="lock-outline" size={22} className="text-[#01256C]/70" />
+                      <MaterialIcons name="lock-outline" size={22} className="text-[#012D1D]/70" />
                     </View>
                     <TextInput
                       className="flex-1 pl-12 pr-12 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
@@ -105,7 +105,7 @@ export function LoginScreen() {
                       <MaterialIcons
                         name={showPassword ? "visibility" : "visibility-off"}
                         size={22}
-                        className="text-[#01256C]/70"
+                        className="text-[#012D1D]/70"
                       />
                     </Pressable>
                   </View>
@@ -119,7 +119,7 @@ export function LoginScreen() {
                 ) : null}
 
                 <Pressable accessibilityRole="button"
-                  className="w-full bg-[#012E82] h-14 rounded-full flex-row items-center justify-center active:opacity-80 mt-2 shadow-sm"
+                  className="w-full bg-[#1B4332] h-14 rounded-full flex-row items-center justify-center active:opacity-80 mt-2 shadow-sm"
                   onPress={onSubmit}
                   disabled={loading}
                 >

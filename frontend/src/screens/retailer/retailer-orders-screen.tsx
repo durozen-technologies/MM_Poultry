@@ -41,22 +41,22 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
-        <Text className="font-headline-sm text-on-surface font-semibold">Orders</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full" onPress={refresh}>
-          <MaterialIcons name="refresh" size={24} className="text-on-surface" />
+      <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
+        <Text className="font-headline-sm text-white font-semibold">My Orders</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={refresh}>
+          <MaterialIcons name="refresh" size={24} className="text-white" />
         </Pressable>
       </View>
 
-      <View className="flex-row mx-4 mt-2 bg-surface-variant/50 rounded-xl p-1">
+      <View className="flex-row mx-4 mt-4 bg-surface-container-highest rounded-full p-1 border border-outline-variant/30">
         {(["today", "history"] as Tab[]).map((key) => (
           <Pressable accessibilityRole="button" accessibilityLabel="Button"
             key={key}
-            className={`flex-1 py-2 rounded-lg items-center ${tab === key ? "bg-surface" : ""}`}
+            className={`flex-1 py-2.5 rounded-full items-center ${tab === key ? "bg-white shadow-sm elevation-sm" : ""}`}
             onPress={() => setTab(key)}
           >
-            <Text className={tab === key ? "text-primary font-semibold" : "text-on-surface-variant"}>
-              {key === "today" ? "Today" : "Previous"}
+            <Text className={tab === key ? "text-[#0052CC] font-bold" : "text-on-surface-variant font-medium"}>
+              {key === "today" ? "Today's Orders" : "Order History"}
             </Text>
           </Pressable>
         ))}
@@ -82,22 +82,26 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
             <Text className="text-on-surface-variant text-center mt-8">No orders found</Text>
           ) : null
         }
-        renderItem={({ item: order }) => (
-          <Pressable accessibilityRole="button" accessibilityLabel="Button"
-            className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-3"
-            onPress={() => navigation.navigate("OrderDetail", { orderId: order.id })}
-          >
-            <View className="flex-row justify-between items-start mb-2">
-              <View>
-                <Text className="font-headline-sm text-on-surface font-semibold">
-                  {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg Total
-                </Text>
-                <Text className="font-body-md text-on-surface-variant">
-                  {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
-                </Text>
-              </View>
-              <View className="bg-surface-variant px-3 py-1 rounded-full">
-                <Text className="font-label-md text-on-surface-variant">{order.status}</Text>
+        renderItem={({ item: order }) => {
+          const isDelivered = order.status === "FULFILLED";
+          return (
+            <Pressable accessibilityRole="button" accessibilityLabel="Button"
+              className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
+              onPress={() => navigation.navigate("OrderDetail", { orderId: order.id })}
+            >
+              <View className="flex-row justify-between items-start mb-3">
+                <View>
+                  <Text className="font-headline-sm text-on-surface font-bold">
+                    {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg Total
+                  </Text>
+                  <Text className="font-body-sm text-on-surface-variant mt-1">
+                    {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
+                  </Text>
+                </View>
+                <View className={`px-3 py-1.5 rounded-md ${isDelivered ? "bg-[#e8f5e9]" : "bg-primary-container"}`}>
+                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${isDelivered ? "text-[#2e7d32]" : "text-on-primary-container"}`}>
+                    {order.status}
+                  </Text>
               </View>
             </View>
             <View className="flex-row items-center gap-1">
@@ -105,7 +109,8 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
               <Text className="font-label-md text-primary">View tracking</Text>
             </View>
           </Pressable>
-        )}
+          );
+        }}
       />
     </SafeAreaView>
   );

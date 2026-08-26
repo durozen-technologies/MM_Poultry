@@ -49,3 +49,35 @@ async def delete_delivery_user(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> None:
     await svc.delete_delivery_user(auth.db, _org_id(auth), user_id)
+
+
+@router.get("/admin/users/retailer", response_model=list[UserOut])
+async def list_retailer_users(
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> list[UserOut]:
+    from app.services.wholesale.retailers import list_retailer_users as _list
+    return await _list(auth.db, _org_id(auth))
+
+
+@router.patch("/admin/users/retailer/{user_id}", response_model=UserOut)
+async def update_retailer_user(
+    user_id: UUID,
+    payload: DeliveryUserUpdate, # We can reuse DeliveryUserUpdate or create RetailerUserUpdate, but DeliveryUserUpdate only has password/is_active/full_name/mobile which is fine (we'll only use password and is_active)
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> UserOut:
+    from app.services.wholesale.retailers import update_retailer_user as _update
+    return await _update(auth.db, _org_id(auth), user_id, payload.model_dump(exclude_unset=True))
+
+
+@router.delete("/admin/users/retailer/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_retailer_user(
+    user_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> None:
+    from app.services.wholesale.retailers import delete_retailer_user as _delete
+    from app.db.tenant_schema import derive_schema_name
+    schema_name = derive_schema_name(auth.user.organization_slug) if auth.user.organization_slug else derive_schema_name(str(_org_id(auth)))
+    # wait, auth.user doesn't have organization_slug natively mapped unless it's loaded.
+    # We can use auth.schema_name! Let's check if auth has schema_name.
+    # AuthContext has `schema_name`.
+    await _delete(auth.db, _org_id(auth), user_id, auth.schema_name)

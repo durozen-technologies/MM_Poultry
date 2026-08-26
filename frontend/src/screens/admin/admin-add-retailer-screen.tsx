@@ -24,8 +24,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const [area, setArea] = useState("");
   const [routeName, setRouteName] = useState("");
   const [category, setCategory] = useState("");
+  const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
-  const [creditLimit, setCreditLimit] = useState("");
+  const [openingBalance, setOpeningBalance] = useState("");
   const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -56,8 +57,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         area: area.trim() || null,
         route_name: routeName.trim() || null,
         category: category.trim() || null,
+        email: email.trim() || null,
         notes: notes.trim() || null,
-        credit_limit: creditLimit ? parseFloat(creditLimit) : 0,
+        opening_balance: openingBalance ? parseFloat(openingBalance) : 0,
         preferred_delivery_time: preferredDeliveryTime.trim() || null,
         username: username.trim(),
         password: password.trim(),
@@ -288,29 +290,6 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               textAlignVertical="top"
               value={address}
               onChangeText={setAddress}
- />
-          </View>
-        </View>
-
-        {/* Financial Details Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-row items-center gap-2">
-            <MaterialIcons name="payments" size={20} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Financial Details
-            </Text>
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Credit Limit (₹)
-            </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
-              placeholder="e.g. 50000"
-              keyboardType="decimal-pad"
-              value={creditLimit}
-              onChangeText={setCreditLimit}
  />
           </View>
         </View>

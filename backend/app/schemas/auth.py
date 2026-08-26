@@ -26,6 +26,8 @@ class UserOut(BaseModel):
     organization_name: str | None = None
     full_name: str | None = None
     mobile_number: str | None = None
+    retailer_name: str | None = None
+    retailer_shop_name: str | None = None
 
 
 class LoginResponse(BaseModel):

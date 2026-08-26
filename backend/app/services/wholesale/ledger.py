@@ -160,8 +160,16 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         running = q_money(running + entry.debit - entry.credit)
         entry.balance_after = running
 
+    from app.models.user import User
+    has_portal_access = await db.scalar(
+        select(select(User).where(User.retailer_id == retailer_id).exists())
+    )
+    
+    retailer_out = RetailerOut.model_validate(retailer, from_attributes=True)
+    retailer_out.has_portal_access = has_portal_access or False
+
     return LedgerOut(
-        retailer=RetailerOut.model_validate(retailer, from_attributes=True),
+        retailer=retailer_out,
         opening_balance=retailer.opening_balance,
         credit_balance=retailer.credit_balance,
         entries=entries,

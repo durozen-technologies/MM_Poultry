@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "postgres-mmpoultry": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://postgres:root@localhost:5432/MM_Poultry"
+            ]
+        }
+    }
+}

@@ -130,7 +130,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
         ListEmptyComponent={
           isLoading ? (
              <View className="flex-col items-center justify-center p-8 mt-8">
-               <ActivityIndicator size="large" color="#012d1d" />
+               <ActivityIndicator size="large" color="#012D1D" />
              </View>
           ) : (
             <View className="flex-col items-center justify-center p-8 mt-8">
@@ -217,25 +217,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                       ₹{bal}
                     </Text>
                   </View>
-                  <View className="flex-col items-end">
-                    <Text className="font-label-md text-on-surface-variant uppercase text-[10px] font-semibold">
-                      Credit Limit
-                    </Text>
-                    <Text className="font-body-md text-on-surface font-semibold">
-                      ₹{limit}
-                    </Text>
                   </View>
-                </View>
-                {limit > 0 && (
-                  <View className="h-1.5 w-full bg-surface-variant rounded-full mt-2 overflow-hidden">
-                    <View
-                      className={`h-full rounded-full ${
-                        limitPct > 90 ? "bg-error" : "bg-primary"
-                      }`}
-                      style={{ width: `${limitPct}%` }}
-                    />
-                  </View>
-                )}
               </View>
             </Pressable>
           );
