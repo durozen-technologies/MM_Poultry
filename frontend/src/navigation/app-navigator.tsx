@@ -9,6 +9,7 @@ import { LoginScreen } from "../screens/auth/login-screen";
 import { AdminHomeScreen } from "../screens/admin/admin-home-screen";
 import { AdminRetailersScreen } from "../screens/admin/admin-retailers-screen";
 import { AdminAddRetailerScreen } from "../screens/admin/admin-add-retailer-screen";
+import { AdminEditRetailerScreen } from "../screens/admin/admin-edit-retailer-screen";
 import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-profile-screen";
 import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
 import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
@@ -149,6 +150,7 @@ export function AppNavigator() {
             <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
             <Stack.Screen name="Items" component={AdminItemsScreen} />
             <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
+            <Stack.Screen name="EditRetailer" component={AdminEditRetailerScreen} />
             <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
             <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
             <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />

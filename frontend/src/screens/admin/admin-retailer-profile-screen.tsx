@@ -199,44 +199,31 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Button"
           className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center active:bg-surface-container-high"
-          onPress={() => alert("Edit Retailer functionality is under construction")}
+          onPress={() => navigation.navigate("EditRetailer", { retailerId: retailer.id })}
         >
           <MaterialIcons name="edit" size={20} className="text-on-surface" />
         </Pressable>
       </View>
 
       <KeyboardAwareScrollView enableOnAndroid={true} keyboardShouldPersistTaps="always" className="flex-1 w-full" contentContainerStyle={{ paddingBottom: 100 }}>
-        <View className="px-4 py-6 bg-surface flex-col gap-2">
-          <View className="flex-row justify-between items-start">
-            <View className="flex-col gap-1 flex-1">
-              <View className="flex-row items-center gap-2 flex-wrap">
-                <Text className="font-headline-md text-headline-md text-on-surface font-semibold">
-                  {retailer.name}
-                </Text>
-                <View className="bg-tertiary-fixed px-2 py-1 rounded-full">
-                  <Text className="font-label-md text-label-md text-on-tertiary-fixed-variant font-semibold text-[10px]">
-                    {retailer.is_active ? "ACTIVE" : "INACTIVE"}
-                  </Text>
-                </View>
-              </View>
-              <Text className="text-on-surface-variant mt-1">{retailer.shop_name || retailer.owner_name || "—"}</Text>
-            </View>
+        <View className="px-4 py-6 bg-surface flex-col items-center justify-center gap-2">
+          <View className="flex-row items-center justify-center gap-2 flex-wrap">
+            <Text className="font-headline-md text-headline-md text-on-surface font-semibold text-center">
+              {retailer.name}
+            </Text>
           </View>
-          <View className="flex-row items-center mt-2">
-            <MaterialIcons name="phone" size={16} className="text-on-surface" />
-            <Text className="text-on-surface-variant ml-1">{retailer.phone || "N/A"}</Text>
-          </View>
+          <Text className="text-on-surface-variant mt-1 text-center">{retailer.shop_name || retailer.owner_name || "—"}</Text>
         </View>
 
-        <View className="pl-4 py-3 bg-background">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3 pr-4">
-            <View className="w-40 bg-error-container p-3 rounded-2xl shadow-sm flex-col justify-between min-h-[96px] mr-3">
-              <Text className="font-label-md text-on-error-container uppercase opacity-90 font-semibold text-[10px]">
-                Outstanding
-              </Text>
-              <Text className="font-headline-sm text-on-error-container font-semibold mt-1">₹{bal}</Text>
-            </View>
-          </ScrollView>
+        <View className="py-3 bg-background px-4 items-center">
+          <View className="w-48 bg-error-container p-4 rounded-2xl shadow-sm flex-col items-center justify-center">
+            <Text className="font-label-md text-on-error-container uppercase opacity-90 font-semibold text-[10px]">
+              Outstanding Balance
+            </Text>
+            <Text className="font-headline-sm text-on-error-container font-bold mt-1">
+              ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+            </Text>
+          </View>
         </View>
 
         <View className="bg-surface border-b border-surface-container-high mt-4">

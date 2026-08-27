@@ -137,25 +137,25 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
               
               {showFarmDropdown && (
                 <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
-                  <FlatList
-                    data={farms}
-                    keyExtractor={(item) => item.id}
-                    nestedScrollEnabled
-                    renderItem={({ item: farm }) => (
-                      <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-                        className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
-                        onPress={() => {
-                          setSelectedFarm(farm.id);
-                          setShowFarmDropdown(false);
-                        }}
-                      >
-                        <Text className="font-body-md text-on-surface">{farm.name}</Text>
-                      </Pressable>
-                    )}
-                    ListEmptyComponent={
+                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
+                    {farms.length > 0 ? (
+                      farms.map((farm) => (
+                        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+                          key={farm.id}
+                          className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
+                          onPress={() => {
+                            setSelectedFarm(farm.id);
+                            setShowFarmDropdown(false);
+                          }}
+                        >
+                          <Text className="font-body-md text-body-md text-on-surface font-semibold">{farm.name}</Text>
+                          <Text className="font-label-md text-label-md text-on-surface-variant mt-0.5">{farm.owner_name} • {farm.contact_phone}</Text>
+                        </Pressable>
+                      ))
+                    ) : (
                       <Text className="p-4 text-center text-on-surface-variant">No farms found.</Text>
-                    }
-                  />
+                    )}
+                  </ScrollView>
                 </View>
               )}
             </View>
