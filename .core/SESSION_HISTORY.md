@@ -758,6 +758,7 @@
 
 ### [2026-08-26 12:11:42] Applied Blue & White Theme to Retailer UI
 - Per user request, applied a crisp Cobalt Blue (#0052CC) and White theme exclusively to the Retailer screens.
+<<<<<<< Updated upstream
 
 ### [2026-08-27 20:59:03] Session Update
 - Updated frontend api.ts types for Box counts and Gross/Empty Box weights.
@@ -786,3 +787,12 @@
 ### [2026-08-28 08:00:38] Git Push
 - **Request:** "make a git push"
 - **Action:** Created a commit with the recent changes (wholesale allocation, farm loads, boxes/net weight) and pushed to origin/main.
+=======
+
+### [2026-08-27 16:46:35] UI Refinement and Bug Fixes
+- User requested UI adjustments on the Admin Retailer Profile screen (centered text, removed active status, formatted balance).
+- Created AdminEditRetailerScreen and wired it to the profile edit button.
+- Fixed a React Native 'VirtualizedLists nested inside plain ScrollViews' warning originating from the Admin Farm Purchase screen.
+- Fixed TypeScript type mismatch for FarmOut.contact_phone.
+- User requested a git push.
+>>>>>>> Stashed changes
