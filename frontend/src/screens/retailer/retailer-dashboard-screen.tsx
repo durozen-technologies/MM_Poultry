@@ -108,9 +108,12 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
                   <View className="flex-col gap-1">
                     <View className="flex-row items-baseline gap-1">
                       <Text className="font-display-sm text-on-surface font-bold">
-                        {todayOrder.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0}
+                        {todayOrder.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || '-'}
                       </Text>
                       <Text className="font-body-lg text-on-surface-variant font-medium">kg</Text>
+                      <Text className="font-headline-sm text-on-surface font-bold ml-2">
+                        ({todayOrder.items?.reduce((s, it) => s + (it.total_boxes || 0), 0) || 0} Boxes)
+                      </Text>
                     </View>
                     
                     <Text className="font-body-sm text-on-surface-variant mt-1">

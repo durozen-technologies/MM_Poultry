@@ -77,3 +77,8 @@ Expanded blueprint beyond short proposal. Implementing IDEA MVP-1 slice: ops das
 
 ### [2026-08-18 16:01:39] Explicit Separation of Organization and Admin Creation
 - **Thought**: The user explicitly requested to ensure that an admin user is *not* created automatically after an organization is created, and must be created manually. Although the system currently adheres to this separation, it is recorded here as a core invariant/design principle moving forward.
+
+### [2026-08-27 22:47:43] Master Architecture & 8 Open Questions
+- Confirmed end-to-end model: Farm Load -> Items -> Stock -> Retailer Order -> Admin Confirms -> Allocation -> Delivery Run -> Retailer Shop -> Weighing -> Bill -> Ledger.
+- Documented missing rules (box vs items, weight loss, party-wise rates, partial payments, ledgers).
+- Formulated 8 open questions for user on Farm Load boxes, Expected KG variance, Allocation weights, Physical box IDs, Driver visibility, Billing splits, Excess payments, and Daily Closing.

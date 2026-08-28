@@ -44,6 +44,7 @@ class FarmOut(BaseModel):
 class FarmLoadCreate(BaseModel):
     load_date: IstDateOptional = None
     farm_id: UUID | None = None
+    item_id: UUID
     vehicle_id: UUID | None = None
     vehicle_number: str | None = None
     driver_name: str | None = None
@@ -61,6 +62,7 @@ class FarmLoadCreate(BaseModel):
 class FarmLoadUpdate(BaseModel):
     load_date: IstDateOptional = None
     farm_id: UUID | None = None
+    item_id: UUID | None = None
     vehicle_id: UUID | None = None
     vehicle_number: str | None = None
     driver_name: str | None = None
@@ -82,6 +84,7 @@ class FarmLoadOut(BaseModel):
     id: UUID
     load_date: IstDate
     farm_id: UUID | None
+    item_id: UUID
     vehicle_id: UUID | None = None
     vehicle_number: str | None
     driver_name: str | None

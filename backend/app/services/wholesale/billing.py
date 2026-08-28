@@ -71,7 +71,13 @@ async def weigh_stop(
     for item in stop.items:
         pi = payload_item_map.get(item.item_id)
         if pi:
-            item.delivered_weight_kg = q_kg(pi.delivered_weight_kg)
+            net_weight = pi.gross_weight_kg - (Decimal(pi.delivered_boxes) * pi.empty_box_weight_kg)
+            if net_weight <= Decimal("0"):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Net weight must be greater than zero")
+            item.delivered_weight_kg = q_kg(net_weight)
+            item.gross_weight_kg = pi.gross_weight_kg
+            item.delivered_boxes = pi.delivered_boxes
+            item.empty_box_weight_kg = pi.empty_box_weight_kg
             item.delivered_bird_count = pi.delivered_bird_count
             item.gross_amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
     

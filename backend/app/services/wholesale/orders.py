@@ -85,7 +85,8 @@ async def upsert_today_order(
         order_item = RetailerDailyOrderItem(
             order_id=order.id,
             item_id=item_in.item_id,
-            requested_kg=q_kg(item_in.requested_kg),
+            total_boxes=item_in.total_boxes,
+            requested_kg=q_kg(item_in.requested_kg) if item_in.requested_kg else None,
             bird_size=item_in.bird_size,
             notes=item_in.notes
         )
@@ -143,13 +144,17 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
     )
 
     items: list[DailyOrderOut] = []
-    total = Decimal("0.000")
+    total_kg = Decimal("0.000")
+    total_bx = 0
     for order, r_name, r_shop in res:
         out = DailyOrderOut.model_validate(order, from_attributes=True)
         out.retailer_name = r_name
         out.shop_name = r_shop
         items.append(out)
         for i in order.items:
-            total += i.requested_kg
+            if i.requested_kg:
+                total_kg += i.requested_kg
+            if i.total_boxes:
+                total_bx += i.total_boxes
 
-    return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total))
+    return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total_kg), total_boxes=total_bx)

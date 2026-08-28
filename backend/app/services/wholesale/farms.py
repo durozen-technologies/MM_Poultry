@@ -124,6 +124,7 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
     load = FarmLoad(
         load_date=payload.load_date or today_ist(),
         farm_id=payload.farm_id,
+        item_id=payload.item_id,
         vehicle_id=payload.vehicle_id,
         vehicle_number=vehicle_number,
         driver_name=driver_name,

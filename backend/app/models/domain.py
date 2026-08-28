@@ -143,7 +143,7 @@ class RetailerDailyOrderItem(Base, BaseModelMixin):
     item_id: Mapped[UUID] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("items.id"), nullable=False, index=True
     )
-    requested_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    requested_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     total_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     bird_size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -201,6 +201,9 @@ class FarmLoad(Base, BaseModelMixin):
     load_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     farm_id: Mapped[UUID | None] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("farms.id"), nullable=True
+    )
+    item_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("items.id"), nullable=False, index=True
     )
     vehicle_id: Mapped[UUID | None] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("vehicles.id"), nullable=True
@@ -287,6 +290,9 @@ class DeliveryStopItem(Base, BaseModelMixin):
     )
     ordered_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     delivered_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    delivered_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gross_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    empty_box_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     gross_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     delivered_bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -179,7 +179,7 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
               <View className="flex-row justify-between items-center">
                 <View className="flex-row items-center gap-1">
                   <MaterialIcons name="scale" size={20} className="text-on-surface" />
-                  <Text className="font-body-md text-on-surface">{order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0} KG</Text>
+                  <Text className="font-body-md text-on-surface">{order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || '-'} KG ({order.items?.reduce((s, it) => s + (it.total_boxes || 0), 0) || 0} Boxes)</Text>
                 </View>
                 <Pressable accessibilityRole="button"
                   className="px-3 py-1 bg-surface-container rounded-full"

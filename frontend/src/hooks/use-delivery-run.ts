@@ -20,6 +20,8 @@ export function useDeliveryRun() {
   const [run, setRun] = useState<DeliveryRun | null>(null);
   const [activeStop, setActiveStop] = useState<DeliveryStop | null>(null);
   const [weights, setWeights] = useState<Record<string, string>>({});
+  const [deliveredBoxes, setDeliveredBoxes] = useState<Record<string, string>>({});
+  const [emptyBoxWeights, setEmptyBoxWeights] = useState<Record<string, string>>({});
   const [cash, setCash] = useState("0");
   const [upi, setUpi] = useState("0");
   const [msg, setMsg] = useState<string | null>(null);
@@ -78,7 +80,9 @@ export function useDeliveryRun() {
     try {
       const itemsPayload = (activeStop.items || []).map((item) => ({
         item_id: item.item_id,
-        delivered_weight_kg: weights[item.item_id] || "0",
+        gross_weight_kg: Number(weights[item.item_id] || "0"),
+        delivered_boxes: Number(deliveredBoxes[item.item_id] || "0"),
+        empty_box_weight_kg: Number(emptyBoxWeights[item.item_id] || "0"),
         delivered_bird_count: 0,
       }));
 
@@ -113,6 +117,8 @@ export function useDeliveryRun() {
       setMsg(`Billed ${updated.bill_number} → print ${updated.print_status}`);
       setActiveStop(null);
       setWeights({});
+      setDeliveredBoxes({});
+      setEmptyBoxWeights({});
       setCash("0");
       setUpi("0");
       await refresh();
@@ -128,6 +134,8 @@ export function useDeliveryRun() {
       setMsg(`Skipped stop for ${activeStop.retailer_name}`);
       setActiveStop(null);
       setWeights({});
+      setDeliveredBoxes({});
+      setEmptyBoxWeights({});
       await refresh();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed to skip");
@@ -154,6 +162,10 @@ export function useDeliveryRun() {
     setActiveStop,
     weights,
     setWeights,
+    deliveredBoxes,
+    setDeliveredBoxes,
+    emptyBoxWeights,
+    setEmptyBoxWeights,
     cash,
     setCash,
     upi,

@@ -61,7 +61,8 @@ export type OrderItem = {
   id: string;
   daily_order_id: string;
   item_id: string;
-  requested_kg: string;
+  total_boxes?: number;
+  requested_kg?: string | null;
   bird_size?: string | null;
   notes?: string | null;
 };
@@ -82,6 +83,7 @@ export type DailyOrderOut = DailyOrder;
 export type TodayOrdersResponse = {
   items: DailyOrder[];
   total_requested_kg: string;
+  total_boxes: number;
   has_more: boolean;
   next_cursor: string | null;
 };
@@ -167,6 +169,9 @@ export type DeliveryStopItem = {
   item_id: string;
   ordered_kg: string;
   delivered_weight_kg: string | null;
+  delivered_boxes?: number | null;
+  gross_weight_kg?: string | null;
+  empty_box_weight_kg?: string | null;
   rate_per_kg: string;
   gross_amount: string | null;
   delivered_bird_count?: number | null;
@@ -307,7 +312,8 @@ export type RetailerProfile = {
 
 export type OrderItemCreate = {
   item_id: string;
-  requested_kg: string;
+  total_boxes: number;
+  requested_kg?: string | null;
   bird_size?: string | null;
   notes?: string | null;
 };

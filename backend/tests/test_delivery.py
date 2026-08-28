@@ -101,7 +101,8 @@ def test_delivery_run_not_found(client: TestClient, mock_delivery_auth: None) ->
 
 def test_delivery_stop_not_found(client: TestClient, mock_delivery_auth: None) -> None:
     nid = str(uuid.uuid4())
-    res = client.post(f"/api/v1/delivery/stops/{nid}/weigh", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "delivered_weight_kg": 10}]})
+    # 2. Test weigh
+    res = client.post(f"/api/v1/delivery/stops/{nid}/weigh", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "gross_weight_kg": 12, "delivered_boxes": 1, "empty_box_weight_kg": 2}]})
     assert res.status_code == 404
     res = client.post(f"/api/v1/delivery/stops/{nid}/skip")
     assert res.status_code == 404
@@ -175,7 +176,7 @@ def test_delivery_full_lifecycle(client: TestClient, mock_admin_auth: None) -> N
             await session.close()
 
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "50", "bird_size": "LARGE"}]})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "total_boxes": 2, "requested_kg": "50", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
 
     if old_override:
@@ -284,7 +285,7 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
             await session.close()
 
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE"}]})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "total_boxes": 4, "requested_kg": "100", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
 
     if old_override:
@@ -301,17 +302,17 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
     client.post(f"/api/v1/delivery/runs/{run_id}/start")
 
     # 5. Weigh stop
-    weigh_payload = {
+    weigh_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/weigh", json={
         "items": [
             {
                 "item_id": "00000000-0000-0000-0000-000000000999",
-                "delivered_weight_kg": 95.5,
+                "gross_weight_kg": 97.0,
+                "delivered_boxes": 1,
+                "empty_box_weight_kg": 1.5,
                 "delivered_bird_count": 50
             }
-        ],
-        "scale_device_id": "test_scale_1"
-    }
-    weigh_resp = client.post(f"/api/v1/delivery/stops/{stop_id}/weigh", json=weigh_payload)
+        ]
+    })
     assert weigh_resp.status_code == 200
     assert float(weigh_resp.json()["items"][0]["delivered_weight_kg"]) == 95.5
 
@@ -342,7 +343,7 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
 
     # Admin weigh override test
     err_override = client.post(f"/api/v1/delivery/stops/{stop_id}/weigh", json={
-        "items": [{"item_id": "00000000-0000-0000-0000-000000000999", "delivered_weight_kg": 100.0}],
+        "items": [{"item_id": "00000000-0000-0000-0000-000000000999", "gross_weight_kg": 103.0, "delivered_boxes": 2, "empty_box_weight_kg": 1.5}],
         "weight_override_reason": "Testing admin override"
     })
     # Cannot weigh after billed! Should be 409

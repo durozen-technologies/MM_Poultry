@@ -11,7 +11,8 @@ from app.schemas.dates import IstDate
 
 class OrderItemCreate(BaseModel):
     item_id: UUID
-    requested_kg: Decimal = Field(gt=0)
+    total_boxes: int = Field(gt=0)
+    requested_kg: Decimal | None = None
     bird_size: str | None = None
     notes: str | None = None
 
@@ -26,7 +27,8 @@ class DailyOrderItemOut(BaseModel):
     id: UUID
     order_id: UUID
     item_id: UUID
-    requested_kg: Decimal
+    total_boxes: int | None = None
+    requested_kg: Decimal | None = None
     bird_size: str | None = None
     notes: str | None = None
 
@@ -49,3 +51,4 @@ class TodayOrdersResponse(BaseModel):
     has_more: bool = False
     next_cursor: str | None = None
     total_requested_kg: Decimal = Decimal("0.000")
+    total_boxes: int = 0

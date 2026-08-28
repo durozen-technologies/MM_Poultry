@@ -758,3 +758,31 @@
 
 ### [2026-08-26 12:11:42] Applied Blue & White Theme to Retailer UI
 - Per user request, applied a crisp Cobalt Blue (#0052CC) and White theme exclusively to the Retailer screens.
+
+### [2026-08-27 20:59:03] Session Update
+- Updated frontend api.ts types for Box counts and Gross/Empty Box weights.
+- Refactored use-retailer-cart.ts to use total_boxes and allow requested_kg as an optional reference field.
+- Updated RetailerPlaceOrderScreen to increment/decrement boxes instead of KG. Added Expected KG field.
+- Updated use-delivery-run.ts to include deliveredBoxes and emptyBoxWeights state, appending them to the weighAndBill payload.
+- Updated DeliveryHomeScreen to accept gross weights, boxes, and empty box weights and compute/display net weight.
+- Updated AdminHomeScreen, AdminOrdersScreen, and RetailerDashboardScreen to show {KG} KG ({Boxes} Boxes) in the dashboard UI.
+
+### [2026-08-27 21:15:33] Fixed Alembic Multi-tenant Migration
+- Resolved database crash during API requests due to missing delivery_stop_items column.
+- Fixed alembic migration 57e2a56a5ea7_boxes_and_net_weight by adding ALEMBIC_MODE conditional to skip public schema, allowing upgrade head to successfully run on tenant_anbu_chicken.
+
+### [2026-08-27 21:27:12] Add Item Selection to Farm Purchase
+- Implemented mandatory `item_id` selection in Farm Purchases (Backend Model, API Schemas, Migration, and UI).
+
+### [2026-08-27 21:30:38] Fixed Render Error on Farm Purchase Screen
+- Fixed an issue where the Items API returned a paginated object which crashed items.find.
+
+### [2026-08-27 21:31:47] Fixed Internal Server Error on Farm Purchase
+- Mapped item_id explicitly in the create_farm_load service function to fix NotNullViolationError.
+
+### [2026-08-27 22:48:15] Formulate Master Implementation Plan
+- Digested business logic rules and created an implementation plan with 8 open questions for the user.
+
+### [2026-08-28 08:00:38] Git Push
+- **Request:** "make a git push"
+- **Action:** Created a commit with the recent changes (wholesale allocation, farm loads, boxes/net weight) and pushed to origin/main.

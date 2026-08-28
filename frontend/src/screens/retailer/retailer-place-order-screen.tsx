@@ -12,9 +12,9 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
     message,
     items,
     loadingItems,
-    totalKg,
+    totalBoxes,
     updateCartItem,
-    adjustKg,
+    adjustBoxes,
     onSubmit,
   } = useRetailerCart(() => navigation.goBack());
 
@@ -41,7 +41,8 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
         ) : (
           items.map((item: any) => {
             const cartItem = cart[item.id];
-            const qty = cartItem ? cartItem.requested_kg : "0";
+            const qty = cartItem ? String(cartItem.total_boxes || 0) : "0";
+            const expectedKg = cartItem ? cartItem.requested_kg : "";
             const isSelected = Number(qty) > 0;
 
             return (
@@ -49,23 +50,26 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
                 <Text className="font-headline-sm text-on-surface mb-1">{item.name}</Text>
                 {item.description ? <Text className="font-body-sm text-on-surface-variant mb-3">{item.description}</Text> : <View className="mb-2" />}
 
-                <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Quantity (kg)</Text>
+                <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Boxes Count</Text>
                 <View className="flex-row items-center justify-between mb-4">
                   <Pressable accessibilityRole="button"
                     className="w-14 h-14 rounded-full bg-surface-container-highest items-center justify-center active:opacity-70"
-                    onPress={() => adjustKg(item.id, -5)}
+                    onPress={() => adjustBoxes(item.id, -1)}
                   >
                     <MaterialIcons name="remove" size={28} className="text-on-surface" />
                   </Pressable>
                   <TextInput
                     className="flex-1 mx-4 text-center font-display-sm font-bold text-[#0052CC] border border-outline-variant/50 bg-surface-container-lowest rounded-xl py-4"
                     value={qty}
-                    onChangeText={(v) => updateCartItem(item.id, "requested_kg", v)}
-                    keyboardType="decimal-pad"
+                    onChangeText={(v) => {
+                       const num = parseInt(v, 10);
+                       updateCartItem(item.id, "total_boxes", isNaN(num) ? 0 : num);
+                    }}
+                    keyboardType="number-pad"
                   />
                   <Pressable accessibilityRole="button"
                     className="w-14 h-14 rounded-full bg-[#0052CC] items-center justify-center active:opacity-70 shadow-sm"
-                    onPress={() => adjustKg(item.id, 5)}
+                    onPress={() => adjustBoxes(item.id, 1)}
                   >
                     <MaterialIcons name="add" size={28} className="text-white" />
                   </Pressable>
@@ -73,6 +77,15 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
 
                 {isSelected && (
                   <>
+                    <Text className="font-label-md text-on-surface-variant mb-2">Expected Kg (Optional)</Text>
+                    <TextInput
+                      className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl px-4 py-3 text-body-lg text-[#0052CC] font-bold mb-4"
+                      value={expectedKg || ""}
+                      onChangeText={(v) => updateCartItem(item.id, "requested_kg", v)}
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 50"
+                    />
+                    
                     <Text className="font-label-md text-on-surface-variant mb-3">Bird size</Text>
                     <View className="flex-row flex-wrap gap-2 mb-4">
                       {BIRD_SIZES.map((size) => {
@@ -113,11 +126,11 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
         <Pressable accessibilityRole="button"
           className="bg-[#0052CC] h-[60px] rounded-[20px] flex-row items-center justify-between px-6 shadow-md elevation-sm"
           onPress={onSubmit}
-          disabled={busy || totalKg === 0}
+          disabled={busy || totalBoxes === 0}
         >
           <View className="flex-row items-center gap-2">
             <MaterialIcons name="shopping-cart" size={20} color="white" />
-            <Text className="text-on-primary font-semibold text-lg">{totalKg} kg Total</Text>
+            <Text className="text-on-primary font-semibold text-lg">{totalBoxes} Boxes Total</Text>
           </View>
           {busy ? (
             <ActivityIndicator color="#fff" />

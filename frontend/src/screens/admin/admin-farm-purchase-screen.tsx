@@ -15,12 +15,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { DatePickerField } from "../../components/date-picker-field";
 import { toApiDate, todayIstDate } from "../../utils/ist-date";
-import type { FarmOut } from "../../types/api";
+import type { FarmOut, Item } from "../../types/api";
 
 export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
   const [farms, setFarms] = useState<FarmOut[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
+  const [items, setItems] = useState<Item[]>([]);
+  const [selectedItem, setSelectedItem] = useState<string>("");
   const [purchaseDate, setPurchaseDate] = useState(todayIstDate());
   const [quantity, setQuantity] = useState("");
   const [weight, setWeight] = useState("");
@@ -38,25 +40,34 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const paidNum = parseFloat(paidAmount) || 0;
   const balanceAmount = netPayable - paidNum;
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
 
-  const fetchFarms = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const { data } = await api.get("/admin/farms");
-      setFarms(data);
+      const [farmsRes, itemsRes] = await Promise.all([
+        api.get("/admin/farms"),
+        api.get("/admin/items?active_only=true")
+      ]);
+      setFarms(farmsRes.data);
+      setItems(itemsRes.data.items || itemsRes.data);
     } catch (e) {
-      console.warn("Failed to fetch farms", e);
+      console.warn("Failed to fetch data", e);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void fetchFarms();
-    }, [fetchFarms])
+      void fetchData();
+    }, [fetchData])
   );
 
   async function onSubmit() {
     if (!selectedFarm) {
       setError("Please select a farm");
+      return;
+    }
+    if (!selectedItem) {
+      setError("Please select an item");
       return;
     }
     if (!weight) {
@@ -68,6 +79,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
     try {
       await api.post("/admin/farm-loads", {
         farm_id: selectedFarm,
+        item_id: selectedItem,
         load_date: toApiDate(purchaseDate),
         bird_count: quantity ? parseInt(quantity, 10) : null,
         loaded_weight_kg: parseFloat(weight),
@@ -87,6 +99,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   }
 
   const selectedFarmName = farms.find(f => f.id === selectedFarm)?.name || "Select Farm";
+  const selectedItemName = items.find(i => i.id === selectedItem)?.name || "Select Item";
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
@@ -121,7 +134,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
 
           <View className="flex-col gap-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
-            <View className="relative z-10">
+            <View className="relative z-20">
               <Pressable accessibilityRole="button" accessibilityLabel="Button" 
                 className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
                 onPress={() => setShowFarmDropdown(!showFarmDropdown)}
@@ -161,7 +174,48 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             </View>
           </View>
 
-          <View className="flex-col gap-2 relative z-0 mt-2">
+          <View className="flex-col gap-2 z-[9] mt-2">
+            <Text className="font-body-md text-body-md text-on-surface-variant">Item</Text>
+            <View className="relative z-10">
+              <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+                className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
+                onPress={() => setShowItemDropdown(!showItemDropdown)}
+              >
+                <View className="flex-row items-center gap-3">
+                  <MaterialIcons name="category" size={20} color="#5c5f60" />
+                  <Text className={`font-body-lg text-body-lg ${selectedItem ? 'text-on-surface' : 'text-secondary'}`}>
+                    {selectedItemName}
+                  </Text>
+                </View>
+                <MaterialIcons name={showItemDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
+              </Pressable>
+              
+              {showItemDropdown && (
+                <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
+                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
+                    {items.length > 0 ? (
+                      items.map((item) => (
+                        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+                          key={item.id}
+                          className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
+                          onPress={() => {
+                            setSelectedItem(item.id);
+                            setShowItemDropdown(false);
+                          }}
+                        >
+                          <Text className="font-body-md text-body-md text-on-surface font-semibold">{item.name}</Text>
+                        </Pressable>
+                      ))
+                    ) : (
+                      <Text className="p-4 text-center text-on-surface-variant">No items found.</Text>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View className="flex-col gap-2 relative z-[8] mt-2">
             <DatePickerField label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} />
           </View>
         </View>

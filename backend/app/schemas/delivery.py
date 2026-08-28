@@ -23,6 +23,9 @@ class DeliveryStopItemOut(BaseModel):
     item_id: UUID
     ordered_kg: Decimal
     delivered_weight_kg: Decimal | None = None
+    delivered_boxes: int | None = None
+    gross_weight_kg: Decimal | None = None
+    empty_box_weight_kg: Decimal | None = None
     rate_per_kg: Decimal
     gross_amount: Decimal | None = None
     delivered_bird_count: int | None = None
@@ -56,7 +59,9 @@ class DeliveryRunOut(BaseModel):
 
 class WeighItemRequest(BaseModel):
     item_id: UUID
-    delivered_weight_kg: Decimal = Field(gt=0)
+    gross_weight_kg: Decimal = Field(gt=0)
+    delivered_boxes: int = Field(gt=0)
+    empty_box_weight_kg: Decimal = Field(ge=0)
     delivered_bird_count: int | None = None
 
 

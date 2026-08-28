@@ -15,6 +15,10 @@ export function DeliveryHomeScreen() {
     setActiveStop,
     weights,
     setWeights,
+    deliveredBoxes,
+    setDeliveredBoxes,
+    emptyBoxWeights,
+    setEmptyBoxWeights,
     cash,
     setCash,
     upi,
@@ -100,24 +104,56 @@ export function DeliveryHomeScreen() {
               data={activeStop.items || []}
               keyExtractor={(i) => i.item_id}
               className="mb-2"
-              renderItem={({ item }) => (
-                <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
-                  <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
-                  <Text className="text-sm text-on-surface-variant mb-2">Req: {item.ordered_kg} kg @ ₹{item.rate_per_kg}/kg</Text>
-                  <View className="flex-row items-center gap-2">
-                    <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-1" onPress={() => simulateScale(item.item_id)}>
-                      <MaterialIcons name="bluetooth" size={20} className="text-primary" />
-                    </Pressable>
-                    <TextInput
-                      className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-[3]"
-                      value={weights[item.item_id] || ""}
-                      onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
-                      placeholder="Delivered kg"
-                      keyboardType="decimal-pad"
-                    />
+              renderItem={({ item }) => {
+                const gross = Number(weights[item.item_id] || 0);
+                const boxes = Number(deliveredBoxes[item.item_id] || 0);
+                const emptyWt = Number(emptyBoxWeights[item.item_id] || 0);
+                const net = gross - (boxes * emptyWt);
+
+                return (
+                  <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
+                    <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
+                    <Text className="text-sm text-on-surface-variant mb-2">Req: {item.ordered_kg} kg @ ₹{item.rate_per_kg}/kg</Text>
+                    
+                    <View className="flex-row items-center gap-2 mb-2">
+                      <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.5]" onPress={() => simulateScale(item.item_id)}>
+                        <MaterialIcons name="bluetooth" size={20} className="text-primary" />
+                      </Pressable>
+                      <TextInput
+                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
+                        value={weights[item.item_id] || ""}
+                        onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
+                        placeholder="Gross Wt (kg)"
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+
+                    <View className="flex-row items-center gap-2 mb-2">
+                      <TextInput
+                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
+                        value={deliveredBoxes[item.item_id] || ""}
+                        onChangeText={(v) => setDeliveredBoxes(prev => ({ ...prev, [item.item_id]: v }))}
+                        placeholder="Delivered Boxes"
+                        keyboardType="number-pad"
+                      />
+                      <TextInput
+                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
+                        value={emptyBoxWeights[item.item_id] || ""}
+                        onChangeText={(v) => setEmptyBoxWeights(prev => ({ ...prev, [item.item_id]: v }))}
+                        placeholder="Empty Box Wt (kg)"
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+
+                    {gross > 0 && (
+                      <View className="bg-primary-container/30 px-3 py-2 rounded-lg flex-row justify-between items-center mt-1">
+                        <Text className="text-sm font-semibold text-on-surface">Calculated Net Weight:</Text>
+                        <Text className={`text-sm font-bold ${net > 0 ? "text-primary" : "text-error"}`}>{net > 0 ? net.toFixed(2) : "Invalid"} kg</Text>
+                      </View>
+                    )}
                   </View>
-                </View>
-              )}
+                );
+              }}
             />
 
             <View className="flex-row gap-2 mb-2 pt-2 border-t border-outline-variant/20">

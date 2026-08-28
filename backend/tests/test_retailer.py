@@ -104,15 +104,17 @@ def test_retailer_upsert_today_order(client: TestClient, mock_retailer_auth: Non
         "items": [
             {
                 "item_id": str(TEST_ITEM_ID),
+                "total_boxes": 2,
                 "requested_kg": "50.5",
-                "bird_size": "LARGE",
-                "notes": "Testing order"
+                "bird_size": "MEDIUM",
+                "notes": "morning delivery"
             }
         ]
     }
     response = client.post("/api/v1/retailer/orders/today", json=payload)
     assert response.status_code == 200
     data = response.json()
+    assert data["items"][0]["total_boxes"] == 2
     assert data["items"][0]["requested_kg"] == "50.500"
     assert data["status"] == "PLACED"
 
@@ -123,6 +125,7 @@ def test_retailer_get_today_order(client: TestClient, mock_retailer_auth: None):
     data = response.json()
     # Should fetch the one we just placed
     assert data is not None
+    assert data["items"][0]["total_boxes"] == 2
     assert data["items"][0]["requested_kg"] == "50.500"
 
 

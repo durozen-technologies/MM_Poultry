@@ -201,7 +201,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
                 <View className="flex-col gap-1 flex-1">
                   <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Total Req.</Text>
                   <Text className="font-body-lg text-body-lg text-on-surface font-bold">
-                    {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} KG
+                    {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || '-'} KG ({order.items?.reduce((sum, it) => sum + (it.total_boxes || 0), 0) || 0} Boxes)
                   </Text>
                 </View>
                 <View className="flex-col gap-1 flex-1">
