@@ -261,24 +261,15 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailer_returns ADD COLUMN IF NOT EXISTS item_id UUID",
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS uom VARCHAR(20) NOT NULL DEFAULT 'KG'",
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS default_price NUMERIC(12,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN requested_kg DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN total_boxes DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_size DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_count DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN notes DROP NOT NULL",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
-        for table in Base.metadata.sorted_tables:
-            if table.name in {
-                "vehicles",
-                "org_settings",
-                "expense_categories",
-                "expenses",
-                "retailer_returns",
-                "order_sequences",
-                "items",
-                "retailer_daily_order_items",
-                "delivery_stop_items",
-                "delivery_bill_items",
-            }:
-                await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))
         await conn.execute(

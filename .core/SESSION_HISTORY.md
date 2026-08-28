@@ -796,3 +796,9 @@
 - Fixed TypeScript type mismatch for FarmOut.contact_phone.
 - User requested a git push.
 >>>>>>> Stashed changes
+
+### [2026-08-28 11:15:00] Fixed missing columns in tenant_maha schema
+- Added item_id and other missing columns to the farm_loads, delivery_stop_items, and retailer_returns tables in tenant_maha schema to resolve UndefinedColumnError.
+
+### [2026-08-28 11:16:00] Fixed Pydantic validation error for FarmLoadOut
+- Backfilled item_id for existing rows in farm_loads and added NOT NULL constraint in tenant_maha schema to resolve pydantic_core.ValidationError.

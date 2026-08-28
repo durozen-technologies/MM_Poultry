@@ -906,3 +906,15 @@ All backend APIs are heavily covered for the happy paths, exceptions, and valida
 **User**: push
 **Agent**: Executed git add, commit, and push for the recent UI refinements and bug fixes.
 >>>>>>> Stashed changes
+
+### [2026-08-28 09:35:37]
+**User**: pull
+**Agent**: Pulled the latest changes from the repository. Encountered a merge conflict in the log files (.core/CHAT_LOG.md and .core/SESSION_HISTORY.md) due to remote updates, but successfully resolved them by keeping both sets of logs and completed the merge.
+
+### [2026-08-28 11:15:00]
+**User:** (Encountered another database error: UndefinedColumnError for item_id in farm_loads)
+**Agent:** Checked recent migrations for missing columns. Identified several columns that were added to the migrations but not applied to the tenant_maha schema. Updated and ran the fix_columns.py script to add these columns directly to the tenant_maha schema.
+
+### [2026-08-28 11:17:00]
+**User:** (Encountered ValidationError for FarmLoadOut: item_id input_value=None)
+**Agent:** The recently added item_id column allowed NULLs but Pydantic requires it. Created a backfill script to populate existing farm_loads with the first available item_id, then enforced NOT NULL on the column to resolve validation issues.

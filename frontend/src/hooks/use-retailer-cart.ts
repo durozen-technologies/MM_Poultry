@@ -68,7 +68,14 @@ export function useRetailerCart(onSuccess: () => void) {
   };
 
   async function onSubmit() {
-    const payloadItems = Object.values(cart).filter((it) => (it.total_boxes || 0) > 0);
+    const payloadItems = Object.values(cart)
+      .filter((it) => (it.total_boxes || 0) > 0)
+      .map(it => ({
+        ...it,
+        requested_kg: it.requested_kg ? it.requested_kg : undefined,
+        bird_size: it.bird_size ? it.bird_size : undefined,
+        notes: it.notes ? it.notes : undefined,
+      }));
     if (payloadItems.length === 0) {
       setMessage("Add at least one box to your order");
       return;
