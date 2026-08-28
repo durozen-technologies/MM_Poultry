@@ -90,7 +90,7 @@ function OrganizationCard({
           <View className="flex-row items-center w-full">
             {/* Context Menu Toggle */}
             <View className="flex-row items-center bg-surface-container-low rounded-full mr-3 h-12 px-1">
-              <Pressable accessibilityRole="button" onPress={() => setIsEditing(true)} className="w-10 h-10 rounded-full items-center justify-center active:opacity-70">
+              <Pressable accessibilityRole="button" onPress={() => { setEditName(item.name); setIsEditing(true); }} className="w-10 h-10 rounded-full items-center justify-center active:opacity-70">
                 <MaterialCommunityIcons name="pencil-outline" size={18} className="text-on-surface-variant" />
               </Pressable>
               <Pressable accessibilityRole="button" onPress={() => onToggleStatus(item.id, item.is_active)} className="w-10 h-10 rounded-full items-center justify-center active:opacity-70">

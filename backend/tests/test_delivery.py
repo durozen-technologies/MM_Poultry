@@ -67,8 +67,10 @@ def test_delivery_weigh_invalid_stop(client: TestClient, mock_delivery_auth: Non
         "items": [
             {
                 "item_id": "00000000-0000-0000-0000-000000000999",
-                "delivered_weight_kg": "50",
-                "delivered_bird_count": 20
+                "gross_weight_kg": 12,
+                "delivered_boxes": 1,
+                "empty_box_weight_kg": 2,
+                "delivered_bird_count": 20,
             }
         ]
     }

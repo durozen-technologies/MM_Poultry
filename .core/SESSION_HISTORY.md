@@ -802,3 +802,72 @@
 
 ### [2026-08-28 11:16:00] Fixed Pydantic validation error for FarmLoadOut
 - Backfilled item_id for existing rows in farm_loads and added NOT NULL constraint in tenant_maha schema to resolve pydantic_core.ValidationError.
+
+### [2026-08-28 12:04:00] Debugging and Error Recovery: relation "items" does not exist
+
+- **User Request**: Fix the bug reported by the uvicorn logs `asyncpg.exceptions.UndefinedTableError: relation "items" does not exist`.
+- **Action Taken**: 
+  - Investigated `migrations` and `tenant_schema.py` where tenant-specific tables are initialized.
+  - Discovered that the `items` table was recently added to the `models/domain.py` and `_tenant_table_names()`, but existing tenant schemas were never migrated to create the table because `repair_tenant_schema_async` only executes predefined `ALTER TABLE` statements rather than creating missing tables dynamically.
+  - Updated `app/db/tenant_schema.py` in `repair_tenant_schema_async` to dynamically identify and create any missing tenant tables using `await conn.run_sync(table.create, checkfirst=True)`.
+  - Ran `uv run python migrate.py` to correctly create the `items` table in `tenant_test` and `tenant_demo`.
+  - Authored a new integration test `tests/test_admin_items.py` to cover the missing endpoint and safeguard against future regressions.
+  - Verified tests locally, which passed successfully.
+
+### [2026-08-28 12:10:25] Test Suite Fix: Cascading Failures
+
+- **Action Taken**: 
+  - Investigated test failures that occurred after running the full suite (21 failed tests).
+  - Identified that recent database migrations added `item_id` as a required field for `FarmLoad` and changed `delivered_weight_kg` to `gross_weight_kg` + `empty_box_weight_kg` in `WeighItemRequest`, causing 422 Unprocessable Entity errors in tests.
+  - The unhandled `KeyError`s from `422` responses during test runs broke the `pytest` test teardowns, causing the `db_session` and connection pools to leave the database schemas in a corrupted state, leading to subsequent tests failing with `UndefinedTableError: relation "retailers" does not exist`.
+  - Updated `test_admin_farm_loads.py`, `test_admin_reports.py`, and `test_delivery.py` to create and pass `item_id` in `FarmLoad` creation, and to use the correct `gross_weight_kg` schema.
+  - Ran the complete test suite again, confirming that all 93 tests pass successfully.
+
+### [2026-08-28 12:26:00] Test Suite Fixes and Auth Dependency Repair
+- **Request:** "Fix it" (Address failing `uv run pytest` tests in `../test` directory).
+- **Action:** 
+  - Investigated test failures in `api/test_auth_api.py` returning `404 Organization not found` immediately after organization creation.
+  - Discovered a critical bug in FastAPI dependency `app/auth/dependencies.py` (`get_current_auth`), where `db.flush()` on read/write endpoints (like `create_organization`) would result in empty `session.dirty`/`session.new` sets, causing the dependency to `await session.rollback()` and discard successfully flushed inserts.
+  - Fixed `app/auth/dependencies.py` to always explicitly call `await session.commit()` upon successful handler execution instead of trying to optimize commits based on fragile SQLAlchemy session state flags.
+  - Investigated remaining 422 test failures in `test/api/` and `test/smoke/`. Discovered they were missing mandatory `item_id` and new weighing structure fields introduced during recent schema iterations.
+  - Updated payloads in `test/api/test_farms_delivery_api.py`, `test/api/test_retailer_api.py`, `test/api/test_billing_api.py`, and `test/smoke/test_wholesale_flow.py` via regex multi-file replacement to include `item_id` and match the exact weighing fields (`gross_weight_kg`, `delivered_boxes`, `empty_box_weight_kg`).
+  - Ran full `uv run pytest` encompassing all 127 tests across `tests/` and `../test/`. Verified 100% test pass rate.
+
+### [2026-08-28 12:30:00] Fix pytest module resolution
+- **Request**: User reported IDE error `Cannot find module pytest` in `test/smoke/test_wholesale_flow.py`
+- **Action**: Created `.vscode/settings.json` configuring `python.defaultInterpreterPath` to point to `backend/.venv/bin/python` to resolve module import errors.
+
+### [2026-08-28 12:42:00] Link Retailer Portal Access Screen
+- **Request**: User asked "Why no retailers shown, fix it. Show the retailers." from the Retailer Portal Users screen.
+- **Root Cause**: The "Retailer Portal Users" screen only displays created portal users. Retailers created without portal users won't show up here. The `AdminRetailerPortalAccessScreen` (designed to create portal users for existing retailers) was unlinked in the app, leaving users stuck with an empty list and no way to add users.
+- **Action**: Added a Floating Action Button (FAB) to `admin-retailer-users-screen.tsx` that navigates to the `AdminRetailerPortalAccess` route. Updated the empty state text to guide the user to click the + button to create login credentials.
+
+### [2026-08-28 12:46:00] Rewrite AdminRetailerUsersScreen to include all Retailers
+- **Request**: "None of the user show, it must shown the availabe reailers of the organization."
+- **Action**: Completely rewrote `frontend/src/screens/admin/admin-retailer-users-screen.tsx`. It now fetches both `listRetailers` and `listRetailerUsers`. It lists ALL retailers in the organization. If a retailer lacks a portal user, an inline "+ Add Login" button allows creating one without leaving the screen. If they have one, the password reset and status controls are displayed inline.
+- **2026-08-28 14:03:00**: Investigated 500 API error in Retailer Profile and discrepancy in Retailer Users UI. Verified that backend endpoints (`get_ledger`, `list_today_orders`, `list_retailers`, etc.) are returning 200 OK successfully. Verified that `admin-retailer-users-screen.tsx` code on disk is correctly updated to show the merged retailer/users list. Directed user to force-reload the Expo Go app.
+- **2026-08-28 14:08:00**: Resetted local git repository to match remote `origin/main` as requested by user (`git fetch origin` followed by `git reset --hard origin/main`), while preserving `.core` documentation.
+- **2026-08-28 14:15:00**: Executed full local code reset as requested. Reverted all tracked files with `git checkout -- .` and removed all untracked files with `git clean -fd`. Preserved `.core` documentation.
+- **2026-08-28 14:25:00**: Dropped `public` and `tenant_demo` schemas to completely wipe the database per user request. Re-initialized the database using `manage.py setup` and recreated the `Demo` organization and `test1` / `admin` users so the system is usable from a clean slate.
+- **2026-08-28 14:35:00**: Fixed a FastAPI + SQLAlchemy race condition in `super_admin.py` routes that caused "It doesn't actually delete org". Added explicit `await auth.db.commit()` to mutating endpoints because FastAPI `yield` dependencies execute teardowns after the response is sent, causing the frontend's immediate `refresh()` to fetch stale, pre-commit database state.
+- **2026-08-28 14:48:00**: Fixed a React state bug in `SuperAdminHomeScreen` (`OrganizationCard`) where "rechanging" an organization's name showed the old stale name. Updated the pencil icon button to explicitly sync `editName` state with the current `item.name` before entering edit mode.
+- **2026-08-28 15:17:00**: Added a visibility toggle (eye button) to the password field in the Delivery Users screen (`admin-delivery-users-screen.tsx`) by wrapping the TextInput in a container and introducing a `showPassword` toggle state.
+
+### [2026-08-28 15:50:00] Made Farm Load Optional for Delivery Runs
+- **User Request**: Bypass farm load stock check when confirming delivery run.
+- **Action Taken**: 
+  - Updated `DeliveryRun` DB model to make `farm_load_id` nullable.
+  - Due to broken alembic history, altered `delivery_runs` table directly using a python script for `tenant_demo`.
+  - Updated `DeliveryRunCreate` schema, backend `create_delivery_run` service, and frontend `api/delivery.ts` to allow null `farm_load_id`.
+  - Removed strict UI validation in `admin-delivery-runs-screen.tsx` so users can create a run without a selected load.
+
+### [2026-08-28 16:35:00] Delivery App Bottom Navigation & Impeccable Polish
+- **Request**: "Add a bottom nav bar, with order and delivery page..." and "/impeccable Polish the both pages. make it as card structure." and "/impeccable Polish and enhancer order page"
+- **Action**:
+  - Implemented `DeliveryTabNavigator` in `frontend/src/navigation/app-navigator.tsx` to handle Bottom Tabs for the DELIVERY role.
+  - Extracted the main UI into `DeliveryHomeScreen` (the Delivery run view) and `DeliveryOrdersScreen` (the Orders list view).
+  - Used Impeccable standards to elevate lists into a robust card structure:
+    - Added `elevation-sm`, `shadow-sm`, and `border-outline-variant/20`.
+    - Maintained strong left-indicator bars tied to order/stop status.
+  - Prevented "Create Delivery Run" from appearing for the DELIVERY user in `AdminOrderDetailScreen`.
+  - Applied the identical premium card structure polish to `AdminOrdersScreen` for cross-app consistency.

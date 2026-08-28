@@ -27,11 +27,11 @@ def _period_bounds(period: str, day):
     return day, day
 
 
-@router.get("/admin/trips/{run_id}/weight-loss", response_model=TripWeightLossOut)
+@router.get("/admin/trips/{run_id}/weight-loss", response_model=TripWeightLossOut | None)
 async def admin_weight_loss(
     run_id: UUID,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
-) -> TripWeightLossOut:
+) -> TripWeightLossOut | None:
     return await svc.compute_trip_weight_loss(auth.db, run_id)
 
 

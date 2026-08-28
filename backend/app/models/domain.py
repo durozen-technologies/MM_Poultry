@@ -230,8 +230,8 @@ class DeliveryRun(Base, BaseModelMixin):
     __tablename__ = "delivery_runs"
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
-    farm_load_id: Mapped[UUID] = mapped_column(
-        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), nullable=False, index=True
+    farm_load_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), nullable=True, index=True
     )
     run_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     status: Mapped[DeliveryRunStatus] = mapped_column(

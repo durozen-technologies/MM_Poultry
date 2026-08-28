@@ -36,7 +36,9 @@ async def create_org(
     from app.db.tenant_schema import set_search_path
 
     await set_search_path(auth.db, None)
-    return await svc.create_organization(auth.db, payload)
+    org = await svc.create_organization(auth.db, payload)
+    await auth.db.commit()
+    return org
 
 
 @router.patch("/super-admin/organizations/{org_id}", response_model=OrganizationOut)
@@ -45,7 +47,9 @@ async def update_org(
     payload: OrganizationUpdate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> OrganizationOut:
-    return await svc.update_organization(auth.db, org_id, payload)
+    org = await svc.update_organization(auth.db, org_id, payload)
+    await auth.db.commit()
+    return org
 
 
 @router.delete("/super-admin/organizations/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -54,6 +58,7 @@ async def delete_org(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> None:
     await svc.delete_organization(auth.db, org_id)
+    await auth.db.commit()
 
 
 @router.get("/super-admin/organizations/{org_id}/admins", response_model=list[UserOut])
@@ -70,7 +75,9 @@ async def create_tenant_admin(
     payload: TenantAdminCreate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> UserOut:
-    return await svc.create_tenant_admin(auth.db, org_id, payload)
+    admin = await svc.create_tenant_admin(auth.db, org_id, payload)
+    await auth.db.commit()
+    return admin
 
 
 @router.patch("/super-admin/organizations/{org_id}/admins/{user_id}", response_model=UserOut)
@@ -80,7 +87,9 @@ async def update_tenant_admin(
     payload: TenantAdminUpdate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> UserOut:
-    return await svc.update_tenant_admin(auth.db, org_id, user_id, payload)
+    admin = await svc.update_tenant_admin(auth.db, org_id, user_id, payload)
+    await auth.db.commit()
+    return admin
 
 
 @router.delete(
@@ -93,3 +102,4 @@ async def delete_tenant_admin(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.SUPER_ADMIN))],
 ) -> None:
     await svc.delete_tenant_admin(auth.db, org_id, user_id)
+    await auth.db.commit()

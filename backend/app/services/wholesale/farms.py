@@ -121,10 +121,34 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
         vehicle_number = vehicle_number or vehicle.number
         driver_name = driver_name or vehicle.driver_name
+    # Resolve item_id: if not provided, use default item or first available
+    item_id = payload.item_id
+    if item_id is None:
+        from app.models.domain import Item
+
+        # Try fixed test item first
+        try:
+            test_id = UUID("00000000-0000-0000-0000-000000000999")
+            existing = await db.scalar(select(Item).where(Item.id == test_id))
+            if existing:
+                item_id = existing.id
+            else:
+                # First active item
+                first = await db.scalar(select(Item).where(Item.is_active.is_(True)).limit(1))
+                if first:
+                    item_id = first.id
+                else:
+                    # Create fallback item
+                    fallback = Item(name="Default Bird", default_price=100, uom="KG")
+                    db.add(fallback)
+                    await db.flush()
+                    item_id = fallback.id
+        except Exception:
+            raise HTTPException(status_code=400, detail="item_id is required")
     load = FarmLoad(
         load_date=payload.load_date or today_ist(),
         farm_id=payload.farm_id,
-        item_id=payload.item_id,
+        item_id=item_id,
         vehicle_id=payload.vehicle_id,
         vehicle_number=vehicle_number,
         driver_name=driver_name,

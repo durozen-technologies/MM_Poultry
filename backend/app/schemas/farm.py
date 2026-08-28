@@ -44,7 +44,7 @@ class FarmOut(BaseModel):
 class FarmLoadCreate(BaseModel):
     load_date: IstDateOptional = None
     farm_id: UUID | None = None
-    item_id: UUID
+    item_id: UUID | None = None
     vehicle_id: UUID | None = None
     vehicle_number: str | None = None
     driver_name: str | None = None

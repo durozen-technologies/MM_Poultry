@@ -33,7 +33,7 @@ async def test_retailer_dashboard_after_order(client: AsyncClient) -> None:
 
     placed = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "bird_size": "Medium"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2, "bird_size": "Medium"}]},
         headers=r_headers,
     )
     assert placed.status_code == 200
@@ -57,7 +57,7 @@ async def test_retailer_orders_pagination(client: AsyncClient) -> None:
 
     await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "12.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "12.000", "total_boxes": 2}]},
         headers=r_headers,
     )
 
@@ -82,7 +82,7 @@ async def test_retailer_order_detail_tracking(client: AsyncClient) -> None:
 
     placed = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "20.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "20.000", "total_boxes": 2}]},
         headers=r_headers,
     )
     order_id = placed.json()["id"]
@@ -128,12 +128,12 @@ async def test_retailer_bills_scoped(client: AsyncClient) -> None:
 
     order_a = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "25.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "25.000", "total_boxes": 2}]},
         headers=headers_a,
     )
     order_b = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "30.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2}]},
         headers=headers_b,
     )
     load = await client.post(
@@ -151,7 +151,7 @@ async def test_retailer_bills_scoped(client: AsyncClient) -> None:
     await client.post(f"/delivery/runs/{run.json()['id']}/start", headers=admin_headers)
     await client.post(
         f"/delivery/stops/{stop_a['id']}/weigh",
-        json={"items": [{"item_id": item["id"], "delivered_weight_kg": "24.000"}], "scale_device_id": "SIM"},
+        json={"items": [{"item_id": item["id"], "gross_weight_kg": 25.5, "delivered_boxes": 1, "empty_box_weight_kg": 1.5}], "scale_device_id": "SIM"},
         headers=admin_headers,
     )
     bill = await client.post(
@@ -202,7 +202,7 @@ async def test_bird_size_persisted_on_update(client: AsyncClient) -> None:
 
     first = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "15.000", "bird_size": "Small"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "15.000", "total_boxes": 2, "bird_size": "Small"}]},
         headers=r_headers,
     )
     assert first.status_code == 200
@@ -210,7 +210,7 @@ async def test_bird_size_persisted_on_update(client: AsyncClient) -> None:
 
     second = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "18.000", "bird_size": "Large", "notes": "morning"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "18.000", "total_boxes": 2, "bird_size": "Large", "notes": "morning"}]},
         headers=r_headers,
     )
     assert second.status_code == 200

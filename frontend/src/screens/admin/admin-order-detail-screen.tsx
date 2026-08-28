@@ -4,10 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiItems } from "../../api/items";
 import type { DailyOrder } from "../../types/api";
+import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
 
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const order = route.params?.order as DailyOrder;
+  const user = useAuthStore((s) => s.user);
 
   const { data: itemsPage } = useQuery({
     queryKey: ["admin_items"],
@@ -67,12 +69,16 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           </View>
         ))}
 
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="bg-primary h-12 rounded-xl items-center justify-center mt-6 mb-8"
-          onPress={() => navigation.navigate("DeliveryRuns")}
-        >
-          <Text className="text-on-primary font-semibold">Create Delivery Run</Text>
-        </Pressable>
+        {user?.role !== "DELIVERY" ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Button"
+            className="bg-primary h-12 rounded-xl items-center justify-center mt-6 mb-8"
+            onPress={() => navigation.navigate("DeliveryRuns")}
+          >
+            <Text className="text-on-primary font-semibold">Create Delivery Run</Text>
+          </Pressable>
+        ) : (
+          <View className="mb-8" />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

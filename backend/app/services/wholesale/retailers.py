@@ -180,12 +180,7 @@ async def _create_portal_user(
 
 
 async def list_retailer_users(db: AsyncSession, organization_id: UUID) -> list[UserOut]:
-    from sqlalchemy.orm import aliased
-    from app.db.tenant_schema import set_search_path
-
-    # Assuming we are already in the tenant schema when this is called, but we don't have to be if we use set_search_path. 
-    # Actually, the router will set the search path if it requires AuthContext.
-    # We will fetch users with role RETAILER and join Retailer.
+    # Already in tenant schema via AuthContext; fetch RETAILER users with join.
     stmt = (
         select(User, Retailer)
         .join(Retailer, User.retailer_id == Retailer.id)

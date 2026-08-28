@@ -10,7 +10,7 @@ from app.schemas.dates import IstDate, IstDateOptional, IstDateTime
 
 
 class DeliveryRunCreate(BaseModel):
-    farm_load_id: UUID
+    farm_load_id: UUID | None = None
     order_ids: list[UUID]
     run_date: IstDateOptional = None
 
@@ -49,7 +49,7 @@ class DeliveryRunOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    farm_load_id: UUID
+    farm_load_id: UUID | None = None
     run_date: IstDate
     status: DeliveryRunStatus
     started_at: IstDateTime | None = None

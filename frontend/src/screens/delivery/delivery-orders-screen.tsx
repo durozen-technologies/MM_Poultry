@@ -15,7 +15,7 @@ import type { OrderStatus } from "../../types/api";
 
 
 
-export function AdminOrdersScreen({ navigation }: { navigation: any }) {
+export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
   const { data, isLoading, isRefetching, refetch } = useAdminTodayOrders();
   
@@ -53,12 +53,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           Orders
         </Text>
         <View className="flex-row items-center gap-1">
-          <Pressable accessibilityRole="button" accessibilityLabel="Button"
-            className="h-10 px-3 flex-row items-center justify-center rounded-xl bg-primary-container/30"
-            onPress={() => navigation.navigate("DeliveryRuns")}
-          >
-            <MaterialIcons name="local-shipping" size={20} className="text-primary" />
-          </Pressable>
+
           <Pressable accessibilityRole="button" accessibilityLabel="Button"
             className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-container"
             onPress={() => refetch()}

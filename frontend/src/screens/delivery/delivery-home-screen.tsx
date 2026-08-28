@@ -1,4 +1,5 @@
-import { View, Text, FlatList, Pressable, TextInput } from "react-native";
+import { useState } from "react";
+import { View, Text, FlatList, Pressable, TextInput, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +32,15 @@ export function DeliveryHomeScreen() {
     weighAndBill,
     onSkipStop,
     shareBill,
+    refresh,
   } = useDeliveryRun();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   const { data: itemsPage } = useQuery({
     queryKey: ["retailer_items"],
@@ -44,18 +53,28 @@ export function DeliveryHomeScreen() {
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       <View className="px-4 py-3 flex-row justify-between items-center bg-primary">
         <Text className="text-on-primary text-headline-sm font-semibold">Delivery</Text>
-        <Pressable accessibilityRole="button" onPress={() => logout()} className="px-3 py-1 rounded-full bg-primary-container/30">
-          <Text className="text-on-primary font-semibold">Logout</Text>
-        </Pressable>
+        <View className="flex-row items-center gap-3">
+          <Pressable accessibilityRole="button" onPress={handleRefresh} className="p-1">
+            <MaterialIcons name="refresh" size={24} className="text-on-primary" />
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => logout()} className="px-3 py-1 rounded-full bg-primary-container/30">
+            <Text className="text-on-primary font-semibold">Logout</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="p-4 flex-1">
         {msg ? <Text className="text-error mb-2 font-semibold">{msg}</Text> : null}
         {!run ? (
-          <View className="bg-surface-container-lowest rounded-2xl p-6 items-center border border-outline-variant/20">
-            <MaterialIcons name="local-shipping" size={40} className="text-on-surface-variant" />
-            <Text className="text-on-surface-variant mt-3 text-center">No active delivery run. Ask admin to build one.</Text>
-          </View>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          >
+            <View className="bg-surface-container-lowest rounded-2xl p-6 items-center border border-outline-variant/20 w-full">
+              <MaterialIcons name="local-shipping" size={40} className="text-on-surface-variant" />
+              <Text className="text-on-surface-variant mt-3 text-center">No active delivery run. Ask admin to build one.</Text>
+            </View>
+          </ScrollView>
         ) : (
           <>
             <View className="bg-surface-container-lowest rounded-2xl p-4 mb-3 border border-outline-variant/20">
@@ -74,21 +93,41 @@ export function DeliveryHomeScreen() {
             <FlatList
               data={run.stops}
               keyExtractor={(s) => s.id}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
               renderItem={({ item }) => {
                 const totalReq = item.items?.reduce((sum, it) => sum + Number(it.ordered_kg || 0), 0) || 0;
                 return (
                   <Pressable accessibilityRole="button"
-                    className={`rounded-xl p-3 mb-2 border ${
-                      activeStop?.id === item.id ? "bg-primary-container/20 border-primary" : "bg-surface-container-lowest border-outline-variant/20"
+                    className={`bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden ${
+                      activeStop?.id === item.id ? "border-primary" : "border-outline-variant/20"
                     }`}
                     onPress={() => { setActiveStop(item); setWeights({}); }}
                   >
-                    <Text className="font-semibold text-on-surface">
-                      #{item.sequence} {item.retailer_name}
-                    </Text>
-                    <Text className="text-on-surface-variant">
-                      Ordered {totalReq} kg · {item.status}
-                    </Text>
+                    {/* Left indicator bar */}
+                    <View className={`absolute top-0 left-0 w-1 h-full ${activeStop?.id === item.id ? 'bg-primary' : 'bg-transparent'}`} />
+
+                    <View className="flex-row items-center justify-between mb-2">
+                      <View className="flex-row items-center gap-2">
+                        <View className={`w-8 h-8 rounded-full items-center justify-center ${activeStop?.id === item.id ? 'bg-primary' : 'bg-surface-variant'}`}>
+                          <Text className={`font-bold ${activeStop?.id === item.id ? 'text-on-primary' : 'text-on-surface-variant'}`}>{item.sequence}</Text>
+                        </View>
+                        <Text className="font-headline-sm text-on-surface font-bold">
+                          {item.retailer_name}
+                        </Text>
+                      </View>
+                      <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-error-container' : 'bg-primary-container'}`}>
+                        <Text className={`font-label-md font-semibold ${item.status === 'PENDING' ? 'text-error' : 'text-on-primary-container'}`}>
+                          {item.status}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View className="flex-row items-center gap-2 mt-1 pl-10">
+                      <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
+                      <Text className="font-body-md text-on-surface-variant">
+                        Ordered <Text className="font-bold text-on-surface">{totalReq} kg</Text>
+                      </Text>
+                    </View>
                   </Pressable>
                 );
               }}

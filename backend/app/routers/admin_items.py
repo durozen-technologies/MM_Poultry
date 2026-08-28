@@ -2,14 +2,14 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.future import select
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.domain import Item, RetailerItemRate
 from app.models.enums import UserRole
-from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 from app.schemas.common import Page
+from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
 
 router = APIRouter(tags=["admin_items"])
 
@@ -39,7 +39,7 @@ async def admin_list_items(
     """List items."""
     stmt = select(Item).order_by(Item.name)
     if active_only:
-        stmt = stmt.where(Item.is_active == True)
+        stmt = stmt.where(Item.is_active)
     
     # Calculate offset
     offset = (page - 1) * size
@@ -51,7 +51,7 @@ async def admin_list_items(
     from sqlalchemy import func
     count_stmt = select(func.count()).select_from(Item)
     if active_only:
-        count_stmt = count_stmt.where(Item.is_active == True)
+        count_stmt = count_stmt.where(Item.is_active)
     total_count = await auth.db.scalar(count_stmt)
     total_pages = (total_count + size - 1) // size if total_count else 0
     

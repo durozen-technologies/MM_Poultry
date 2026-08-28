@@ -5,16 +5,11 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.timezone import today_ist
-from app.models.domain import (
-    OrderSequence,
-    RetailerDailyOrder,
-    RetailerDailyOrderItem,
-    Retailer
-)
+from app.models.domain import OrderSequence, Retailer, RetailerDailyOrder, RetailerDailyOrderItem
 from app.models.enums import (
     OrderStatus,
 )
@@ -95,13 +90,14 @@ async def upsert_today_order(
     await db.flush()
     
     # Reload to ensure all relationships are fresh
-    order = await db.scalar(
+    reloaded = await db.scalar(
         select(RetailerDailyOrder)
         .options(selectinload(RetailerDailyOrder.items))
         .where(RetailerDailyOrder.id == order.id)
         .execution_options(populate_existing=True)
     )
-    assert order is not None
+    assert reloaded is not None
+    order = reloaded
     
     retailer = await get_retailer(db, retailer_id)
     out = DailyOrderOut.model_validate(order, from_attributes=True)

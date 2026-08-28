@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.timezone import now_ist, today_ist
 from app.models.domain import (
@@ -16,7 +16,6 @@ from app.models.domain import (
     DeliveryBillItem,
     DeliveryRun,
     DeliveryStop,
-    DeliveryStopItem,
     FarmLoad,
     Payment,
     Retailer,
@@ -38,7 +37,7 @@ from app.schemas.billing import (
     DeliveryBillOut,
     PrintStatusUpdate,
 )
-from app.schemas.delivery import WeighRequest, DeliveryStopOut
+from app.schemas.delivery import DeliveryStopOut, WeighRequest
 from app.schemas.report import OpsDashboard
 from app.services.wholesale.common import ZERO, _get_org_settings, q_kg, q_money
 from app.services.wholesale.delivery_runs import _stop_out
@@ -198,8 +197,8 @@ async def commit_bill(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Credit limit exceeded (limit ,1{retailer.credit_limit}, "
-                f"would be ,1{q_money(retailer.credit_balance + preview.balance_amount)})"
+                f"Credit limit exceeded (limit {retailer.credit_limit}, "
+                f"would be {q_money(retailer.credit_balance + preview.balance_amount)})"
             ),
         )
 
@@ -263,13 +262,14 @@ async def commit_bill(
         payment.delivery_bill_id = bill.id
 
     await db.flush()
-    
-    bill = await db.scalar(
+
+    reloaded = await db.scalar(
         select(DeliveryBill)
         .options(selectinload(DeliveryBill.items))
         .where(DeliveryBill.id == bill.id)
     )
-    return DeliveryBillOut.model_validate(bill, from_attributes=True)
+    assert reloaded is not None
+    return DeliveryBillOut.model_validate(reloaded, from_attributes=True)
 
 
 async def update_bill_print_status(

@@ -91,7 +91,7 @@ def test_complete_delivery_run_coverage(client: TestClient, mock_admin_auth: Non
             await session.close()
 
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE"}]})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE", "total_boxes": 2}]})
     order_id = order_resp.json()["id"]
 
     if old_override:

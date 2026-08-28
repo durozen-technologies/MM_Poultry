@@ -191,7 +191,7 @@ export type DeliveryStop = {
 
 export type DeliveryRun = {
   id: string;
-  farm_load_id: string;
+  farm_load_id: string | null;
   run_date: string;
   status: string;
   started_at?: string | null;

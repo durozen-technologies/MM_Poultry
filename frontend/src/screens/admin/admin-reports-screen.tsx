@@ -53,7 +53,11 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
       const bytes = new Uint8Array(buffer);
       let binary = "";
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
+      // Use global btoa if available, otherwise fallback for React Native (Hermes)
+      const base64 =
+        typeof globalThis.btoa === "function"
+          ? globalThis.btoa(binary)
+          : Buffer.from(bytes).toString("base64");
       const path = `${FileSystem.cacheDirectory}report-${period}.pdf`;
       await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
       if (await Sharing.isAvailableAsync()) {

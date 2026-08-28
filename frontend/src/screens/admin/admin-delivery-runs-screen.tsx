@@ -21,6 +21,7 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isLoading = isLoadingOrders || isLoadingFarms;
 
@@ -42,19 +43,23 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
   }
 
   async function onCreateRun() {
-    if (!selectedLoad || selectedOrders.size === 0) {
-      setMsg("Select a farm load and at least one order");
+    if (selectedOrders.size === 0) {
+      setMsg("Select at least one order");
       return;
     }
+    setIsSubmitting(true);
+    setMsg("");
     try {
       await createDeliveryRun({
-        farm_load_id: selectedLoad,
+        farm_load_id: selectedLoad || null,
         order_ids: Array.from(selectedOrders),
       });
       setMsg("Delivery run created");
       await Promise.all([refetchOrders(), refetchFarms()]);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed to create run");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 

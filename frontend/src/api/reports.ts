@@ -9,11 +9,11 @@ export async function getReportSummary(period: "daily" | "weekly" | "monthly", o
 }
 
 export async function getTripWeightLoss(runId: string) {
-  const { data } = await api.get<TripWeightLoss>(`/admin/trips/${runId}/weight-loss`);
+  const { data } = await api.get<TripWeightLoss | null>(`/admin/trips/${runId}/weight-loss`);
   return data;
 }
 
-export function reportPdfUrl(period: string, onDate: string | undefined, token: string) {
+export function reportPdfUrl(period: string, onDate: string | undefined) {
   const params = new URLSearchParams({ period });
   if (onDate) params.set("on_date", onDate);
   return `${API_BASE_URL}/api/v1/admin/reports/summary.pdf?${params.toString()}`;

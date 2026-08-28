@@ -26,7 +26,7 @@ async def test_weigh_preview_commit_flow(client: AsyncClient) -> None:
     r_headers = auth_headers(login.json()["access_token"])
     order = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "40.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "40.000", "total_boxes": 2}]},
         headers=r_headers,
     )
     load = await client.post(
@@ -43,7 +43,7 @@ async def test_weigh_preview_commit_flow(client: AsyncClient) -> None:
     await client.post(f"/delivery/runs/{run.json()['id']}/start", headers=headers)
     weigh = await client.post(
         f"/delivery/stops/{stop_id}/weigh",
-        json={"items": [{"item_id": item["id"], "delivered_weight_kg": "38.500"}], "scale_device_id": "SIM"},
+        json={"items": [{"item_id": item["id"], "gross_weight_kg": 40.0, "delivered_boxes": 2, "empty_box_weight_kg": 1.5}], "scale_device_id": "SIM"},
         headers=headers,
     )
     assert weigh.status_code == 200

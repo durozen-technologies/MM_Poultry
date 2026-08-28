@@ -4,8 +4,8 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.timezone import now_ist, today_ist
 from app.models.domain import (
@@ -40,14 +40,16 @@ async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
 
 
 async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> DeliveryRunOut:
-    load = await db.scalar(select(FarmLoad).where(FarmLoad.id == payload.farm_load_id))
-    if load is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
+    load = None
+    if payload.farm_load_id:
+        load = await db.scalar(select(FarmLoad).where(FarmLoad.id == payload.farm_load_id))
+        if load is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
     if not payload.order_ids:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="order_ids required")
 
     run = DeliveryRun(
-        farm_load_id=load.id,
+        farm_load_id=load.id if load else None,
         run_date=payload.run_date or today_ist(),
         status=DeliveryRunStatus.PLANNED,
     )
@@ -78,14 +80,15 @@ async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> D
             stop_item = DeliveryStopItem(
                 delivery_stop_id=stop.id,
                 item_id=item.item_id,
-                ordered_kg=item.requested_kg,
+                ordered_kg=item.requested_kg if item.requested_kg is not None else 0,
                 rate_per_kg=rate,
             )
             db.add(stop_item)
             
         order.status = OrderStatus.ACKNOWLEDGED
 
-    load.status = FarmLoadStatus.IN_TRANSIT
+    if load:
+        load.status = FarmLoadStatus.IN_TRANSIT
     await db.flush()
     return await get_delivery_run(db, run.id)
 

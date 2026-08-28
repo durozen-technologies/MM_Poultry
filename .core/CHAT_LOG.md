@@ -918,3 +918,87 @@ All backend APIs are heavily covered for the happy paths, exceptions, and valida
 ### [2026-08-28 11:17:00]
 **User:** (Encountered ValidationError for FarmLoadOut: item_id input_value=None)
 **Agent:** The recently added item_id column allowed NULLs but Pydantic requires it. Created a backfill script to populate existing farm_loads with the first available item_id, then enforced NOT NULL on the column to resolve validation issues.
+
+## [2026-08-28 12:04:00] Debugging and Error Recovery: relation "items" does not exist
+
+- Terminal Commands Run:
+  - `uv run python migrate.py`
+  - `uv run pytest tests/test_admin_items.py -v`
+- Technical Reasoning:
+  The `items` table is required by the `admin_list_items` endpoint, yet was not created in the database schema `tenant_test` or `tenant_demo`. Looking into the codebase, tenant tables are managed differently from public schemas. Since existing tenants were upgraded via a hardcoded set of `ALTER TABLE` operations in `tenant_schema.py:repair_tenant_schema_async`, any completely new table missing in existing tenants would not be automatically created. 
+  By injecting a generic loop into `repair_tenant_schema_async` that calls `table.create` on all tables in `_tenant_table_names()` (with `checkfirst=True`), all existing and future missing tables will be automatically created safely before running `ALTER TABLE` migrations. 
+  Following this codebase repair, we confirmed the repair with integration tests to adhere to the test-driven rule.
+
+## [2026-08-28 12:10:25] Test Suite Fix: Cascading Failures
+
+- Terminal Commands Run:
+  - `uv run pytest tests/ -v`
+- Technical Reasoning:
+  After resolving the original missing `items` table, running the entire test suite yielded several unrelated failures. Specifically, tests calling `FarmLoad` creation were failing with `422 Unprocessable Entity` because the `item_id` field was recently made mandatory but the tests had not been updated. The same happened for `WeighItemRequest` which replaced `delivered_weight_kg` with `gross_weight_kg` and `empty_box_weight_kg`. Because these tests failed abruptly with `KeyError` (while trying to extract `id` from error responses) during mocked auth contexts, the database connections were not properly cleaned up, dropping schema tables mid-suite and causing other tests to report `UndefinedTableError: relation "retailers" does not exist`. Updating the test payloads to match the new schemas fixed the 422s and completely restored test suite integrity (93 passed).
+
+### [2026-08-28 12:26:00] Test Suite Fixes and Auth Dependency Repair
+**User:** Fix it (uv run pytest failing on 32 tests)
+**Agent:** 
+Identified that `uv run pytest` executed a wider scope of tests (totaling 127) residing in `../test/` and `tests/` simultaneously. 
+
+1. **Bug discovery (`app/auth/dependencies.py`):**
+   - The test failures included `404 Organization not found` immediately after successfully running `client.post("/super-admin/organizations")`. 
+   - I traced this back to the `get_current_auth` FastAPI dependency. The codebase was flushing transactions to acquire primary keys (`db.flush()`), which cleared `session.new` and `session.dirty`. The dependency was relying on these fragile flags to decide whether to `await session.commit()` or `await session.rollback()`.
+   - Since the flags were empty post-flush, the endpoint committed a silent rollback, discarding the newly created records on successful 200 responses. 
+   - I fixed the logic in `dependencies.py` to unilaterally call `await session.commit()` upon successful endpoint execution to lock in the flush.
+
+2. **Schema Test Payload Fixes:**
+   - The remaining tests were cascading 422 errors across `api/test_farms_delivery_api.py`, `smoke/test_wholesale_flow.py`, `api/test_retailer_api.py`, and `api/test_billing_api.py`.
+   - Similar to the earlier errors in `backend/tests/`, they were missing the `item_id` attribute inside FarmLoad creation payloads and lacked the new `gross_weight_kg`/`delivered_boxes` struct inside weigh payloads.
+   - I utilized file replacement tooling to inject `item_id: item["id"]` and the updated weighing fields into these tests.
+
+**Execution:** 
+Ran `uv run pytest` one final time. All 127 tests completed successfully (127 passed, 0 failures).
+
+### [2026-08-28 12:30:00] Fix pytest module resolution
+**Agent Reasoning**: The IDE language server (Pylance) couldn't resolve `pytest` because the project's virtual environment is located inside `backend/.venv`, but the workspace root is the parent directory. I created a `.vscode/settings.json` file to explicitly set the Python interpreter for the workspace.
+**Commands Run**:
+- `ls -la backend`
+- `ls -la test/smoke`
+
+### [2026-08-28 12:42:00] User Issue: Retailers missing from Retailer Portal Users screen
+**Request**:
+> Why no retailers shown, fix it. Show the retailers.
+
+**Analysis**:
+The user was confused because the "Retailer Portal Users" screen in Settings was completely empty, even though they had created 4 retailers in the database.
+1. The `admin-retailer-users-screen.tsx` is specifically designed to manage **Portal Logins** (User accounts) for retailers, not the Retailers themselves.
+2. A retailer created without a portal login will not appear on this screen.
+3. The real bug: The screen to add a portal user for an existing retailer (`admin-retailer-portal-access-screen.tsx`) existed in the codebase but was **unlinked**—there was no button to reach it! Thus, the user was stuck with an empty list and no way to add portal users.
+
+**Action Taken**:
+- I modified `frontend/src/screens/admin/admin-retailer-users-screen.tsx` and added a Floating Action Button (FAB) in the bottom right corner.
+- This FAB navigates to the previously orphaned `RetailerPortalAccess` route.
+- I updated the empty state text from "No retailer portal users yet." to "No portal users created yet. Click the + button below to create login credentials for your retailers." to explicitly guide the user.
+
+**Result**:
+Now, when the user visits Settings -> Retailer Users, they can click the `+` FAB to see a list of ALL their retailers and assign portal logins to them.
+
+### [2026-08-28 12:46:00] User Issue: Retailers missing from Retailer Portal Users screen (Follow-up)
+**Request**:
+> None of the user show, it must shown the availabe reailers of the organization.
+
+**Action Taken**:
+- The user clarified they didn't just want a button to a separate screen—they expected the "Retailer Portal Users" screen to literally list ALL available retailers in the organization in one place, regardless of their portal access status.
+- I entirely rewrote `frontend/src/screens/admin/admin-retailer-users-screen.tsx`.
+- It now queries both `listRetailers` and `listRetailerUsers` using React Query.
+- The UI displays a master list of all Retailers. 
+- If a retailer already has a portal login, it shows their username, status, and password reset controls inline.
+- If a retailer lacks a portal login, it shows an inline "+ Add Login" button that expands into a quick form to set the username and password without ever leaving the screen.
+
+**Result**:
+The screen now flawlessly serves as a unified master list for both viewing retailers and managing their portal access in a single tap.
+
+### [2026-08-28] Delivery Navigation and UI Polish
+- **User**: Add a bottom nav bar, with order and delivery page. In Devlivery page: On going delivery. In Order page: To show all order ongoing order is also included. /impeccable Polish the both pages. make it as card structure. /impeccable Polish and enhancer order page
+- **Agent**: 
+  - Created `DeliveryTabNavigator`.
+  - Built `DeliveryOrdersScreen` using components from `AdminOrdersScreen`.
+  - Allowed `UserRole.DELIVERY` to see `AdminOrderDetailScreen`, but hid the "Create Delivery Run" button to make it read-only.
+  - Used Impeccable skill guidance to polish `DeliveryHomeScreen`, `DeliveryOrdersScreen`, and `AdminOrdersScreen` into an elevated Material-like Card structure with crisp borders, distinct left indicator lines, and rounded corners (`elevation-sm`, `shadow-sm`, `border-outline-variant/20`).
+  - Requested clarification between `AdminOrdersScreen`, `RetailerOrdersScreen`, and `OrderDetailScreen` when ambiguous. Polished `AdminOrdersScreen` per user request.

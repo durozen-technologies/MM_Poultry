@@ -33,6 +33,7 @@ import { AdminRetailerPortalAccessScreen } from "../screens/admin/admin-retailer
 import { AdminItemsScreen } from "../screens/admin/admin-items-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
+import { DeliveryOrdersScreen } from "../screens/delivery/delivery-orders-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
 import { RetailerOrdersScreen } from "../screens/retailer/retailer-orders-screen";
 import { RetailerBillsScreen } from "../screens/retailer/retailer-bills-screen";
@@ -123,6 +124,38 @@ function RetailerTabNavigator() {
   );
 }
 
+function DeliveryTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => {
+          let iconName: keyof typeof MaterialIcons.glyphMap = "local-shipping";
+          if (route.name === "Delivery") iconName = "local-shipping";
+          else if (route.name === "Orders") iconName = "receipt-long";
+
+          return <MaterialIcons name={iconName} size={24} color={color} />;
+        },
+        tabBarActiveTintColor: "#012d1d",
+        tabBarInactiveTintColor: "#414844",
+        tabBarStyle: {
+          backgroundColor: "rgba(247, 249, 255, 0.9)",
+          borderTopColor: "rgba(0,0,0,0.04)",
+          elevation: 0,
+        },
+        tabBarLabelStyle: {
+          fontFamily: "System",
+          fontWeight: "600",
+          fontSize: 12,
+        },
+      })}
+    >
+      <Tab.Screen name="Delivery" component={DeliveryHomeScreen} />
+      <Tab.Screen name="Orders" component={DeliveryOrdersScreen} />
+    </Tab.Navigator>
+  );
+}
+
 export function AppNavigator() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const user = useAuthStore((s) => s.user);
@@ -170,7 +203,10 @@ export function AppNavigator() {
             <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />
           </>
         ) : user.role === "DELIVERY" ? (
-          <Stack.Screen name="DeliveryHome" component={DeliveryHomeScreen} />
+          <>
+            <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} />
+            <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
+          </>
         ) : (
           <>
             <Stack.Screen name="RetailerTabs" component={RetailerTabNavigator} />

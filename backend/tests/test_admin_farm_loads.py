@@ -113,7 +113,7 @@ def test_create_delivery_run(client: TestClient, mock_admin_auth: None) -> None:
             await session.close()
         
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "50.5", "bird_size": "LARGE"}]})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "50.5", "bird_size": "LARGE", "total_boxes": 2}]})
     order_id = order_resp.json()["id"]
     
     if old_override:
@@ -190,7 +190,7 @@ def test_delivery_run_lifecycle(client: TestClient, mock_admin_auth: None) -> No
             await session.close()
     
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db2
-    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE"}]})
+    order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE", "total_boxes": 2}]})
     order_id = order_resp.json()["id"]
     
     if old_override:

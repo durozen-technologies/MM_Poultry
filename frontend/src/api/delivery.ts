@@ -2,7 +2,7 @@ import { api } from "./client";
 import type { DeliveryBill, DeliveryRun, DeliveryStop } from "../types/api";
 
 export async function createDeliveryRun(payload: {
-  farm_load_id: string;
+  farm_load_id: string | null;
   order_ids: string[];
   run_date?: string;
 }) {

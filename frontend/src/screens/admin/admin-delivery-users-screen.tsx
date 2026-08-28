@@ -19,6 +19,7 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -88,7 +89,12 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
             <View className="bg-surface-container-lowest rounded-2xl p-4 mb-4 border border-outline-variant/20 flex-col gap-3">
               <Text className="font-label-md text-on-surface-variant uppercase font-semibold">New Delivery User</Text>
               <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" placeholderTextColor="#737373" />
-              <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry placeholderTextColor="#737373" />
+              <View className="flex-row items-center bg-surface h-12 border border-outline-variant rounded-lg pr-1">
+                <TextInput className="flex-1 px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} placeholderTextColor="#737373" />
+                <Pressable accessibilityRole="button" onPress={() => setShowPassword(!showPassword)} className="p-2 h-full justify-center">
+                  <MaterialIcons name={showPassword ? "visibility" : "visibility-off"} size={22} className="text-on-surface-variant" />
+                </Pressable>
+              </View>
               <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Full name (optional)" value={fullName} onChangeText={setFullName} placeholderTextColor="#737373" />
               <TextInput className="bg-surface h-12 border border-outline-variant rounded-lg px-3 text-on-surface placeholder:text-on-surface-variant" placeholder="Mobile (optional)" value={mobile} onChangeText={setMobile} keyboardType="phone-pad" placeholderTextColor="#737373" />
               <Pressable accessibilityRole="button" accessibilityLabel="Button" className="bg-primary h-11 rounded-lg items-center justify-center" onPress={onAdd}>

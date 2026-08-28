@@ -75,9 +75,7 @@ async def delete_retailer_user(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> None:
     from app.services.wholesale.retailers import delete_retailer_user as _delete
-    from app.db.tenant_schema import derive_schema_name
-    schema_name = derive_schema_name(auth.user.organization_slug) if auth.user.organization_slug else derive_schema_name(str(_org_id(auth)))
-    # wait, auth.user doesn't have organization_slug natively mapped unless it's loaded.
-    # We can use auth.schema_name! Let's check if auth has schema_name.
-    # AuthContext has `schema_name`.
+
+    if auth.schema_name is None:
+        raise HTTPException(status_code=400, detail="Organization schema not resolved")
     await _delete(auth.db, _org_id(auth), user_id, auth.schema_name)

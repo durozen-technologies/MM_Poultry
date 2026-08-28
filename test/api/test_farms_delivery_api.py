@@ -34,7 +34,7 @@ async def test_farm_vehicle_and_delivery_run(client: AsyncClient) -> None:
     r_headers = auth_headers(login.json()["access_token"])
     order = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "30.000"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2}]},
         headers=r_headers,
     )
     assert order.status_code == 200

@@ -35,10 +35,12 @@ from app.services.wholesale.common import q_kg, q_money
 from app.services.wholesale.delivery_runs import get_delivery_run
 
 
-async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeightLossOut:
+async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeightLossOut | None:
     run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
+    if not run.farm_load_id:
+        return None
     load = await db.scalar(select(FarmLoad).where(FarmLoad.id == run.farm_load_id))
     if load is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")

@@ -57,9 +57,13 @@ export function useDeliveryRun() {
     try {
       await completeRun(run.id);
       const loss = await getTripWeightLoss(run.id);
-      setMsg(`Run complete. Loss ${loss.loss_kg} kg (${loss.loss_pct}%)`);
+      if (loss) {
+        setMsg(`Run complete. Loss ${loss.loss_kg} kg (${loss.loss_pct}%)`);
+      } else {
+        setMsg(`Run complete.`);
+      }
       await refresh();
-    } catch (e) {
+    } catch (e: any) {
       setMsg(e instanceof Error ? e.message : "Failed to complete run");
     }
   }
@@ -178,5 +182,6 @@ export function useDeliveryRun() {
     weighAndBill,
     onSkipStop,
     shareBill,
+    refresh,
   };
 }
