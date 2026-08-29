@@ -44,15 +44,33 @@ async def upsert_today_order(
     user_id: UUID | None,
 ) -> DailyOrderOut:
     day = today_ist()
-    existing = await db.scalar(
-        select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
-        .where(
-            RetailerDailyOrder.retailer_id == retailer_id,
-            RetailerDailyOrder.order_date == day,
+    existing = None
+
+    if payload.order_id:
+        existing = await db.scalar(
+            select(RetailerDailyOrder)
+            .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
+            .where(
+                RetailerDailyOrder.id == payload.order_id,
+                RetailerDailyOrder.retailer_id == retailer_id,
+            )
         )
-    )
+    else:
+        # Fallback for older clients: Try to find an existing PLACED order for today
+        existing = await db.scalar(
+            select(RetailerDailyOrder)
+            .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
+            .where(
+                RetailerDailyOrder.retailer_id == retailer_id,
+                RetailerDailyOrder.order_date == day,
+                RetailerDailyOrder.status == OrderStatus.PLACED,
+            )
+        )
+
     if existing:
+        if existing.status != OrderStatus.PLACED and existing.status != OrderStatus.CANCELLED:
+            raise ValueError("Cannot update a confirmed order. Please place a new order.")
+
         if existing.status == OrderStatus.CANCELLED:
             existing.status = OrderStatus.PLACED
         if not existing.order_number:
@@ -92,7 +110,7 @@ async def upsert_today_order(
     # Reload to ensure all relationships are fresh
     reloaded = await db.scalar(
         select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
+        .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
         .where(RetailerDailyOrder.id == order.id)
         .execution_options(populate_existing=True)
     )
@@ -103,26 +121,39 @@ async def upsert_today_order(
     out = DailyOrderOut.model_validate(order, from_attributes=True)
     out.retailer_name = retailer.name
     out.shop_name = retailer.shop_name
+    for i, model_item in enumerate(order.items):
+        if model_item.item:
+            out.items[i].item_name = model_item.item.name
     return out
 
 
-async def get_today_order_for_retailer(db: AsyncSession, retailer_id: UUID) -> DailyOrderOut | None:
+async def get_today_orders_for_retailer(db: AsyncSession, retailer_id: UUID) -> list[DailyOrderOut]:
     day = today_ist()
-    order = await db.scalar(
+    res = await db.execute(
         select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
+        .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
         .where(
             RetailerDailyOrder.retailer_id == retailer_id,
             RetailerDailyOrder.order_date == day,
         )
+        .order_by(RetailerDailyOrder.created_at.desc())
     )
-    if order is None:
-        return None
+    orders = res.scalars().all()
+    if not orders:
+        return []
+
     retailer = await get_retailer(db, retailer_id)
-    out = DailyOrderOut.model_validate(order, from_attributes=True)
-    out.retailer_name = retailer.name
-    out.shop_name = retailer.shop_name
-    return out
+    out_list = []
+    for order in orders:
+        out = DailyOrderOut.model_validate(order, from_attributes=True)
+        out.retailer_name = retailer.name
+        out.shop_name = retailer.shop_name
+        for i, model_item in enumerate(order.items):
+            if model_item.item:
+                out.items[i].item_name = model_item.item.name
+        out_list.append(out)
+
+    return out_list
 
 
 async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
@@ -130,7 +161,7 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
 
     res = await db.execute(
         select(RetailerDailyOrder, Retailer.name, Retailer.shop_name)
-        .options(selectinload(RetailerDailyOrder.items))
+        .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
         .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
         .where(
             RetailerDailyOrder.order_date == day,
@@ -146,6 +177,9 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
         out = DailyOrderOut.model_validate(order, from_attributes=True)
         out.retailer_name = r_name
         out.shop_name = r_shop
+        for i, model_item in enumerate(order.items):
+            if model_item.item:
+                out.items[i].item_name = model_item.item.name
         items.append(out)
         for i in order.items:
             if i.requested_kg:
@@ -154,3 +188,33 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
                 total_bx += i.total_boxes
 
     return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total_kg), total_boxes=total_bx)
+
+
+async def confirm_order(db: AsyncSession, order_id: UUID, expected_delivery_date: date) -> DailyOrderOut:
+    from fastapi import HTTPException, status
+    order = await db.scalar(
+        select(RetailerDailyOrder)
+        .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
+        .where(RetailerDailyOrder.id == order_id)
+    )
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    
+    if order.status != OrderStatus.PLACED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Cannot confirm order in {order.status.name} state"
+        )
+        
+    order.status = OrderStatus.ACKNOWLEDGED
+    order.expected_delivery_date = expected_delivery_date
+    await db.flush()
+    
+    retailer = await get_retailer(db, order.retailer_id)
+    out = DailyOrderOut.model_validate(order, from_attributes=True)
+    out.retailer_name = retailer.name
+    out.shop_name = retailer.shop_name
+    for i, model_item in enumerate(order.items):
+        if model_item.item:
+            out.items[i].item_name = model_item.item.name
+    return out

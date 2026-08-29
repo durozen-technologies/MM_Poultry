@@ -103,9 +103,6 @@ class RetailerItemRate(Base, BaseModelMixin):
 
 class RetailerDailyOrder(Base, BaseModelMixin):
     __tablename__ = "retailer_daily_orders"
-    __table_args__ = (
-        UniqueConstraint("retailer_id", "order_date", name="uq_retailer_daily_order"),
-    )
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     order_number: Mapped[str | None] = mapped_column(
@@ -121,6 +118,7 @@ class RetailerDailyOrder(Base, BaseModelMixin):
         nullable=False,
         default=OrderStatus.PLACED,
     )
+    expected_delivery_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_by_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
 
     items: Mapped[list["RetailerDailyOrderItem"]] = relationship(
@@ -148,6 +146,8 @@ class RetailerDailyOrderItem(Base, BaseModelMixin):
     bird_size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    item: Mapped["Item"] = relationship("Item", lazy="selectin")
 
 
 class Farm(Base, BaseModelMixin):
@@ -239,6 +239,12 @@ class DeliveryRun(Base, BaseModelMixin):
         nullable=False,
         default=DeliveryRunStatus.PLANNED,
     )
+    driver_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    driver_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    vehicle_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("vehicles.id"), nullable=True
+    )
+    vehicle_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

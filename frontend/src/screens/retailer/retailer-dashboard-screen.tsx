@@ -47,7 +47,8 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
     }, [refresh])
   );
 
-  const todayOrder = dashboard?.today_order;
+  const todayOrders = dashboard?.today_orders || [];
+  const editableOrder = todayOrders.find(o => o.status === "PLACED");
 
   return (
     <View className="flex-1 bg-surface relative">
@@ -88,43 +89,43 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
           {dashboard ? (
             <View className="flex-col gap-5">
               
-              {/* Order Status Card */}
+              {/* Orders Status Card */}
               <View className="bg-white rounded-[20px] p-5 shadow-sm border border-black/5 elevation-sm">
-                <View className="flex-row items-center justify-between border-b border-surface-variant/50 pb-3 mb-3">
-                  <View className="flex-row items-center gap-2">
-                    <MaterialCommunityIcons name="truck-delivery-outline" size={22} className="text-[#0052CC]" />
-                    <Text className="font-headline-sm text-on-surface font-semibold">
-                      Today's Order
-                    </Text>
-                  </View>
-                  {todayOrder && (
-                    <View className="px-2 py-1 bg-primary-container rounded-md">
-                      <Text className="text-on-primary-container text-[10px] font-bold uppercase">{todayOrder.status}</Text>
-                    </View>
-                  )}
+                <View className="flex-row items-center gap-2 border-b border-surface-variant/50 pb-3 mb-3">
+                  <MaterialCommunityIcons name="truck-delivery-outline" size={22} className="text-[#0052CC]" />
+                  <Text className="font-headline-sm text-on-surface font-semibold">
+                    Today's Orders
+                  </Text>
                 </View>
 
-                {todayOrder ? (
-                  <View className="flex-col gap-1">
-                    <View className="flex-row items-baseline gap-1">
-                      <Text className="font-display-sm text-on-surface font-bold">
-                        {todayOrder.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || '-'}
-                      </Text>
-                      <Text className="font-body-lg text-on-surface-variant font-medium">kg</Text>
-                      <Text className="font-headline-sm text-on-surface font-bold ml-2">
-                        ({todayOrder.items?.reduce((s, it) => s + (it.total_boxes || 0), 0) || 0} Boxes)
-                      </Text>
-                    </View>
-                    
-                    <Text className="font-body-sm text-on-surface-variant mt-1">
-                      <Text className="font-semibold text-on-surface">Sizes: </Text>
-                      {todayOrder.items?.map(it => it.bird_size).filter(Boolean).join(", ") || "Any size"}
-                    </Text>
-                    
-                    <Text className="font-body-sm text-on-surface-variant mt-1">
-                      <Text className="font-semibold text-on-surface">Est. Delivery: </Text>
-                      {estimatedDeliveryLabel(todayOrder.order_date)}
-                    </Text>
+                {todayOrders.length > 0 ? (
+                  <View className="flex-col gap-4">
+                    {todayOrders.map(order => (
+                      <View key={order.id} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 relative">
+                        <View className="absolute right-4 top-4 px-2 py-1 bg-primary-container rounded-md">
+                          <Text className="text-on-primary-container text-[10px] font-bold uppercase">{order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}</Text>
+                        </View>
+                        
+                        <View className="flex-col gap-2 mt-1">
+                          {order.items?.map(it => (
+                            <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">
+                              <Text className="font-headline-sm text-on-surface font-bold">{it.item_name || "Item"}</Text>
+                              <Text className="font-body-md text-on-surface-variant font-medium ml-1">
+                                {it.total_boxes || 0} Boxes
+                              </Text>
+                              {it.requested_kg ? (
+                                <Text className="font-body-md text-on-surface-variant ml-1">({it.requested_kg} kg)</Text>
+                              ) : null}
+                            </View>
+                          ))}
+
+                          <Text className="font-body-sm text-on-surface-variant mt-2">
+                            <Text className="font-semibold text-on-surface">Est. Delivery: </Text>
+                            {estimatedDeliveryLabel(order.order_date)}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
                 ) : (
                   <View className="py-2 items-center flex-col">
@@ -137,10 +138,16 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
                 
                 <Pressable accessibilityRole="button" accessibilityLabel="Button"
                   className="bg-[#0052CC] h-12 rounded-xl items-center justify-center mt-5 active:opacity-85"
-                  onPress={() => navigation.navigate("PlaceOrder")}
+                  onPress={() => {
+                    if (editableOrder) {
+                      navigation.navigate("PlaceOrder", { orderId: editableOrder.id });
+                    } else {
+                      navigation.navigate("PlaceOrder");
+                    }
+                  }}
                 >
                   <Text className="text-white font-bold tracking-wide">
-                    {todayOrder ? "UPDATE ORDER" : "PLACE NEW ORDER"}
+                    {editableOrder ? "UPDATE ORDER" : "PLACE NEW ORDER"}
                   </Text>
                 </Pressable>
               </View>

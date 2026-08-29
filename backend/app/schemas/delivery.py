@@ -13,6 +13,10 @@ class DeliveryRunCreate(BaseModel):
     farm_load_id: UUID | None = None
     order_ids: list[UUID]
     run_date: IstDateOptional = None
+    driver_user_id: UUID | None = None
+    driver_name: str | None = None
+    vehicle_id: UUID | None = None
+    vehicle_number: str | None = None
 
 
 class DeliveryStopItemOut(BaseModel):
@@ -52,6 +56,10 @@ class DeliveryRunOut(BaseModel):
     farm_load_id: UUID | None = None
     run_date: IstDate
     status: DeliveryRunStatus
+    driver_user_id: UUID | None = None
+    driver_name: str | None = None
+    vehicle_id: UUID | None = None
+    vehicle_number: str | None = None
     started_at: IstDateTime | None = None
     completed_at: IstDateTime | None = None
     stops: list[DeliveryStopOut] = []

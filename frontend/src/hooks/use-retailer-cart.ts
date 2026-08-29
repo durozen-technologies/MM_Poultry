@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getTodayOrder, upsertTodayOrder } from "../api/retailer";
+import { getRetailerOrder, upsertTodayOrder } from "../api/retailer";
 import { apiItems } from "../api/items";
 import type { OrderItemCreate } from "../types/api";
 
-export function useRetailerCart(onSuccess: () => void) {
+export function useRetailerCart(onSuccess: () => void, orderId?: string) {
   const [cart, setCart] = useState<Record<string, OrderItemCreate>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -16,8 +16,9 @@ export function useRetailerCart(onSuccess: () => void) {
   const items = itemsPage?.items || [];
 
   const loadExisting = useCallback(async () => {
+    if (!orderId) return;
     try {
-      const order = await getTodayOrder();
+      const order = await getRetailerOrder(orderId);
       if (order && order.items) {
         const existingCart: Record<string, OrderItemCreate> = {};
         for (const it of order.items) {
@@ -38,7 +39,7 @@ export function useRetailerCart(onSuccess: () => void) {
 
   useEffect(() => {
     void loadExisting();
-  }, [loadExisting]);
+  }, [loadExisting, orderId]);
 
   const updateCartItem = (itemId: string, field: keyof OrderItemCreate, value: any) => {
     setCart((prev) => {
@@ -83,7 +84,7 @@ export function useRetailerCart(onSuccess: () => void) {
     setBusy(true);
     setMessage(null);
     try {
-      await upsertTodayOrder({ items: payloadItems });
+      await upsertTodayOrder({ order_id: orderId, items: payloadItems });
       onSuccess();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed to save order");

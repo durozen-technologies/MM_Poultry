@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.billing import DeliveryBillOut
 from app.schemas.dates import IstDate
@@ -49,7 +49,7 @@ class RetailerLastPayment(BaseModel):
 
 
 class RetailerDashboardOut(BaseModel):
-    today_order: DailyOrderOut | None = None
+    today_orders: list[DailyOrderOut] = Field(default_factory=list)
     outstanding: Decimal
     last_payment: RetailerLastPayment | None = None
     month_purchase_total: Decimal

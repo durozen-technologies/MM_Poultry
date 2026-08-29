@@ -871,3 +871,39 @@
     - Maintained strong left-indicator bars tied to order/stop status.
   - Prevented "Create Delivery Run" from appearing for the DELIVERY user in `AdminOrderDetailScreen`.
   - Applied the identical premium card structure polish to `AdminOrdersScreen` for cross-app consistency.
+
+### [2026-08-29 12:16:33] Implementing Multi-Item Order and Flexible Ordering
+- Modified `RetailerDailyOrder` model by removing unique constraint on retailer and date.
+- Added `item` relation to `RetailerDailyOrderItem` to support fetching item names.
+- Dropped `uq_retailer_daily_order` constraint locally using Python.
+- Refactored `upsert_today_order` and `get_today_orders_for_retailer` backend services to support multiple orders for the same day and updated schemas.
+- Updated retailer portal endpoints to return a list of today's orders.
+- Implemented frontend changes in `retailer-dashboard-screen.tsx` to show a list of placed orders.
+- Updated `useRetailerCart` hook and `retailer-place-order-screen.tsx` to allow placing new orders or editing an existing unconfirmed order.
+
+### [2026-08-29 12:49:33] Implementing Multi-Item Order and Flexible Ordering
+- Modified `RetailerDailyOrder` model by removing unique constraint on retailer and date.
+- Added `item` relation to `RetailerDailyOrderItem` to support fetching item names.
+- Dropped `uq_retailer_daily_order` constraint locally using Python.
+- Refactored `upsert_today_order` and `get_today_orders_for_retailer` backend services to support multiple orders for the same day and updated schemas.
+- Updated retailer portal endpoints to return a list of today's orders.
+- Implemented frontend changes in `retailer-dashboard-screen.tsx` to show a list of placed orders.
+- Updated `useRetailerCart` hook and `retailer-place-order-screen.tsx` to allow placing new orders or editing an existing unconfirmed order.
+
+### [2026-08-29 12:49:59] Admin Orders Workflow Enhancements
+- **Request:** Admin orders screen updates: show owner and business name stacked, detailed item breakdown, rename 'ACKNOWLEDGED' to 'Confirmed', and add action buttons for 'Confirm Order' and 'Assign Delivery'. Option A selected for delivery assignment.
+- **Action:**
+  - Updated DeliveryRun model and schemas to include driver_user_id, driver_name, ehicle_id, and ehicle_number.
+  - Wrote a python script to manually alter the tenant schema because lembic failed due to testing schema state. Generated empty alembic migration script e0857c608906_add_driver_and_vehicle_fields_to_.py.
+  - Added confirm_order endpoint in backend orders.py and dmin_orders.py.
+  - Updated create_delivery_run service to save the direct vehicle/driver assignment.
+  - Replaced 'ACKNOWLEDGED' enum text to display as 'Confirmed' globally in the frontend (dmin-orders-screen.tsx, delivery-orders-screen.tsx).
+  - Updated dmin-orders-screen.tsx UI to stack Owner and Shop Name, display Item list instead of aggregates.
+  - Built AssignDeliveryModal component and added useConfirmOrder, useAdminDeliveryUsers, useAdminVehicles, and useCreateDeliveryRun React Query hooks.
+
+# # #   [ \ 2 0 2 6 - 0 8 - 2 9   1 6 : 0 3 : 0 1 \ ]   A d d   E s t i m a t e d   D e l i v e r y   D a t e   t o   O r d e r   C o n f i r m a t i o n  
+ -   I m p l e m e n t e d   a   r e q u i r e d   E s t i m a t e d   D e l i v e r y   D a t e   f i e l d   w h e n   c o n f i r m i n g   o r d e r s   i n   t h e   A d m i n   p a n e l .  
+ -   A d d e d   \ e x p e c t e d _ d e l i v e r y _ d a t e \   c o l u m n   t o   \  e t a i l e r _ d a i l y _ o r d e r s \   t a b l e   v i a   A l e m b i c   m i g r a t i o n .  
+ -   A d d e d   \ C o n f i r m O r d e r M o d a l \   i n   f r o n t e n d   w i t h   \ @ r e a c t - n a t i v e - c o m m u n i t y / d a t e t i m e p i c k e r \ .  
+ -   F i e l d   i s   e m p t y   b y   d e f a u l t   a n d   m a n d a t o r y   t o   p r o c e e d .  
+ 

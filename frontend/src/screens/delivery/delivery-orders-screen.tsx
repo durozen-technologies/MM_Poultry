@@ -143,7 +143,7 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
                         filter === f ? "text-on-primary" : "text-on-surface"
                       }`}
                     >
-                      {f.charAt(0) + f.slice(1).toLowerCase()}
+                      {f === "ACKNOWLEDGED" ? "Confirmed" : f === "All" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
                     </Text>
                   </Pressable>
                 ))}
@@ -180,7 +180,7 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
                 <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1`}>
                   <MaterialIcons name={statusColors.icon as any} size={14} color={statusColors.text === 'text-on-primary-fixed' ? '#002114' : (statusColors.text === 'text-on-error-container' ? '#93000a' : '#181c20')} />
                   <Text className={`font-label-md text-label-md font-semibold ${statusColors.text}`}>
-                    {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+                    {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
                   </Text>
                 </View>
               </View>

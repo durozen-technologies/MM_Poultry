@@ -32,6 +32,7 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
 
   const pendingKg = dashboard?.pending_kg || "0";
   const orderedKg = dashboard?.ordered_kg || "0";
+  const orderedBoxes = dashboard?.ordered_boxes || 0;
   const deliveredKg = dashboard?.delivered_kg || "0";
   const totalSales = Number(dashboard?.total_sales || 0);
   const collection = Number(dashboard?.total_collection || 0);
@@ -75,7 +76,7 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
           <Text className="font-headline-sm text-on-surface mt-2">Today's Overview</Text>
           <View className="flex-row flex-wrap justify-between gap-y-3">
             <MetricCard icon="shopping-cart" label="Today's Orders" value={dashboard?.order_count || 0} valueColor="text-primary" />
-            <MetricCard icon="scale" label="Total Ordered" value={orderedKg} valueColor="text-primary" />
+            <MetricCard icon="inventory-2" label="Total Ordered" value={orderedBoxes} valueColor="text-primary" />
             <MetricCard icon="local-shipping" label="Delivered KG" value={deliveredKg} />
             <MetricCard icon="pending-actions" label="Pending KG" value={pendingKg} />
           </View>

@@ -296,14 +296,16 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
             select(
                 func.count(func.distinct(RetailerDailyOrder.id)),
                 func.coalesce(func.sum(RetailerDailyOrderItem.requested_kg), 0),
+                func.coalesce(func.sum(RetailerDailyOrderItem.total_boxes), 0),
             )
             .outerjoin(RetailerDailyOrderItem, RetailerDailyOrder.id == RetailerDailyOrderItem.order_id)
             .where(RetailerDailyOrder.order_date == day)
         )
     ).first()
 
-    order_count, ordered_kg_val = order_res or (0, ZERO)
+    order_count, ordered_kg_val, ordered_boxes_val = order_res or (0, ZERO, 0)
     ordered_kg = q_kg(ordered_kg_val)
+    ordered_boxes = int(ordered_boxes_val)
 
     loaded_kg_val = await db.scalar(
         select(func.coalesce(func.sum(FarmLoad.loaded_weight_kg), 0)).where(
@@ -390,6 +392,7 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     return OpsDashboard(
         order_count=order_count,
         ordered_kg=ordered_kg,
+        ordered_boxes=ordered_boxes,
         loaded_kg=loaded_kg,
         delivered_kg=delivered_kg,
         pending_kg=q_kg(max(ordered_kg - delivered_kg, ZERO)),

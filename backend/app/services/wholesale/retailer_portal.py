@@ -24,7 +24,7 @@ from app.schemas import (
     RetailerProfileOut,
 )
 from app.services.wholesale.common import ZERO, q_money
-from app.services.wholesale.orders import get_today_order_for_retailer
+from app.services.wholesale.orders import get_today_orders_for_retailer
 from app.services.wholesale.retailers import get_retailer
 
 
@@ -70,7 +70,7 @@ def build_tracking_stages(
 
 async def get_retailer_dashboard(db: AsyncSession, retailer_id: UUID) -> RetailerDashboardOut:
     retailer = await get_retailer(db, retailer_id)
-    today_order = await get_today_order_for_retailer(db, retailer_id)
+    today_orders = await get_today_orders_for_retailer(db, retailer_id)
 
     last_pay = await db.scalar(
         select(Payment)
@@ -108,7 +108,7 @@ async def get_retailer_dashboard(db: AsyncSession, retailer_id: UUID) -> Retaile
     )
 
     return RetailerDashboardOut(
-        today_order=today_order,
+        today_orders=today_orders,
         outstanding=retailer.credit_balance,
         last_payment=last_payment,
         month_purchase_total=q_money(month_purchase or ZERO),
@@ -179,7 +179,7 @@ async def get_retailer_order_detail(
     base.shop_name = retailer.shop_name
     return RetailerOrderDetailOut(
         **base.model_dump(),
-        estimated_delivery_date=_estimated_delivery_date(order.order_date),
+        estimated_delivery_date=order.expected_delivery_date or _estimated_delivery_date(order.order_date),
         tracking_stages=build_tracking_stages(order.status, run_in_progress=run_in_progress),
     )
 

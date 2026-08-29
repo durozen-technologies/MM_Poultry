@@ -16,8 +16,8 @@ export async function getRetailerDashboard() {
   return data;
 }
 
-export async function getTodayOrder() {
-  const { data } = await api.get<DailyOrder | null>("/retailer/orders/today");
+export async function getTodayOrders() {
+  const { data } = await api.get<DailyOrder[]>("/retailer/orders/today");
   return data;
 }
 

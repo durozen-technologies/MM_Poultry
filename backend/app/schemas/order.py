@@ -18,6 +18,7 @@ class OrderItemCreate(BaseModel):
 
 
 class DailyOrderCreate(BaseModel):
+    order_id: UUID | None = None
     items: list[OrderItemCreate]
 
 
@@ -27,10 +28,15 @@ class DailyOrderItemOut(BaseModel):
     id: UUID
     order_id: UUID
     item_id: UUID
+    item_name: str | None = None
     total_boxes: int | None = None
     requested_kg: Decimal | None = None
     bird_size: str | None = None
     notes: str | None = None
+
+
+class ConfirmOrderRequest(BaseModel):
+    expected_delivery_date: IstDate = Field(..., description="The estimated delivery date chosen by the admin")
 
 
 class DailyOrderOut(BaseModel):
@@ -41,6 +47,7 @@ class DailyOrderOut(BaseModel):
     order_date: IstDate
     order_number: str | None = None
     status: OrderStatus
+    expected_delivery_date: IstDate | None = None
     retailer_name: str | None = None
     shop_name: str | None = None
     items: list[DailyOrderItemOut] = []

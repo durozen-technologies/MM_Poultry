@@ -11,6 +11,7 @@ from app.schemas.dates import IstDate, IstDateTime
 class OpsDashboard(BaseModel):
     order_count: int
     ordered_kg: Decimal
+    ordered_boxes: int = 0
     loaded_kg: Decimal
     delivered_kg: Decimal
     pending_kg: Decimal

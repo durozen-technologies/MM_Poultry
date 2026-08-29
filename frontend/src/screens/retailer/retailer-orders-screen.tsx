@@ -100,7 +100,7 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
                 </View>
                 <View className={`px-3 py-1.5 rounded-md ${isDelivered ? "bg-[#e8f5e9]" : "bg-primary-container"}`}>
                   <Text className={`font-label-sm font-bold uppercase tracking-wider ${isDelivered ? "text-[#2e7d32]" : "text-on-primary-container"}`}>
-                    {order.status}
+                    {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
                   </Text>
               </View>
             </View>

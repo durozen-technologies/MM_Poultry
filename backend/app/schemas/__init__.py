@@ -42,7 +42,7 @@ from app.schemas.ledger import (
     RetailerReturnCreate,
     RetailerReturnOut,
 )
-from app.schemas.order import DailyOrderCreate, DailyOrderOut, TodayOrdersResponse
+from app.schemas.order import ConfirmOrderRequest, DailyOrderCreate, DailyOrderOut, TodayOrdersResponse
 from app.schemas.organization import (
     DeliveryUserCreate,
     DeliveryUserUpdate,
@@ -85,6 +85,7 @@ __all__ = [
     "RateOut",
     "DailyOrderCreate",
     "DailyOrderOut",
+    "ConfirmOrderRequest",
     "TodayOrdersResponse",
     "FarmCreate",
     "FarmUpdate",

@@ -52,6 +52,10 @@ async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> D
         farm_load_id=load.id if load else None,
         run_date=payload.run_date or today_ist(),
         status=DeliveryRunStatus.PLANNED,
+        driver_user_id=payload.driver_user_id,
+        driver_name=payload.driver_name,
+        vehicle_id=payload.vehicle_id,
+        vehicle_number=payload.vehicle_number,
     )
     db.add(run)
     await db.flush()

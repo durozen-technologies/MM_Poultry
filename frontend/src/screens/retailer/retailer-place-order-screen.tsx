@@ -5,7 +5,8 @@ import { useRetailerCart } from "../../hooks/use-retailer-cart";
 
 const BIRD_SIZES = ["Small", "Medium", "Large", "XL"];
 
-export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
+export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: any; route: any }) {
+  const orderId = route.params?.orderId;
   const {
     cart,
     busy,
@@ -16,7 +17,7 @@ export function RetailerPlaceOrderScreen({ navigation }: { navigation: any }) {
     updateCartItem,
     adjustBoxes,
     onSubmit,
-  } = useRetailerCart(() => navigation.goBack());
+  } = useRetailerCart(() => navigation.goBack(), orderId);
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>

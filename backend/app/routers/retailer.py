@@ -36,11 +36,11 @@ async def retailer_dashboard(
     return await svc.get_retailer_dashboard(auth.db, _require_retailer_id(auth))
 
 
-@router.get("/retailer/orders/today", response_model=DailyOrderOut | None)
-async def retailer_get_today_order(
+@router.get("/retailer/orders/today", response_model=list[DailyOrderOut])
+async def retailer_get_today_orders(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.RETAILER))],
-) -> DailyOrderOut | None:
-    return await svc.get_today_order_for_retailer(auth.db, _require_retailer_id(auth))
+) -> list[DailyOrderOut]:
+    return await svc.get_today_orders_for_retailer(auth.db, _require_retailer_id(auth))
 
 
 @router.post("/retailer/orders/today", response_model=DailyOrderOut)

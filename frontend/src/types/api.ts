@@ -61,6 +61,7 @@ export type OrderItem = {
   id: string;
   daily_order_id: string;
   item_id: string;
+  item_name?: string | null;
   total_boxes?: number;
   requested_kg?: string | null;
   bird_size?: string | null;
@@ -73,6 +74,7 @@ export type DailyOrder = {
   order_date: string;
   order_number?: string | null;
   status: OrderStatus;
+  expected_delivery_date: string | null;
   retailer_name?: string | null;
   shop_name?: string | null;
   items: OrderItem[];
@@ -108,6 +110,7 @@ export type FarmLoad = {
   vehicle_number: string | null;
   driver_name: string | null;
   bird_count?: number | null;
+  total_boxes?: number | null;
   rate_per_kg?: string | null;
   total_amount?: string | null;
   paid_amount?: string | null;
@@ -227,6 +230,7 @@ export type DeliveryBill = {
 export type OpsDashboard = {
   order_count: number;
   ordered_kg: string;
+  ordered_boxes: number;
   loaded_kg: string;
   delivered_kg: string;
   pending_kg: string;
@@ -298,7 +302,7 @@ export type RetailerLastPayment = {
 };
 
 export type RetailerDashboard = {
-  today_order: DailyOrder | null;
+  today_orders: DailyOrder[];
   outstanding: string;
   last_payment: RetailerLastPayment | null;
   month_purchase_total: string;
@@ -319,6 +323,7 @@ export type OrderItemCreate = {
 };
 
 export type DailyOrderCreate = {
+  order_id?: string | null;
   items: OrderItemCreate[];
 };
 

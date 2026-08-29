@@ -1,14 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
-import type { DailyOrderOut, FarmOut, FarmLoad, Retailer, OpsDashboard } from "../types/api";
+import type { DailyOrderOut, FarmOut, FarmLoad, Retailer, OpsDashboard, TodayOrdersResponse } from "../types/api";
 
 export function useAdminTodayOrders() {
   return useQuery({
     queryKey: ["admin", "orders", "today"],
     queryFn: async () => {
-      const { data } = await api.get<{ items: DailyOrderOut[]; total_requested_kg: string }>("/admin/orders/today");
+      const { data } = await api.get<TodayOrdersResponse>("/admin/orders/today");
       return data;
     },
   });
@@ -47,3 +47,52 @@ export function useAdminDashboard(dateStr: string | null) {
     enabled: !!dateStr,
   });
 }
+
+
+export function useConfirmOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, expected_delivery_date }: { orderId: string, expected_delivery_date: string }) => {
+      const { data } = await api.post(`/admin/orders/${orderId}/confirm`, { expected_delivery_date });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+    },
+  });
+}
+
+export function useAdminDeliveryUsers() {
+  return useQuery({
+    queryKey: ["admin", "users", "delivery"],
+    queryFn: async () => {
+      const { data } = await api.get<any[]>("/admin/users/delivery");
+      return data;
+    },
+  });
+}
+
+export function useAdminVehicles() {
+  return useQuery({
+    queryKey: ["admin", "vehicles"],
+    queryFn: async () => {
+      const { data } = await api.get<any[]>("/admin/vehicles");
+      return data;
+    },
+  });
+}
+
+export function useCreateDeliveryRun() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post("/admin/delivery-runs", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    },
+  });
+}
+
