@@ -24,6 +24,7 @@ from app.services.wholesale.retailers import get_retailer
 
 async def _next_order_number(db: AsyncSession, order_date: date) -> str:
     from sqlalchemy.dialects.postgresql import insert as pg_insert
+
     from app.core.ids import uuid7
 
     year = order_date.year
@@ -105,8 +106,9 @@ async def upsert_today_order(
 
     item_ids = [item_in.item_id for item_in in payload.items if item_in.item_id]
     if item_ids:
-        from app.models.domain import Item
         from fastapi import HTTPException, status
+
+        from app.models.domain import Item
 
         existing_items = set(await db.scalars(select(Item.id).where(Item.id.in_(item_ids))))
         missing = set(item_ids) - existing_items

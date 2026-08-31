@@ -1107,3 +1107,12 @@ The screen now flawlessly serves as a unified master list for both viewing retai
 ## [2026-08-31T16:44:00+05:30]
 **User:** Make login endpoint ask username and password only
 **Agent:** Sanitized `organization_slug` handling in `backend/app/services/auth.py`. Login requests with `"organization_slug": ""` or missing `organization_slug` now work directly using `username` and `password`.
+
+## [2026-08-31T16:47:00+05:30]
+**User:** Remove organization_slug from login request schema
+**Agent:** Updated `LoginRequest` in `backend/app/schemas/auth.py` to remove `organization_slug` field. Swagger UI request body example now contains only `username` and `password`.
+
+## [2026-08-31T16:48:00+05:30]
+**User:** Explain what this problem is and help me fix it: Cannot find module `sqlalchemy.exc`
+**Agent:** Diagnostic: IDE language server (Pyright/Pylance) used system interpreter (`/usr/lib/python3`) instead of the project virtual environment (`backend/.venv`). Created `pyrightconfig.json` and `.vscode/settings.json` pointing `venvPath`, `venv`, and `python.defaultInterpreterPath` to `backend/.venv`.
+

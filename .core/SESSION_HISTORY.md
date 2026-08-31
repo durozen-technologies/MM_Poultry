@@ -970,3 +970,12 @@
 ## [2026-08-31T16:44:00+05:30]
 **User:** Make login endpoint ask for username and password only
 **Agent:** Updated `login_user` in `backend/app/services/auth.py` to treat empty/whitespace `organization_slug` values ("") as None. Username + Password lookup now resolves tenant and platform users automatically without requiring organization_slug.
+
+## [2026-08-31T16:47:00+05:30]
+**User:** Remove organization_slug from login request body schema
+**Agent:** Removed `organization_slug` field completely from `LoginRequest` schema in `backend/app/schemas/auth.py` and `login_user` in `backend/app/services/auth.py`. OpenAPI / Swagger documentation now ONLY requests username and password.
+
+## [2026-08-31T16:48:00+05:30]
+**User:** Explain what this problem is and help me fix it: Cannot find module `sqlalchemy.exc`
+**Agent:** Explained why IDE/Language Server failed to resolve `sqlalchemy.exc` (attempting system Python vs `backend/.venv`). Created `pyrightconfig.json` and `.vscode/settings.json` configuring the Python virtual environment path to `backend/.venv` and adding `backend` to `extraPaths`.
+

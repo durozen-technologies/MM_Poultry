@@ -91,18 +91,6 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
         )
 
     stmt = select(UserAuthIndex).where(UserAuthIndex.username_lower == username_lower)
-    org_slug = payload.organization_slug.strip() if payload.organization_slug and payload.organization_slug.strip() else None
-    if org_slug:
-        org = await db.scalar(
-            select(Organization).where(Organization.slug == org_slug)
-        )
-        if org is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username or password",
-            )
-        stmt = stmt.where(UserAuthIndex.organization_id == org.id)
-
     matches = list(await db.scalars(stmt))
     if len(matches) == 0:
         raise HTTPException(
