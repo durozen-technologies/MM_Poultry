@@ -13,6 +13,8 @@ Desktop.ini
 *~
 
 # --- Env & secrets (keep *.example) ---
+# Root .env is required for compose (POSTGRES_*) — compose.yaml:7 uses required:false + defaults.
+# Host dev uvicorn on 8000 collides with docker bind; use BACKEND_HOST_PORT=8001 if needed.
 .env
 /.env
 .env.*

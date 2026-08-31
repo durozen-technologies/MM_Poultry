@@ -4,7 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - POSTGRES_SERVER=db
     depends_on:
@@ -13,7 +14,7 @@ services:
     working_dir: /app
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${BACKEND_HOST_PORT:-8000}:8000"
     entrypoint: ["/app/entrypoint.sh"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()\""]
@@ -26,7 +27,12 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: ${POSTGRES_DB:-MM_Poultry}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
