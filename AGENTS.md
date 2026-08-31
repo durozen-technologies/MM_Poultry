@@ -25,7 +25,7 @@ bun run web                     # web target; app targets need Expo Go SDK 57 or
 bun run start:dev               # BLE/printer flows require dev-client (Expo Go is UI+API only)
 ```
 
-Docker: `docker compose up` — `backend/entrypoint.sh:9` waits for DB, stamps `alembic_version` if `manage.py setup` left it empty, runs `alembic upgrade head`, then `python migrate.py:18` to repair tenant schemas. Health: `GET /api/v1/health` (`backend/app/main.py:73`).
+Docker: `docker compose up` — `backend/entrypoint.sh:9` waits for DB, stamps `alembic_version` if `manage.py setup` left it empty, runs `alembic upgrade head`, then `python migrate.py:18` to repair tenant schemas. Health: `GET /api/v1/health` (`backend/app/main.py:73`). Compose `expose:8000` + `ports: ${BACKEND_HOST_PORT:-8001}:8000` (`compose.yaml:16`); local `.env` sets `BACKEND_HOST_PORT=8000`, Dokploy (no `.env`) defaults to `8001` to avoid gateway `0.0.0.0:8000` collision. `env_file` is `required:false` with DB fallback defaults (`compose.yaml:32`).
 
 ## Backend Quirks (verify before changing)
 - **Tenancy:** `public` = `organizations`, `user_auth_index`, `users` (platform). Each wholesaler = `tenant_<slug>` (`backend/app/db/tenant_schema.py:23` `derive_schema_name`, capped 63 chars, regex `^[a-zA-Z_][a-zA-Z0-9_]*$`). Tenant provisioning: `provision_tenant_schema_async` + stamp `TENANT_MIGRATION_HEAD="36325e542abe"` — does not replay migrations.

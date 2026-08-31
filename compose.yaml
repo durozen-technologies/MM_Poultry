@@ -13,8 +13,10 @@ services:
         condition: service_healthy
     working_dir: /app
     restart: unless-stopped
+    expose:
+      - "8000"
     ports:
-      - "${BACKEND_HOST_PORT:-8000}:8000"
+      - "${BACKEND_HOST_PORT:-8001}:8000"
     entrypoint: ["/app/entrypoint.sh"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()\""]
