@@ -104,6 +104,7 @@ async def get_retailer_dashboard(db: AsyncSession, retailer_id: UUID) -> Retaile
             Payment.retailer_id == retailer_id,
             Payment.type == PaymentType.RECEIVED,
             Payment.payment_date >= month_start,
+            Payment.delivery_bill_id.is_(None),
         )
     )
 
@@ -179,7 +180,8 @@ async def get_retailer_order_detail(
     base.shop_name = retailer.shop_name
     return RetailerOrderDetailOut(
         **base.model_dump(),
-        estimated_delivery_date=order.expected_delivery_date or _estimated_delivery_date(order.order_date),
+        estimated_delivery_date=order.expected_delivery_date
+        or _estimated_delivery_date(order.order_date),
         tracking_stages=build_tracking_stages(order.status, run_in_progress=run_in_progress),
     )
 

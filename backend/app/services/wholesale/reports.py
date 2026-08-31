@@ -36,16 +36,19 @@ from app.services.wholesale.delivery_runs import get_delivery_run
 
 
 async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeightLossOut | None:
-    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
+    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id).with_for_update())
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
     if not run.farm_load_id:
         return None
-    load = await db.scalar(select(FarmLoad).where(FarmLoad.id == run.farm_load_id))
+    load = await db.scalar(
+        select(FarmLoad).where(FarmLoad.id == run.farm_load_id).with_for_update()
+    )
     if load is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
 
     from app.models.domain import DeliveryStopItem
+
     delivered = await db.scalar(
         select(func.coalesce(func.sum(DeliveryStopItem.delivered_weight_kg), 0))
         .join(DeliveryStop, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
@@ -56,7 +59,9 @@ async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeight
     )
     delivered_kg = q_kg(Decimal(str(delivered or 0)))
     loaded_kg = q_kg(load.loaded_weight_kg)
-    loss_kg = q_kg(loaded_kg - delivered_kg)
+    raw_loss = loaded_kg - delivered_kg
+    # clamp negative loss to 0 (over-delivery)
+    loss_kg = q_kg(raw_loss if raw_loss > Decimal("0") else Decimal("0"))
     loss_pct = q_money((loss_kg / loaded_kg) * Decimal("100")) if loaded_kg > 0 else Decimal("0.00")
 
     existing = await db.scalar(
@@ -84,14 +89,17 @@ async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeight
 
 
 async def complete_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
-    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id))
+    run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == run_id).with_for_update())
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
     run.status = DeliveryRunStatus.COMPLETED
     run.completed_at = now_ist()
-    load = await db.scalar(select(FarmLoad).where(FarmLoad.id == run.farm_load_id))
-    if load:
-        load.status = FarmLoadStatus.CLOSED
+    if run.farm_load_id:
+        load = await db.scalar(
+            select(FarmLoad).where(FarmLoad.id == run.farm_load_id).with_for_update()
+        )
+        if load:
+            load.status = FarmLoadStatus.CLOSED
     await compute_trip_weight_loss(db, run_id)
     await db.flush()
     return await get_delivery_run(db, run_id)
@@ -108,6 +116,7 @@ async def report_summary(db: AsyncSession, start: date, end: date) -> ReportSumm
         )
     )
     from app.models.domain import DeliveryBillItem
+
     delivered = await db.scalar(
         select(func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0))
         .join(DeliveryBill, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)

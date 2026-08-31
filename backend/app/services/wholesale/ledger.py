@@ -32,10 +32,13 @@ from app.services.wholesale.retailers import get_retailer
 async def create_payment(db: AsyncSession, retailer_id: UUID, payload: PaymentCreate) -> PaymentOut:
     retailer = await get_retailer(db, retailer_id)
     total = q_money(payload.cash_amount + payload.upi_amount)
-    if total <= ZERO and payload.type == PaymentType.RECEIVED:
+    if total <= ZERO:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Payment amount required"
         )
+    # Ensure total matches sum after quantize
+    if q_money(payload.cash_amount) + q_money(payload.upi_amount) != total:
+        total = q_money(q_money(payload.cash_amount) + q_money(payload.upi_amount))
     payment = Payment(
         retailer_id=retailer_id,
         payment_date=payload.payment_date or today_ist(),
@@ -59,6 +62,20 @@ async def create_return(
     retailer = await get_retailer(db, retailer_id)
     if payload.total_amount <= ZERO:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Total amount required")
+    # ownership check for delivery_bill_id
+    if payload.delivery_bill_id is not None:
+        bill = await db.scalar(
+            select(DeliveryBill).where(DeliveryBill.id == payload.delivery_bill_id)
+        )
+        if bill is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Delivery bill not found"
+            )
+        if bill.retailer_id != retailer_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Delivery bill does not belong to this retailer",
+            )
 
     ret = RetailerReturn(
         retailer_id=retailer_id,
@@ -106,7 +123,11 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
     entries: list[LedgerEntry] = []
     for bill in bills:
         total_wt = sum((i.weight_kg for i in bill.items), ZERO)
-        rate_str = f"@ {bill.items[0].rate_per_kg}" if len(bill.items) == 1 else ("(Mixed Rates)" if len(bill.items) > 1 else "")
+        rate_str = (
+            f"@ {bill.items[0].rate_per_kg}"
+            if len(bill.items) == 1
+            else ("(Mixed Rates)" if len(bill.items) > 1 else "")
+        )
         entries.append(
             LedgerEntry(
                 entry_type="BILL",
@@ -161,10 +182,11 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         entry.balance_after = running
 
     from app.models.user import User
+
     has_portal_access = await db.scalar(
         select(select(User).where(User.retailer_id == retailer_id).exists())
     )
-    
+
     retailer_out = RetailerOut.model_validate(retailer, from_attributes=True)
     retailer_out.has_portal_access = has_portal_access or False
 

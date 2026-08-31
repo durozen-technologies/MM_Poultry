@@ -54,19 +54,20 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
   };
 
   const handleSave = () => {
-    if (!name) return;
-    
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+    if (!trimmedName) return;
     if (editingItem) {
       updateMutation.mutate({
         id: editingItem.id,
-        name,
-        description,
+        name: trimmedName,
+        description: trimmedDescription || null,
         is_active: isActive,
       });
     } else {
       createMutation.mutate({
-        name,
-        description,
+        name: trimmedName,
+        description: trimmedDescription || undefined,
       });
     }
   };

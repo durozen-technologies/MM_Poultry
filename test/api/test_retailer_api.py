@@ -41,8 +41,8 @@ async def test_retailer_dashboard_after_order(client: AsyncClient) -> None:
     dash = await client.get("/retailer/dashboard", headers=r_headers)
     assert dash.status_code == 200
     body = dash.json()
-    assert body["today_order"] is not None
-    assert body["today_order"]["items"][0]["requested_kg"] == "30.000"
+    assert len(body["today_orders"]) > 0
+    assert body["today_orders"][0]["items"][0]["requested_kg"] == "30.000"
     assert body["outstanding"] == retailer["credit_balance"]
 
 

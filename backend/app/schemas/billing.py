@@ -3,15 +3,15 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import PrintStatus
 from app.schemas.dates import IstDate, IstDateTime
 
 
 class BillPreviewRequest(BaseModel):
-    cash_payment: Decimal = Decimal("0.00")
-    upi_payment: Decimal = Decimal("0.00")
+    cash_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
+    upi_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
 
 
 class BillItemPreviewOut(BaseModel):
@@ -32,15 +32,15 @@ class BillPreviewOut(BaseModel):
 
 
 class BillCommitRequest(BaseModel):
-    cash_payment: Decimal = Decimal("0.00")
-    upi_payment: Decimal = Decimal("0.00")
+    cash_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
+    upi_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
     print_status: PrintStatus = PrintStatus.PENDING
-    checkout_id: str | None = None
+    checkout_id: str | None = Field(default=None, max_length=64)
 
 
 class DeliveryBillItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     delivery_bill_id: UUID
     item_id: UUID

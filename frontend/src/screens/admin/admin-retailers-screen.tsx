@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -8,10 +8,11 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { api } from "../../api/client";
+import { api, getApiErrorMessage } from "../../api/client";
 import { useAdminRetailers } from "../../hooks/use-queries";
 import { DatePickerField } from "../../components/date-picker-field";
 import type { LedgerOut, Retailer } from "../../types/api";
@@ -20,6 +21,16 @@ import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 export function AdminRetailersScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
   const { data: retailers = [], isLoading, refetch } = useAdminRetailers();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   const [selected, setSelected] = useState<LedgerOut | null>(null);
   const [cash, setCash] = useState("0");
@@ -51,7 +62,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       setMsg("Payment recorded");
       setTimeout(() => setMsg(null), 3000);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(getApiErrorMessage(e));
     }
   }
 
@@ -125,7 +136,9 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       {/* Retailer List */}
       <FlatList
         data={filteredRetailers}
-        keyExtractor={(i) => i.id}
+        keyExtractor={(item) => String(item.id)}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 }}
         ListEmptyComponent={
           isLoading ? (

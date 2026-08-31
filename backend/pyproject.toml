@@ -38,5 +38,9 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["../test"]
+testpaths = ["tests", "../test"]
 pythonpath = [".", ".."]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]

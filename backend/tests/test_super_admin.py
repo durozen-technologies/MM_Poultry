@@ -35,9 +35,10 @@ def test_super_admin_org_not_found(client: TestClient, mock_super_admin_auth: No
     assert res.status_code == 404
     res = client.get(f"/api/v1/super-admin/organizations/{nid}/admins")
     assert res.status_code == 404
-    res = client.post(f"/api/v1/super-admin/organizations/{nid}/admins", json={
-        "username": "foo", "password": "bar", "full_name": "foo"
-    })
+    res = client.post(
+        f"/api/v1/super-admin/organizations/{nid}/admins",
+        json={"username": "foo", "password": "securePass123", "full_name": "foo"},
+    )
     assert res.status_code == 404
 
 

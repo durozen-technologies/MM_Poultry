@@ -14,11 +14,26 @@ import { useAdminTodayOrders, useConfirmOrder } from "../../hooks/use-queries";
 import type { OrderStatus, DailyOrderOut } from "../../types/api";
 import { AssignDeliveryModal } from "./components/assign-delivery-modal";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
+import { cancelOrder, listOrdersByDate } from "../../api/orders";
+import { DatePickerField } from "../../components/date-picker-field";
+import { todayIstDate, toApiDate } from "../../utils/ist-date";
+import { useQuery } from "@tanstack/react-query";
 
 
 export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
-  const { data, isLoading, isRefetching, refetch } = useAdminTodayOrders();
+  const [selectedDate, setSelectedDate] = useState(todayIstDate());
+  const isToday = toApiDate(selectedDate) === toApiDate(todayIstDate());
+  const { data: todayData, isLoading: isLoadingToday, isRefetching: isRefetchingToday, refetch: refetchToday } = useAdminTodayOrders();
+  const { data: dateData, isLoading: isLoadingDate, isRefetching: isRefetchingDate, refetch: refetchDate } = useQuery({
+    queryKey: ["admin", "orders", "by-date", toApiDate(selectedDate)],
+    queryFn: () => listOrdersByDate(toApiDate(selectedDate) as string),
+    enabled: !isToday,
+  });
+  const data = isToday ? todayData : dateData;
+  const isLoading = isToday ? isLoadingToday : isLoadingDate;
+  const isRefetching = isToday ? isRefetchingToday : isRefetchingDate;
+  const refetch = isToday ? refetchToday : refetchDate;
   const { mutate: confirmOrder, isPending: isConfirming } = useConfirmOrder();
   
   const orders = data?.items || [];
@@ -29,6 +44,20 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
   const [assignOrder, setAssignOrder] = useState<DailyOrderOut | null>(null);
   const [confirmOrderModal, setConfirmOrderModal] = useState<DailyOrderOut | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function handleCancel(order: DailyOrderOut) {
+    setCancellingId(order.id);
+    try {
+      await cancelOrder(order.id);
+      refetch();
+    } catch (e: any) {
+      const msg = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to cancel";
+      alert(typeof msg === "string" ? msg : JSON.stringify(msg));
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   const filteredOrders = orders.filter((o) => {
     if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
@@ -79,12 +108,17 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 
       <FlatList
         data={filteredOrders}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
+        refreshing={isRefetching}
+        onRefresh={refetch}
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
+            <View className="px-4 pt-3">
+              <DatePickerField label="Filter by Date" value={selectedDate} onChange={setSelectedDate} maximumDate={todayIstDate()} />
+            </View>
             {/* Search & Top Actions */}
             <View className="px-4 pt-3 flex-row items-center gap-3">
               <View className="flex-1 h-12 bg-surface-container-high rounded-full flex-row items-center px-4 shadow-sm">
@@ -209,7 +243,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 
               <View className="flex-col gap-2 mt-1 bg-surface-container-low p-3 rounded-lg">
                 {order.items?.map((it, idx) => (
-                  <View key={idx} className="flex-row items-center justify-between border-b border-surface-variant/20 pb-2 last:border-b-0 last:pb-0">
+                  <View key={it.item_id ?? idx} className="flex-row items-center justify-between border-b border-surface-variant/20 pb-2 last:border-b-0 last:pb-0">
                     <Text className="font-body-md text-body-md text-on-surface font-semibold">
                       {it.item_name || "Item"}
                     </Text>
@@ -230,15 +264,24 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
                 >
                   <Text className="font-label-md text-label-md text-primary font-semibold">Details</Text>
                 </Pressable>
-                
+
                 {order.status === "PLACED" && (
-                  <Pressable accessibilityRole="button" accessibilityLabel="Button"
-                    className="bg-primary h-10 px-4 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80"
-                    onPress={() => setConfirmOrderModal(order)}
-                  >
-                    <Text className="font-label-md text-label-md text-on-primary font-semibold">Confirm Order</Text>
-                    <MaterialIcons name="check" size={18} className="text-on-primary" />
-                  </Pressable>
+                  <>
+                    <Pressable
+                      className="bg-transparent h-10 px-3 rounded-xl flex-row items-center justify-center gap-1 border border-error/30 active:bg-error-container/50"
+                      onPress={() => handleCancel(order)}
+                      disabled={cancellingId === order.id}
+                    >
+                      <Text className="font-label-md text-error font-semibold">{cancellingId === order.id ? "..." : "Cancel"}</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Button"
+                      className="bg-primary h-10 px-4 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80"
+                      onPress={() => setConfirmOrderModal(order)}
+                    >
+                      <Text className="font-label-md text-label-md text-on-primary font-semibold">Confirm Order</Text>
+                      <MaterialIcons name="check" size={18} className="text-on-primary" />
+                    </Pressable>
+                  </>
                 )}
                 
                 {order.status === "ACKNOWLEDGED" && (

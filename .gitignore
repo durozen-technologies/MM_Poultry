@@ -116,3 +116,7 @@ tasks/
 
 # Tracked Issues
 .core/pending_issues/
+
+tmp/
+.marscode/
+

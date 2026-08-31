@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import PaymentType
 from app.schemas.dates import IstDate, IstDateOptional
@@ -11,10 +11,10 @@ from app.schemas.retailer import RetailerOut
 
 
 class PaymentCreate(BaseModel):
-    cash_amount: Decimal = Decimal("0.00")
-    upi_amount: Decimal = Decimal("0.00")
+    cash_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    upi_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
     payment_date: IstDateOptional = None
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=500)
     type: PaymentType = PaymentType.RECEIVED
     is_credit: bool = True
 
@@ -37,11 +37,11 @@ class PaymentOut(BaseModel):
 class RetailerReturnCreate(BaseModel):
     return_date: IstDateOptional = None
     delivery_bill_id: UUID | None = None
-    weight_kg: Decimal
-    bird_count: int | None = None
-    rate_per_kg: Decimal
-    total_amount: Decimal
-    reason: str | None = None
+    weight_kg: Decimal = Field(..., gt=0)
+    bird_count: int | None = Field(default=None, ge=0)
+    rate_per_kg: Decimal = Field(..., gt=0)
+    total_amount: Decimal = Field(..., gt=0)
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class RetailerReturnOut(BaseModel):

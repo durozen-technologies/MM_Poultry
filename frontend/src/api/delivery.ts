@@ -15,6 +15,11 @@ export async function getActiveRun() {
   return data;
 }
 
+export async function listDeliveryRuns(limit = 20, offset = 0) {
+  const { data } = await api.get<DeliveryRun[]>("/admin/delivery-runs", { params: { limit, offset } });
+  return data;
+}
+
 export async function startRun(runId: string) {
   const { data } = await api.post<DeliveryRun>(`/delivery/runs/${runId}/start`);
   return data;
@@ -30,8 +35,9 @@ export async function weighStop(stopId: string, payload: Record<string, unknown>
   return data;
 }
 
-export async function skipStop(stopId: string) {
-  const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/skip`);
+export async function skipStop(stopId: string, reason?: string) {
+  const payload = reason ? { reason } : {};
+  const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/skip`, payload);
   return data;
 }
 

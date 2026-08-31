@@ -26,6 +26,7 @@ export function DeliveryHomeScreen() {
     setUpi,
     msg,
     lastBill,
+    billing,
     onStartRun,
     onCompleteRun,
     simulateScale,
@@ -43,11 +44,11 @@ export function DeliveryHomeScreen() {
   };
 
   const { data: itemsPage } = useQuery({
-    queryKey: ["retailer_items"],
-    queryFn: () => apiItems.list(),
+    queryKey: ["delivery_items"],
+    queryFn: () => apiItems.list(true),
   });
   const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i: any) => i.id === id)?.name || "Unknown Item";
+  const getItemName = (id: string) => allItems.find((i: { id: string; name: string }) => i.id === id)?.name || "Unknown Item";
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
@@ -94,6 +95,7 @@ export function DeliveryHomeScreen() {
               data={run.stops}
               keyExtractor={(s) => s.id}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+              ListEmptyComponent={<Text className="text-on-surface-variant text-center py-4">No stops in this run</Text>}
               renderItem={({ item }) => {
                 const totalReq = item.items?.reduce((sum, it) => sum + Number(it.ordered_kg || 0), 0) || 0;
                 return (
@@ -141,8 +143,9 @@ export function DeliveryHomeScreen() {
             
             <FlatList
               data={activeStop.items || []}
-              keyExtractor={(i) => i.item_id}
+              keyExtractor={(i) => `${activeStop.id}-${i.item_id}`}
               className="mb-2"
+              ListEmptyComponent={<Text className="text-on-surface-variant text-center py-2">No items for this stop</Text>}
               renderItem={({ item }) => {
                 const gross = Number(weights[item.item_id] || 0);
                 const boxes = Number(deliveredBoxes[item.item_id] || 0);
@@ -199,8 +202,8 @@ export function DeliveryHomeScreen() {
               <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={cash} onChangeText={setCash} placeholder="Cash" keyboardType="decimal-pad" />
               <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={upi} onChangeText={setUpi} placeholder="UPI" keyboardType="decimal-pad" />
             </View>
-            <Pressable accessibilityRole="button" className="bg-primary rounded-lg py-3 items-center mb-2" onPress={weighAndBill}>
-              <Text className="text-on-primary font-semibold">Weigh → Commit → Print</Text>
+            <Pressable accessibilityRole="button" className={`rounded-lg py-3 items-center mb-2 ${billing ? "bg-primary/50" : "bg-primary"}`} onPress={weighAndBill} disabled={billing}>
+              <Text className="text-on-primary font-semibold">{billing ? "Billing..." : "Weigh → Commit → Print"}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" className="border border-error rounded-lg py-3 items-center" onPress={onSkipStop}>
               <Text className="text-error font-semibold">Skip Stop</Text>

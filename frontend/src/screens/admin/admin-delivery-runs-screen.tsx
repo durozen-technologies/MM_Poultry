@@ -6,9 +6,10 @@ import { FlatList, ActivityIndicator,
   View, } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createDeliveryRun } from "../../api/delivery";
+import { createDeliveryRun, listDeliveryRuns } from "../../api/delivery";
 import { useAdminTodayOrders, useAdminFarms } from "../../hooks/use-queries";
 import { formatIstDate } from "../../utils/ist-date";
+import { useQuery } from "@tanstack/react-query";
 
 export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
   const { data: todayOrders, isLoading: isLoadingOrders, refetch: refetchOrders } = useAdminTodayOrders();
@@ -23,7 +24,12 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isLoading = isLoadingOrders || isLoadingFarms;
+  const { data: runs = [], isLoading: isLoadingRuns, refetch: refetchRuns } = useQuery({
+    queryKey: ["admin", "delivery-runs"],
+    queryFn: () => listDeliveryRuns(20, 0),
+  });
+
+  const isLoading = isLoadingOrders || isLoadingFarms || isLoadingRuns;
 
   useEffect(() => {
     if (todayOrders?.items && !initialized) {
@@ -47,6 +53,10 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
       setMsg("Select at least one order");
       return;
     }
+    if (!selectedLoad) {
+      setMsg("Select a farm load");
+      return;
+    }
     setIsSubmitting(true);
     setMsg("");
     try {
@@ -55,9 +65,11 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
         order_ids: Array.from(selectedOrders),
       });
       setMsg("Delivery run created");
-      await Promise.all([refetchOrders(), refetchFarms()]);
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to create run");
+      await Promise.all([refetchOrders(), refetchFarms(), refetchRuns()]);
+    } catch (e: any) {
+      const m = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to create run";
+      setMsg(typeof m === "string" ? m : JSON.stringify(m));
+      setTimeout(() => setMsg(null), 4000);
     } finally {
       setIsSubmitting(false);
     }
@@ -81,6 +93,23 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
         ListHeaderComponent={
           <>
             {msg ? <Text className="text-error mb-3 font-semibold">{msg}</Text> : null}
+
+            {runs.length > 0 && (
+              <View className="mb-4">
+                <Text className="font-headline-sm text-on-surface font-semibold mb-3">Recent Runs ({runs.length})</Text>
+                {runs.slice(0, 5).map((run: any) => (
+                  <View key={run.id} className="bg-surface-container rounded-xl p-3 mb-2 border border-outline-variant/20 flex-row justify-between items-center">
+                    <View>
+                      <Text className="font-semibold text-on-surface">{formatIstDate(run.run_date)} · {run.status}</Text>
+                      <Text className="text-on-surface-variant text-sm">{run.stops?.length || 0} stops {run.vehicle_number ? `· ${run.vehicle_number}` : ""}</Text>
+                    </View>
+                    <View className={`px-2 py-1 rounded-full ${run.status === "COMPLETED" ? "bg-primary" : run.status === "IN_PROGRESS" ? "bg-tertiary" : "bg-surface-variant"}`}>
+                      <Text className="text-white text-xs font-bold">{run.status}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <Text className="font-headline-sm text-on-surface font-semibold mb-3">Farm Load</Text>
             {isLoading ? (

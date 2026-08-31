@@ -10,21 +10,21 @@ from app.schemas.dates import IstDate, IstDateOptional
 
 
 class FarmCreate(BaseModel):
-    name: str
-    owner_name: str | None = None
-    location: str | None = None
-    address: str | None = None
-    contact_phone: str | None = None
-    capacity: int | None = None
+    name: str = Field(..., min_length=2, max_length=120)
+    owner_name: str | None = Field(default=None, max_length=120)
+    location: str | None = Field(default=None, max_length=250)
+    address: str | None = Field(default=None, max_length=500)
+    contact_phone: str | None = Field(default=None, max_length=30)
+    capacity: int | None = Field(default=None, ge=0)
 
 
 class FarmUpdate(BaseModel):
-    name: str | None = None
-    owner_name: str | None = None
-    location: str | None = None
-    address: str | None = None
-    contact_phone: str | None = None
-    capacity: int | None = None
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    owner_name: str | None = Field(default=None, max_length=120)
+    location: str | None = Field(default=None, max_length=250)
+    address: str | None = Field(default=None, max_length=500)
+    contact_phone: str | None = Field(default=None, max_length=30)
+    capacity: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
 
@@ -100,15 +100,15 @@ class FarmLoadOut(BaseModel):
 
 
 class VehicleCreate(BaseModel):
-    number: str
-    capacity_kg: Decimal | None = None
-    driver_name: str | None = None
+    number: str = Field(..., min_length=2, max_length=40)
+    capacity_kg: Decimal | None = Field(default=None, gt=0)
+    driver_name: str | None = Field(default=None, max_length=120)
 
 
 class VehicleUpdate(BaseModel):
-    number: str | None = None
-    capacity_kg: Decimal | None = None
-    driver_name: str | None = None
+    number: str | None = Field(default=None, min_length=2, max_length=40)
+    capacity_kg: Decimal | None = Field(default=None, gt=0)
+    driver_name: str | None = Field(default=None, max_length=120)
     is_active: bool | None = None
 
 

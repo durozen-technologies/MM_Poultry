@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
@@ -20,7 +21,24 @@ from app.schemas import (
 )
 from app.services import wholesale as svc
 
+
+class SkipRequest(BaseModel):
+    reason: str | None = None
+
+
 router = APIRouter()
+
+
+@router.get("/admin/delivery-runs", response_model=list[DeliveryRunOut])
+async def admin_list_runs(
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    limit: int = 20,
+    offset: int = 0,
+) -> list[DeliveryRunOut]:
+    # Clamp to production-safe bounds
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
+    return await svc.list_delivery_runs(auth.db, limit=limit, offset=offset)
 
 
 @router.post("/admin/delivery-runs", response_model=DeliveryRunOut)
@@ -66,9 +84,12 @@ async def delivery_weigh(
 @router.post("/delivery/stops/{stop_id}/skip", response_model=DeliveryStopOut)
 async def delivery_skip(
     stop_id: UUID,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+    payload: SkipRequest | None = None,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))] = None,  # type: ignore[assignment]
 ) -> DeliveryStopOut:
-    return await svc.skip_stop(auth.db, stop_id)
+    assert auth is not None
+    reason = payload.reason if payload else None
+    return await svc.skip_stop(auth.db, stop_id, reason=reason)
 
 
 @router.post("/delivery/stops/{stop_id}/bill/preview", response_model=BillPreviewOut)

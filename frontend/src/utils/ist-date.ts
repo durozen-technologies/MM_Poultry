@@ -6,12 +6,26 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** Format a Date as DD/MM/YYYY in local/IST calendar sense. */
+/** Format a Date as DD/MM/YYYY in Asia/Kolkata timezone via Intl. */
 export function formatIstDate(value: Date | string | null | undefined): string {
   if (!value) return "";
   const d = typeof value === "string" ? parseIstDate(value) : value;
   if (!d || Number.isNaN(d.getTime())) return "";
-  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  try {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const parts = formatter.formatToParts(d);
+    const day = parts.find((p) => p.type === "day")?.value ?? pad2(d.getDate());
+    const month = parts.find((p) => p.type === "month")?.value ?? pad2(d.getMonth() + 1);
+    const year = parts.find((p) => p.type === "year")?.value ?? String(d.getFullYear());
+    return `${day}/${month}/${year}`;
+  } catch {
+    return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  }
 }
 
 /**
@@ -45,8 +59,26 @@ export function parseIstDate(value: string | Date | null | undefined): Date | nu
   return null;
 }
 
-/** Today's date as Date (device local; India devices = IST). */
+/** Today's date as Date in Asia/Kolkata timezone. */
 export function todayIstDate(): Date {
+  try {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const parts = fmt.formatToParts(now);
+    const y = Number(parts.find((p) => p.type === "year")?.value);
+    const m = Number(parts.find((p) => p.type === "month")?.value);
+    const d = Number(parts.find((p) => p.type === "day")?.value);
+    if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)) {
+      return new Date(y, m - 1, d, 12, 0, 0);
+    }
+  } catch {
+    // fallback
+  }
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
 }

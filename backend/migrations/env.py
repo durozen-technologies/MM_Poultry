@@ -40,12 +40,43 @@ def render_item(type_, obj, autogen_context):
     """Strip schema='tenant' during autogeneration so it doesn't hardcode it into the migration file"""
     if type_ == "table_schema" and obj.schema == "tenant":
         return False
-    
+
     # Let Alembic render everything else normally
-    return False
+    return None
+
+def _stamp_public_if_needed(connection: Connection) -> None:
+    """If public tables exist but alembic_version is missing/empty, stamp head so upgrade is no-op."""
+    from sqlalchemy import text
+
+    try:
+        has_org = connection.dialect.has_table(connection, "organizations", schema="public")
+    except Exception:
+        has_org = False
+    if not has_org:
+        return
+    try:
+        has_ver = connection.dialect.has_table(connection, "alembic_version", schema="public")
+    except Exception:
+        has_ver = False
+    if not has_ver:
+        connection.execute(text("CREATE TABLE IF NOT EXISTS public.alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"))
+        # Stamper will be done by alembic CLI; ensure empty is detectable
+        return
+    try:
+        rows = list(connection.execute(text("SELECT version_num FROM public.alembic_version")).fetchall())
+        if not rows:
+            # Empty version table — will be handled by entrypoint stamp, but ensure we don't double-create
+            pass
+    except Exception:
+        pass
+
 
 def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None:
     import os
+
+    # Pre-flight: stamp public if tables exist without version (manage.py setup case)
+    _stamp_public_if_needed(connection)
+
     alembic_mode = os.environ.get("ALEMBIC_MODE", "upgrade")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     public_version_loc = os.path.join(base_dir, "migrations", "versions", "public")

@@ -25,17 +25,26 @@ async def get_expense_categories(
 async def create_expense_category(
     db: AsyncSession, category_in: ExpenseCategoryCreate
 ) -> ExpenseCategory:
-    res = await db.execute(
-        select(ExpenseCategory).where(ExpenseCategory.name.ilike(category_in.name))
-    )
+    name_stripped = category_in.name.strip()
+    res = await db.execute(select(ExpenseCategory).where(ExpenseCategory.name.ilike(name_stripped)))
     if res.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"message": "Expense category with this name already exists."},
         )
-    cat = ExpenseCategory(**category_in.model_dump())
+    cat = ExpenseCategory(name=name_stripped, is_active=category_in.is_active)
     db.add(cat)
-    await db.flush()
+    try:
+        await db.flush()
+    except Exception as exc:
+        from sqlalchemy.exc import IntegrityError
+
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"message": "Expense category with this name already exists."},
+            ) from exc
+        raise
     return cat
 
 

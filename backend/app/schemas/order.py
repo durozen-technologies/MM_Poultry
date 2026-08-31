@@ -19,7 +19,7 @@ class OrderItemCreate(BaseModel):
 
 class DailyOrderCreate(BaseModel):
     order_id: UUID | None = None
-    items: list[OrderItemCreate]
+    items: list[OrderItemCreate] = Field(..., min_length=1)
 
 
 class DailyOrderItemOut(BaseModel):
@@ -36,7 +36,9 @@ class DailyOrderItemOut(BaseModel):
 
 
 class ConfirmOrderRequest(BaseModel):
-    expected_delivery_date: IstDate = Field(..., description="The estimated delivery date chosen by the admin")
+    expected_delivery_date: IstDate = Field(
+        ..., description="The estimated delivery date chosen by the admin"
+    )
 
 
 class DailyOrderOut(BaseModel):

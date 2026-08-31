@@ -3,16 +3,20 @@ import { FlatList, ActivityIndicator,
   Pressable,
   Text,
   TextInput,
-  View, } from "react-native";
+  View, RefreshControl } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
 import { deleteRetailerUser, listRetailerUsers, updateRetailerUser } from "../../api/users";
+import { getApiErrorMessage } from "../../api/client";
 import type { User } from "../../types/api";
 
 export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
+  const queryClient = useQueryClient();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -20,9 +24,20 @@ export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
     try {
       setUsers(await listRetailerUsers());
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to load users");
+      setMsg(getApiErrorMessage(e));
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setUsers(await listRetailerUsers());
+    } catch (e) {
+      setMsg(getApiErrorMessage(e));
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -35,18 +50,22 @@ export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
   async function onToggleStatus(user: User) {
     try {
       await updateRetailerUser(user.id, { is_active: !user.is_active });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
       await refresh();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to update user");
+      setMsg(getApiErrorMessage(e));
     }
   }
 
   async function onRemove(user: User) {
     try {
       await deleteRetailerUser(user.id);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
       await refresh();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed to remove user");
+      setMsg(getApiErrorMessage(e));
     }
   }
 
@@ -65,15 +84,17 @@ export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
         className="flex-1 px-4 py-4"
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <>
             {msg ? <Text className="text-error mb-3 font-semibold">{msg}</Text> : null}
-            {loading ? (
-              <ActivityIndicator className="text-primary" />
-            ) : users.length === 0 ? (
-              <Text className="text-on-surface-variant text-center py-8">No retailer portal users yet.</Text>
+            {loading && users.length === 0 ? (
+              <ActivityIndicator color="#012d1d" />
             ) : null}
           </>
+        }
+        ListEmptyComponent={
+          !loading ? <Text className="text-on-surface-variant text-center py-8">No retailer portal users yet.</Text> : null
         }
         renderItem={({ item: u }) => <RetailerUserCard user={u} onToggleStatus={onToggleStatus} onRemove={onRemove} />}
       />
@@ -82,6 +103,7 @@ export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
 }
 
 function RetailerUserCard({ user, onToggleStatus, onRemove }: { user: User; onToggleStatus: (u: User) => void; onRemove: (u: User) => void }) {
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -91,12 +113,15 @@ function RetailerUserCard({ user, onToggleStatus, onRemove }: { user: User; onTo
     if (!newPassword.trim()) return;
     try {
       await updateRetailerUser(user.id, { password: newPassword });
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
       setNewPassword("");
       setIsEditing(false);
       setMsg("Password updated");
       setTimeout(() => setMsg(null), 3000);
     } catch (e) {
-      setMsg("Failed to update password");
+      setMsg(getApiErrorMessage(e));
+      setTimeout(() => setMsg(null), 3000);
     }
   }
 

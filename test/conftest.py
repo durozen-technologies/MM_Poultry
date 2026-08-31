@@ -25,15 +25,35 @@ def _configure_test_db() -> None:
     get_settings.cache_clear()
 
 
-@pytest_asyncio.fixture
+import asyncio as _asyncio
+
+_db_setup_lock = _asyncio.Lock()
+_db_prepared = False
+
+
+@pytest_asyncio.fixture(scope="session")
 async def prepare_database() -> AsyncIterator[None]:
-    await dispose_engine()
-    get_settings.cache_clear()
-    await reset_test_database_async()
-    await create_platform_tables()
-    await repair_platform_schema_async()
+    global _db_prepared
+    async with _db_setup_lock:
+        if not _db_prepared:
+            await dispose_engine()
+            get_settings.cache_clear()
+            # Retry reset with advisory lock to avoid deadlock with parallel suites
+            for attempt in range(3):
+                try:
+                    await reset_test_database_async()
+                    break
+                except Exception as e:
+                    if "deadlock" in str(e).lower() and attempt < 2:
+                        await _asyncio.sleep(0.5 * (attempt + 1))
+                        continue
+                    raise
+            await create_platform_tables()
+            await repair_platform_schema_async()
+            _db_prepared = True
     yield
-    await dispose_engine()
+    # Teardown only once at session end
+    # (dispose handled by last client fixture)
 
 
 @pytest_asyncio.fixture

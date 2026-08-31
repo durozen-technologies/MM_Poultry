@@ -56,7 +56,7 @@ async def require_username_available(db: AsyncSession, username: str) -> str:
     username_lower = normalize_username(username)
     if not username_lower:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username is required"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Username is required"
         )
     if not await check_global_username_available(db, username_lower):
         raise_username_taken()

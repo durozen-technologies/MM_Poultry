@@ -19,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 import { DatePickerField } from "../../components/date-picker-field";
 import { FormField } from "../../components/form-field";
+import { getApiErrorMessage } from "../../api/client";
 export function AdminRetailerProfileScreen({ route, navigation }: { route: any; navigation: any }) {
   const { retailerId } = route.params;
   const [ledger, setLedger] = useState<LedgerOut | null>(null);
@@ -61,10 +62,11 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     onSuccess: () => {
       setRateMsg("Custom rate saved successfully");
       queryClient.invalidateQueries({ queryKey: ["admin_rates"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_items", { activeOnly: true }] });
       setTimeout(() => setRateMsg(null), 3000);
     },
     onError: (e) => {
-      setRateMsg(e instanceof Error ? e.message : "Failed to save rate");
+      setRateMsg(getApiErrorMessage(e));
       setTimeout(() => setRateMsg(null), 3000);
     }
   });
@@ -102,10 +104,24 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         setTimeout(() => setMsg(null), 3000);
         return;
       }
+      const c = Number(cash || "0");
+      const u = Number(upi || "0");
+      if (!Number.isFinite(c) || !Number.isFinite(u)) {
+        setMsg("Invalid amount");
+        setTimeout(() => setMsg(null), 3000);
+        return;
+      }
     }
     if (actionType === "RETURN") {
       if (!returnWeight || !returnRate) {
         setMsg("Please enter both weight and rate.");
+        setTimeout(() => setMsg(null), 3000);
+        return;
+      }
+      const w = Number(returnWeight);
+      const r = Number(returnRate);
+      if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) {
+        setMsg("Invalid weight or rate");
         setTimeout(() => setMsg(null), 3000);
         return;
       }
@@ -114,11 +130,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     setLoading(true);
     try {
       if (actionType === "RETURN") {
+        const w = Number(returnWeight);
+        const r = Number(returnRate);
         await createReturn(retailerId, {
-          weight_kg: returnWeight,
-          rate_per_kg: returnRate,
-          total_amount: String(Number(returnWeight) * Number(returnRate)),
-          reason: returnReason || undefined,
+          weight_kg: String(w),
+          rate_per_kg: String(r),
+          total_amount: String(w * r),
+          reason: returnReason.trim() || undefined,
         });
         setReturnWeight("");
         setReturnRate("");
@@ -138,8 +156,11 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
       }
       setTimeout(() => setMsg(null), 3000);
       await refresh();
+      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(getApiErrorMessage(e));
+    } finally {
       setLoading(false);
     }
   }
@@ -159,11 +180,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
       setPortalMessage("Portal account created successfully.");
       setPortalUsername("");
       setPortalPassword("");
-    } catch (e: any) {
-      if (e?.response?.status === 409) {
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e);
+      if ((e as { response?: { status?: number } })?.response?.status === 409) {
         setPortalMessage("This retailer already has a portal account.");
       } else {
-        setPortalMessage(e instanceof Error ? e.message : "Failed to create portal account.");
+        setPortalMessage(msg);
       }
     } finally {
       setPortalLoading(false);

@@ -42,7 +42,12 @@ from app.schemas.ledger import (
     RetailerReturnCreate,
     RetailerReturnOut,
 )
-from app.schemas.order import ConfirmOrderRequest, DailyOrderCreate, DailyOrderOut, TodayOrdersResponse
+from app.schemas.order import (
+    ConfirmOrderRequest,
+    DailyOrderCreate,
+    DailyOrderOut,
+    TodayOrdersResponse,
+)
 from app.schemas.organization import (
     DeliveryUserCreate,
     DeliveryUserUpdate,
@@ -71,6 +76,7 @@ from app.schemas.retailer_portal import (
     RetailerOrdersPage,
     RetailerProfileOut,
 )
+from app.schemas.settings import OrgSettingsOut, OrgSettingsUpdate
 
 __all__ = [
     "LoginRequest",
@@ -134,4 +140,6 @@ __all__ = [
     "ItemCreate",
     "ItemUpdate",
     "ItemResponse",
+    "OrgSettingsOut",
+    "OrgSettingsUpdate",
 ]

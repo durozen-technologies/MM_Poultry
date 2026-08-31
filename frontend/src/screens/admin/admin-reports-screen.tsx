@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { downloadReportPdf, getReportSummary } from "../../api/reports";
-import { useAuthStore } from "../../store/auth-store";
 import type { ReportSummary } from "../../types/api";
 import { DatePickerField } from "../../components/date-picker-field";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
@@ -20,7 +19,6 @@ import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
 type Period = "daily" | "weekly" | "monthly";
 
 export function AdminReportsScreen({ navigation }: { navigation: any }) {
-  const token = useAuthStore((s) => s.token);
   const [period, setPeriod] = useState<Period>("daily");
   const [reportDate, setReportDate] = useState(todayIstDate());
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -47,9 +45,8 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
   );
 
   async function sharePdf() {
-    if (!token) return;
     try {
-      const buffer = await downloadReportPdf(period, toApiDate(reportDate) ?? undefined, token);
+      const buffer = await downloadReportPdf(period, toApiDate(reportDate) ?? undefined);
       const bytes = new Uint8Array(buffer);
       let binary = "";
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);

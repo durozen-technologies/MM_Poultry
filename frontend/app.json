@@ -23,7 +23,7 @@
       "foregroundImage": "./assets/logo.jpeg",
       "backgroundColor": "#FFFFFF"
     },
-    "usesCleartextTraffic": true,
+    "usesCleartextTraffic": false,
     "permissions": [
       "android.permission.BLUETOOTH",
       "android.permission.BLUETOOTH_ADMIN",

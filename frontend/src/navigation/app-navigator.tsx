@@ -1,7 +1,8 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
+import { Component, type ReactNode } from "react";
 import { useAuthStore } from "../store/auth-store";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -48,12 +49,43 @@ import { SuperAdminOrgAdminsScreen } from "../screens/super-admin/super-admin-or
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const linking = {
+  prefixes: ["mmbroilers://", "https://mmbroilers.app"],
+  config: {
+    screens: {
+      Login: "login",
+      AdminTabs: "admin",
+      DeliveryTabs: "delivery",
+      RetailerTabs: "retailer",
+      SuperAdminHome: "super-admin",
+    },
+  },
+};
+
+class NavErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string | null }> {
+  state = { hasError: false, error: null as string | null };
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, error: error instanceof Error ? error.message : String(error) };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "#fff" }}>
+          <Text style={{ fontWeight: "600", marginBottom: 8 }}>Navigation error</Text>
+          <Text style={{ color: "#666", textAlign: "center" }}>{this.state.error}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AdminTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           let iconName: keyof typeof MaterialIcons.glyphMap = "dashboard";
           if (route.name === "Dashboard") iconName = "dashboard";
           else if (route.name === "Retailers") iconName = "store";
@@ -91,7 +123,7 @@ function RetailerTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           let iconName: keyof typeof MaterialIcons.glyphMap = "home";
           if (route.name === "Home") iconName = "home";
           else if (route.name === "Orders") iconName = "receipt-long";
@@ -129,7 +161,7 @@ function DeliveryTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           let iconName: keyof typeof MaterialIcons.glyphMap = "local-shipping";
           if (route.name === "Delivery") iconName = "local-shipping";
           else if (route.name === "Orders") iconName = "receipt-long";
@@ -169,53 +201,55 @@ export function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!user ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : user.role === "SUPER_ADMIN" ? (
-          <>
-            <Stack.Screen name="SuperAdminHome" component={SuperAdminHomeScreen} />
-            <Stack.Screen name="SuperAdminOrgAdmins" component={SuperAdminOrgAdminsScreen} />
-          </>
-        ) : user.role === "ADMIN" ? (
-          <>
-            <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
-            <Stack.Screen name="Items" component={AdminItemsScreen} />
-            <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
-            <Stack.Screen name="EditRetailer" component={AdminEditRetailerScreen} />
-            <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
-            <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
-            <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
-            <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
-            <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
-            <Stack.Screen name="DeliveryRuns" component={AdminDeliveryRunsScreen} />
-            <Stack.Screen name="Reports" component={AdminReportsScreen} />
-            <Stack.Screen name="Rates" component={AdminRatesScreen} />
-            <Stack.Screen name="Vehicles" component={AdminVehiclesScreen} />
-            <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
-            <Stack.Screen name="AdminRetailerUsers" component={AdminRetailerUsersScreen} />
-            <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
-            <Stack.Screen name="AdminFarmLoadDetail" component={AdminFarmLoadDetailScreen} />
-            <Stack.Screen name="AdminFarmProfile" component={AdminFarmProfileScreen} />
+    <NavErrorBoundary>
+      <NavigationContainer linking={linking} fallback={<ActivityIndicator color="#012d1d" />}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!user ? (
+            <Stack.Screen name="Login" component={LoginScreen} />
+          ) : user.role === "SUPER_ADMIN" ? (
+            <>
+              <Stack.Screen name="SuperAdminHome" component={SuperAdminHomeScreen} />
+              <Stack.Screen name="SuperAdminOrgAdmins" component={SuperAdminOrgAdminsScreen} />
+            </>
+          ) : user.role === "ADMIN" ? (
+            <>
+              <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
+              <Stack.Screen name="Items" component={AdminItemsScreen} />
+              <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
+              <Stack.Screen name="EditRetailer" component={AdminEditRetailerScreen} />
+              <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
+              <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
+              <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
+              <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
+              <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
+              <Stack.Screen name="DeliveryRuns" component={AdminDeliveryRunsScreen} />
+              <Stack.Screen name="Reports" component={AdminReportsScreen} />
+              <Stack.Screen name="Rates" component={AdminRatesScreen} />
+              <Stack.Screen name="Vehicles" component={AdminVehiclesScreen} />
+              <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
+              <Stack.Screen name="AdminRetailerUsers" component={AdminRetailerUsersScreen} />
+              <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
+              <Stack.Screen name="AdminFarmLoadDetail" component={AdminFarmLoadDetailScreen} />
+              <Stack.Screen name="AdminFarmProfile" component={AdminFarmProfileScreen} />
 
-            <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
-            <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />
-          </>
-        ) : user.role === "DELIVERY" ? (
-          <>
-            <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} />
-            <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="RetailerTabs" component={RetailerTabNavigator} />
-            <Stack.Screen name="PlaceOrder" component={RetailerPlaceOrderScreen} />
-            <Stack.Screen name="OrderDetail" component={RetailerOrderDetailScreen} />
-            <Stack.Screen name="BillDetail" component={RetailerBillDetailScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+              <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
+              <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />
+            </>
+          ) : user.role === "DELIVERY" ? (
+            <>
+              <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} />
+              <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="RetailerTabs" component={RetailerTabNavigator} />
+              <Stack.Screen name="PlaceOrder" component={RetailerPlaceOrderScreen} />
+              <Stack.Screen name="OrderDetail" component={RetailerOrderDetailScreen} />
+              <Stack.Screen name="BillDetail" component={RetailerBillDetailScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </NavErrorBoundary>
   );
 }

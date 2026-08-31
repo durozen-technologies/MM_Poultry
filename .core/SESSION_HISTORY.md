@@ -907,3 +907,30 @@
  -   A d d e d   \ C o n f i r m O r d e r M o d a l \   i n   f r o n t e n d   w i t h   \ @ r e a c t - n a t i v e - c o m m u n i t y / d a t e t i m e p i c k e r \ .  
  -   F i e l d   i s   e m p t y   b y   d e f a u l t   a n d   m a n d a t o r y   t o   p r o c e e d .  
  
+## [2026-08-31T11:19:45+05:30]
+**User:** git pull
+**Agent:** Ran `git pull`. Successfully updated from remote.
+
+## [2026-08-31T14:22:00+05:30]
+**User:** Fix it (sqlalchemy.exc.InvalidRequestError: Table 'items' is already defined for this MetaData instance / ForeignKeyViolationError)
+**Agent:** Fixed improper module import `from backend.app.models.domain import Item` to `from app.models.domain import Item` in `backend/app/services/wholesale/farms.py`. Ran `uv run pytest`.
+
+## [2026-08-31T14:25:00+05:30]
+**User:** Fix it (IntegrityError: duplicate key value violates unique constraint ix_users_username for superadmin)
+**Agent:** Updated `ensure_superadmin` in `test/factories.py` to query for existing superadmin user and update password/status if present instead of re-inserting. Re-ran `uv run pytest`.
+
+## [2026-08-31T14:28:00+05:30]
+**User:** Fix it (foreign key constraint item_id not present in table items)
+**Agent:** Discovered root cause: `get_current_auth` in `backend/app/auth/dependencies.py` checked `if session.dirty or session.new or session.deleted:` before committing, which evaluates to False if the endpoint called `await session.flush()` (moving objects to persistent map), causing uncommitted transactions to roll back on connection close. Fixed `get_current_auth` to always call `await session.commit()`. Re-ran `uv run pytest`.
+
+## [2026-08-31T14:31:00+05:30]
+**User:** Fix final failing test (KeyError: today_order)
+**Agent:** Updated assertion in `test/api/test_retailer_api.py` from `body["today_order"]` to `body["today_orders"][0]` to match `RetailerDashboardOut` schema. Re-ran `uv run pytest`.
+
+## [2026-08-31T14:33:45+05:30]
+**User:** Result verification
+**Agent:** All 126 tests passed in 136.03s. Full test suite clean.
+
+## [2026-08-31T14:51:00+05:30]
+**User:** Clarification on DuplicateTable relation organizations already exists traceback
+**Agent:** Explained Alembic DuplicateTable error cause and verified resolution via entrypoint stamp fallback & tenant_schema stamping logic.

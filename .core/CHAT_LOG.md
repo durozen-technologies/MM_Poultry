@@ -1043,3 +1043,31 @@ The screen now flawlessly serves as a unified master list for both viewing retai
 **Agent:** Bumped version to 1.0.2 and versionCode to 3 in app.json.
 **User:** push
 **Agent:** Pushing the app version bump.
+
+## [2026-08-31T11:19:45+05:30]
+**User:** git pull
+**Agent:** Executed `git pull` in `/home/sachinn-p/Codes/Durozen Projects/MM_Poultry`. Output showed updates to CHAT_LOG.md and app.json.
+
+## [2026-08-31T14:22:00+05:30]
+**User:** Fix it
+**Agent:** Identified root cause of SQLAlchemy metadata duplicate table error and import duplication. Fixed import in `backend/app/services/wholesale/farms.py` from `backend.app.models.domain` to `app.models.domain`. Triggered `uv run pytest`.
+
+## [2026-08-31T14:25:00+05:30]
+**User:** Fix it
+**Agent:** Updated `test/factories.py`'s `ensure_superadmin` function to check for existing superadmin record before creating it to prevent `UniqueViolationError` on `ix_users_username`. Triggered `uv run pytest`.
+
+## [2026-08-31T14:28:00+05:30]
+**User:** Fix it
+**Agent:** Fixed session management flaw in `backend/app/auth/dependencies.py`. `session.flush()` emptied `session.new`/`session.dirty`, causing the cleanup check `if session.dirty or session.new or session.deleted:` to skip `await session.commit()` and roll back flushed database writes upon request completion. Changed to unconditionally `await session.commit()`. Triggered `uv run pytest`.
+
+## [2026-08-31T14:31:00+05:30]
+**User:** Fix final failing test
+**Agent:** Fixed test assertion key in `test/api/test_retailer_api.py` to reference `today_orders` list instead of `today_order` property. Re-ran `uv run pytest`.
+
+## [2026-08-31T14:33:45+05:30]
+**User:** Result verification
+**Agent:** Ran `uv run pytest` to completion. Output: 126 passed, 7 warnings in 136.03s.
+
+## [2026-08-31T14:51:00+05:30]
+**User:** Clarification on DuplicateTable relation organizations already exists
+**Agent:** Provided technical explanation for why DuplicateTable occurred (running alembic upgrade on pre-created schema without alembic_version) and how entrypoint.sh (stamp head fallback) and app/db/tenant_schema.py handle it.

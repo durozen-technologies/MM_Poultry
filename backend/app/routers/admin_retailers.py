@@ -31,7 +31,7 @@ router = APIRouter()
 async def admin_list_retailers(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
     cursor: str | None = None,
-    limit: int = Query(default=50, ge=1, le=100),
+    limit: int = Query(default=50, ge=1, le=200),
 ) -> CursorPage:
     items, has_more, next_cursor = await svc.list_retailers(auth.db, cursor=cursor, limit=limit)
     return CursorPage(items=items, has_more=has_more, next_cursor=next_cursor)

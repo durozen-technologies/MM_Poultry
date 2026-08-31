@@ -56,16 +56,18 @@ async def list_retailer_users(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> list[UserOut]:
     from app.services.wholesale.retailers import list_retailer_users as _list
+
     return await _list(auth.db, _org_id(auth))
 
 
 @router.patch("/admin/users/retailer/{user_id}", response_model=UserOut)
 async def update_retailer_user(
     user_id: UUID,
-    payload: DeliveryUserUpdate, # We can reuse DeliveryUserUpdate or create RetailerUserUpdate, but DeliveryUserUpdate only has password/is_active/full_name/mobile which is fine (we'll only use password and is_active)
+    payload: DeliveryUserUpdate,  # We can reuse DeliveryUserUpdate or create RetailerUserUpdate, but DeliveryUserUpdate only has password/is_active/full_name/mobile which is fine (we'll only use password and is_active)
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> UserOut:
     from app.services.wholesale.retailers import update_retailer_user as _update
+
     return await _update(auth.db, _org_id(auth), user_id, payload.model_dump(exclude_unset=True))
 
 

@@ -13,7 +13,7 @@ def test_check_username_not_available(client: TestClient, mock_super_admin_auth:
     org_res = client.post("/api/v1/super-admin/organizations", json=org_payload)
     org_id = org_res.json()["id"]
     
-    admin_payload = {"username": "auth_admin", "password": "abc", "full_name": "A"}
+    admin_payload = {"username": "auth_admin", "password": "securePass123", "full_name": "A"}
     client.post(f"/api/v1/super-admin/organizations/{org_id}/admins", json=admin_payload)
     
     response = client.get("/api/v1/auth/check-username?username=auth_admin")

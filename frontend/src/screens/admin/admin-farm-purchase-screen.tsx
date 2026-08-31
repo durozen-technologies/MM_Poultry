@@ -21,6 +21,8 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
   const [farms, setFarms] = useState<FarmOut[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [purchaseDate, setPurchaseDate] = useState(todayIstDate());
@@ -40,16 +42,19 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const paidNum = parseFloat(paidAmount) || 0;
   const balanceAmount = netPayable - paidNum;
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
   const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [farmsRes, itemsRes] = await Promise.all([
+      const [farmsRes, itemsRes, vehiclesRes] = await Promise.all([
         api.get("/admin/farms"),
-        api.get("/admin/items?active_only=true")
+        api.get("/admin/items?active_only=true"),
+        api.get("/admin/vehicles").catch(() => ({ data: [] })),
       ]);
       setFarms(farmsRes.data);
       setItems(itemsRes.data.items || itemsRes.data);
+      setVehicles(Array.isArray(vehiclesRes.data) ? vehiclesRes.data : (vehiclesRes.data as any).items || []);
     } catch (e) {
       console.warn("Failed to fetch data", e);
     }
@@ -74,15 +79,28 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
       setError("Total Weight is required");
       return;
     }
+    const w = parseFloat(weight);
+    if (!Number.isFinite(w) || w <= 0) {
+      setError("Weight must be a positive number");
+      return;
+    }
+    if (selectedVehicle) {
+      const v = vehicles.find((x) => x.id === selectedVehicle);
+      if (v?.capacity_kg && w > parseFloat(v.capacity_kg)) {
+        setError(`Weight ${w}kg exceeds vehicle capacity ${v.capacity_kg}kg`);
+        return;
+      }
+    }
     setLoading(true);
     setError(null);
     try {
       await api.post("/admin/farm-loads", {
         farm_id: selectedFarm,
         item_id: selectedItem,
+        vehicle_id: selectedVehicle || null,
         load_date: toApiDate(purchaseDate),
         bird_count: quantity ? parseInt(quantity, 10) : null,
-        loaded_weight_kg: parseFloat(weight),
+        loaded_weight_kg: w,
         rate_per_kg: rateNum > 0 ? rateNum : null,
         total_amount: netPayable > 0 ? netPayable : null,
         paid_amount: paidNum > 0 ? paidNum : null,
@@ -175,6 +193,39 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           </View>
 
           <View className="flex-col gap-2 z-[9] mt-2">
+            <Text className="font-body-md text-body-md text-on-surface-variant">Vehicle (Optional)</Text>
+            <View className="relative z-15">
+              <Pressable
+                className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
+                onPress={() => setShowVehicleDropdown(!showVehicleDropdown)}
+              >
+                <View className="flex-row items-center gap-3">
+                  <MaterialIcons name="local-shipping" size={20} color="#5c5f60" />
+                  <Text className={`font-body-lg ${selectedVehicle ? "text-on-surface" : "text-secondary"}`}>
+                    {vehicles.find((v) => v.id === selectedVehicle)?.number || "Select Vehicle (optional)"}
+                  </Text>
+                </View>
+                <MaterialIcons name={showVehicleDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
+              </Pressable>
+              {showVehicleDropdown && (
+                <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden elevation-10">
+                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
+                    <Pressable className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container" onPress={() => { setSelectedVehicle(""); setShowVehicleDropdown(false); }}>
+                      <Text className="text-on-surface-variant">— No vehicle —</Text>
+                    </Pressable>
+                    {vehicles.map((v) => (
+                      <Pressable key={v.id} className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container" onPress={() => { setSelectedVehicle(v.id); setShowVehicleDropdown(false); }}>
+                        <Text className="font-semibold text-on-surface">{v.number}</Text>
+                        <Text className="text-on-surface-variant text-sm">{v.capacity_kg ? `${v.capacity_kg} kg` : "No capacity"} {v.driver_name ? `· ${v.driver_name}` : ""}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View className="flex-col gap-2 z-[9] mt-2">
             <Text className="font-body-md text-body-md text-on-surface-variant">Item</Text>
             <View className="relative z-10">
               <Pressable accessibilityRole="button" accessibilityLabel="Button" 
@@ -216,7 +267,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
           </View>
 
           <View className="flex-col gap-2 relative z-[8] mt-2">
-            <DatePickerField label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} />
+            <DatePickerField label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} maximumDate={new Date()} />
           </View>
         </View>
 

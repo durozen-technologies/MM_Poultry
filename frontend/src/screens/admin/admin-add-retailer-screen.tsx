@@ -10,7 +10,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "../../api/client";
+import { api, getApiErrorMessage } from "../../api/client";
 
 export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
@@ -39,8 +39,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
       setError("Please fill all required fields (Name, Phone, Username, Password)");
       return;
     }
-    if (phone.trim().length < 10) {
-      setError("Phone number must be at least 10 digits");
+    const phoneDigits = phone.trim().replace(/\D/g, "");
+    if (!/^\d{10,15}$/.test(phoneDigits)) {
+      setError("Phone number must be 10-15 digits");
       return;
     }
     setLoading(true);
@@ -59,15 +60,16 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         category: category.trim() || null,
         email: email.trim() || null,
         notes: notes.trim() || null,
-        opening_balance: openingBalance ? parseFloat(openingBalance) : 0,
+        opening_balance: openingBalance ? (Number.isFinite(parseFloat(openingBalance)) ? parseFloat(openingBalance) : 0) : 0,
         preferred_delivery_time: preferredDeliveryTime.trim() || null,
         username: username.trim(),
         password: password.trim(),
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
       navigation.goBack();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create retailer");
+      setError(getApiErrorMessage(e));
       setLoading(false);
     }
   }

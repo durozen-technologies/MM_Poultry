@@ -40,7 +40,9 @@ class Item(Base, BaseModelMixin):
     name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     uom: Mapped[str] = mapped_column(String(20), nullable=False, server_default="KG")
-    default_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, server_default=text("0.00"))
+    default_price: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("0.00")
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )
@@ -130,9 +132,7 @@ class RetailerDailyOrder(Base, BaseModelMixin):
 
 class RetailerDailyOrderItem(Base, BaseModelMixin):
     __tablename__ = "retailer_daily_order_items"
-    __table_args__ = (
-        UniqueConstraint("order_id", "item_id", name="uq_retailer_daily_order_item"),
-    )
+    __table_args__ = (UniqueConstraint("order_id", "item_id", name="uq_retailer_daily_order_item"),)
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     order_id: Mapped[UUID] = mapped_column(
@@ -146,6 +146,7 @@ class RetailerDailyOrderItem(Base, BaseModelMixin):
     bird_size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    locked_rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     item: Mapped["Item"] = relationship("Item", lazy="selectin")
 
@@ -214,6 +215,8 @@ class FarmLoad(Base, BaseModelMixin):
     loaded_weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    empty_box_weight: Mapped[Decimal | None] = mapped_column(Numeric(8, 3), nullable=True)
+    weight_loss_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     total_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
@@ -362,6 +365,9 @@ class DeliveryBillItem(Base, BaseModelMixin):
     weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    box_charge: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("0.00")
+    )
 
 
 class RetailerReturn(Base, BaseModelMixin):

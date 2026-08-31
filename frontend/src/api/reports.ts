@@ -21,14 +21,13 @@ export function reportPdfUrl(period: string, onDate: string | undefined) {
 
 export async function downloadReportPdf(
   period: "daily" | "weekly" | "monthly",
-  onDate: string | undefined,
-  token: string
+  onDate: string | undefined
 ) {
   const params = new URLSearchParams({ period });
   if (onDate) params.set("on_date", onDate);
-  const res = await fetch(`${API_BASE_URL}/api/v1/admin/reports/summary.pdf?${params}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await api.get<ArrayBuffer>(`/admin/reports/summary.pdf`, {
+    params: { period, on_date: onDate },
+    responseType: "arraybuffer",
   });
-  if (!res.ok) throw new Error("Failed to download report PDF");
-  return res.arrayBuffer();
+  return res.data;
 }

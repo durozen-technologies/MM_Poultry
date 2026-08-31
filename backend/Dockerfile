@@ -17,7 +17,7 @@ ENV UV_LINK_MODE=copy
 # Copy application source
 COPY app ./app
 COPY migrations ./migrations
-COPY main.py migrate.py manage.py alembic.ini ./
+COPY main.py migrate.py manage.py alembic.ini entrypoint.sh ./
 
 # Sync dependencies and create virtual environment
 RUN uv sync --no-dev
@@ -33,7 +33,15 @@ COPY --from=builder /app /app
 # Add virtual environment to PATH so binaries (like uvicorn/alembic) are available globally
 ENV PATH="/app/.venv/bin:$PATH"
 
-EXPOSE 8000
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Run directly from the virtual environment
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Security: non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+RUN chmod +x /app/entrypoint.sh && chown appuser:appuser /app/entrypoint.sh
+USER appuser
+
+EXPOSE 8000
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()" || exit 1
+
+ENTRYPOINT ["/app/entrypoint.sh"]

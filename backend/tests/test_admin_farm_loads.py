@@ -143,8 +143,8 @@ def test_delivery_run_lifecycle(client: TestClient, mock_admin_auth: None) -> No
     
     # Create run
     run_resp = client.post("/api/v1/admin/delivery-runs", json={"farm_load_id": load_id, "order_ids": []})
-    # Cannot create run with empty orders
-    assert run_resp.status_code == 400
+    # Cannot create run with empty orders (pydantic validation -> 422)
+    assert run_resp.status_code in (400, 422)
     
     # Valid run
     ret_resp = client.post("/api/v1/admin/retailers", json={"name": "Run Ret 2"})

@@ -48,6 +48,7 @@ async def get_current_auth(
         ) from exc
 
     session = get_session_factory()()
+    # Do not expose token value in exception messages
     token = set_active_tenant_schema(None)
     organization: Organization | None = None
     schema_name: str | None = None
@@ -70,6 +71,7 @@ async def get_current_auth(
                     detail="Invalid authentication credentials",
                 )
             schema_name = organization.schema_name
+            # Reset previous token and set new one atomically
             reset_active_tenant_schema(token)
             token = set_active_tenant_schema(schema_name)
             await set_search_path(session, schema_name)
@@ -96,6 +98,10 @@ async def get_current_auth(
         await session.rollback()
         raise
     finally:
+        try:
+            await set_search_path(session, None)
+        except Exception:
+            pass
         await session.close()
         reset_active_tenant_schema(token)
 

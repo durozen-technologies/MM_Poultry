@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -6,12 +6,11 @@ import {
   TextInput,
   View,
   Image,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth-store";
+import { getApiErrorMessage } from "../../api/client";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
@@ -22,31 +21,33 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function onSubmit() {
-    setLoading(true);
-    setError(null);
-    try {
-      await login(
-        username.trim(),
-        password.trim()
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const onSubmit = useCallback(async () => {
+    if (loading) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        await login(username.trim(), password);
+      } catch (e) {
+        setError(getApiErrorMessage(e));
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+  }, [loading, login, username, password]);
 
   return (
     <View className="flex-1 bg-surface relative">
       {/* Background Architectural Header in Deep Navy Blue */}
       <View className="absolute top-0 left-0 right-0 h-[320px] bg-[#012D1D] rounded-b-[48px] overflow-hidden" />
 
-      <KeyboardAwareScrollView 
+      <KeyboardAwareScrollView
         className="flex-1 z-10"
-        contentContainerStyle={{ flexGrow: 1 }} 
-        keyboardShouldPersistTaps="handled" 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
         enableOnAndroid={true}

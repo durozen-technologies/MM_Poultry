@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "b2c3d4e5f6g7"
+TENANT_MIGRATION_HEAD = "36325e542abe"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -88,22 +88,46 @@ def _platform_table_names() -> set[str]:
 
 
 async def reset_test_database_async() -> None:
-    """Drop tenant schemas and truncate public control-plane tables (test isolation)."""
-    engine = get_engine()
-    async with engine.begin() as conn:
-        rows = await conn.execute(
-            text(
-                "SELECT schema_name FROM information_schema.schemata "
-                "WHERE schema_name LIKE 'tenant\\_%' ESCAPE '\\'"
-            )
-        )
-        for (schema_name,) in rows:
-            if _SCHEMA_SAFE.match(schema_name):
-                await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
-        await conn.execute(text("SET search_path TO public"))
-        await conn.execute(
-            text("TRUNCATE TABLE user_auth_index, users, organizations RESTART IDENTITY CASCADE")
-        )
+    """Drop tenant schemas and truncate public control-plane tables (test isolation).
+
+    Uses advisory xact lock + retry to avoid deadlock when parallel pytest workers
+    (backend/tests + test/) reset the same DB concurrently.
+    """
+    import asyncio as _asyncio
+
+    for attempt in range(3):
+        try:
+            engine = get_engine()
+            async with engine.begin() as conn:
+                try:
+                    await conn.execute(text("SELECT pg_advisory_xact_lock(87654321)"))
+                except Exception:
+                    pass
+                rows = await conn.execute(
+                    text(
+                        "SELECT schema_name FROM information_schema.schemata "
+                        "WHERE schema_name LIKE 'tenant\\_%' ESCAPE '\\'"
+                    )
+                )
+                for (schema_name,) in rows:
+                    if _SCHEMA_SAFE.match(schema_name):
+                        await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+                await conn.execute(text("SET search_path TO public"))
+                try:
+                    await conn.execute(
+                        text("TRUNCATE TABLE user_auth_index, users, organizations RESTART IDENTITY CASCADE")
+                    )
+                except Exception as e:
+                    if "does not exist" not in str(e).lower():
+                        raise
+            return
+        except Exception as e:
+            if "deadlock" in str(e).lower() and attempt < 2:
+                await _asyncio.sleep(0.5 * (attempt + 1))
+                continue
+            if attempt == 2 and "does not exist" in str(e).lower():
+                return
+            raise
 
 
 async def create_platform_tables() -> None:
@@ -119,6 +143,27 @@ async def create_platform_tables() -> None:
         await conn.execute(text("SET search_path TO public"))
         for table in platform_tables:
             await conn.run_sync(table.create, checkfirst=True)
+        # Stamp alembic_version so `alembic upgrade head` becomes no-op (idempotent with manage.py)
+        await conn.execute(
+            text("CREATE TABLE IF NOT EXISTS public.alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)")
+        )
+        # Public head is 2422fde3c720; use config if available otherwise hard-coded
+        try:
+            from alembic.config import Config as _AC
+            from alembic.script import ScriptDirectory as _SD
+
+            cfg = _AC("alembic.ini")
+            sd = _SD.from_config(cfg)
+            head = sd.get_current_head()
+            if head and isinstance(head, str):
+                await conn.execute(
+                    text("INSERT INTO public.alembic_version (version_num) VALUES (:v) ON CONFLICT DO NOTHING"),
+                    {"v": head},
+                )
+        except Exception:
+            await conn.execute(
+                text("INSERT INTO public.alembic_version (version_num) VALUES ('2422fde3c720') ON CONFLICT DO NOTHING")
+            )
     await repair_platform_schema_async()
 
 
@@ -207,9 +252,14 @@ async def provision_tenant_schema_async(schema_name: str) -> None:
                 """
             )
         )
-        await conn.execute(text(f'DELETE FROM "{schema_name}".alembic_version'))
         await conn.execute(
-            text(f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v)'),
+            text(
+                f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v) ON CONFLICT (version_num) DO NOTHING'
+            ),
+            {"v": TENANT_MIGRATION_HEAD},
+        )
+        await conn.execute(
+            text(f'DELETE FROM "{schema_name}".alembic_version WHERE version_num != :v'),
             {"v": TENANT_MIGRATION_HEAD},
         )
         await conn.execute(text("SET search_path TO public"))
@@ -240,6 +290,9 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS capacity INTEGER",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS total_boxes INTEGER",
+        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS item_id UUID",
+        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS empty_box_weight NUMERIC(8,3)",
+        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS weight_loss_kg NUMERIC(12,3)",
         "ALTER TABLE retailer_daily_orders DROP COLUMN IF EXISTS requested_kg",
         "ALTER TABLE retailer_daily_orders DROP COLUMN IF EXISTS bird_size",
         "ALTER TABLE delivery_stops DROP COLUMN IF EXISTS ordered_kg",
@@ -251,6 +304,11 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE delivery_bills DROP COLUMN IF EXISTS weight_kg",
         "ALTER TABLE delivery_bills DROP COLUMN IF EXISTS rate_per_kg",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
+        "ALTER TABLE delivery_stop_items ADD COLUMN IF NOT EXISTS delivered_boxes INTEGER",
+        "ALTER TABLE delivery_stop_items ADD COLUMN IF NOT EXISTS gross_weight_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_stop_items ADD COLUMN IF NOT EXISTS empty_box_weight_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_bill_items ADD COLUMN IF NOT EXISTS box_charge NUMERIC(12,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE retailer_daily_order_items ADD COLUMN IF NOT EXISTS locked_rate_per_kg NUMERIC(12,2)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(120)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0",
@@ -270,8 +328,54 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
+        for table in Base.metadata.sorted_tables:
+            if table.name in {
+                "vehicles",
+                "org_settings",
+                "expense_categories",
+                "expenses",
+                "retailer_returns",
+                "order_sequences",
+                "items",
+                "retailer_daily_order_items",
+                "delivery_stop_items",
+                "delivery_bill_items",
+            }:
+                await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))
+        # Backfill missing item_id references
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='retailer_item_rates' AND column_name='item_id') THEN
+                    UPDATE retailer_item_rates SET item_id = (SELECT id FROM items LIMIT 1) WHERE item_id IS NULL;
+                  END IF;
+                END $$;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farm_loads' AND column_name='item_id') THEN
+                    UPDATE farm_loads SET item_id = (SELECT id FROM items LIMIT 1) WHERE item_id IS NULL;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='farm_loads' AND column_name='item_id' AND is_nullable='NO') THEN
+                      BEGIN
+                        ALTER TABLE farm_loads ALTER COLUMN item_id SET NOT NULL;
+                      EXCEPTION WHEN others THEN
+                        NULL;
+                      END;
+                    END IF;
+                  END IF;
+                END $$;
+                """
+            )
+        )
         await conn.execute(
             text(
                 """
@@ -296,9 +400,14 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                 """
             )
         )
-        await conn.execute(text(f'DELETE FROM "{schema_name}".alembic_version'))
         await conn.execute(
-            text(f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v)'),
+            text(
+                f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v) ON CONFLICT (version_num) DO NOTHING'
+            ),
+            {"v": TENANT_MIGRATION_HEAD},
+        )
+        await conn.execute(
+            text(f'DELETE FROM "{schema_name}".alembic_version WHERE version_num != :v'),
             {"v": TENANT_MIGRATION_HEAD},
         )
         await conn.execute(text("SET search_path TO public"))

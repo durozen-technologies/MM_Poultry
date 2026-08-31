@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -65,21 +66,67 @@ async def weigh_stop(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin may override weight with reason",
         )
-    
+    if not stop.items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Stop has no items to weigh"
+        )
+
     payload_item_map = {pi.item_id: pi for pi in payload.items}
+    # Validate all stop items are present in payload
+    missing = [str(i.item_id) for i in stop.items if i.item_id not in payload_item_map]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Missing weigh data for items: {', '.join(missing)}",
+        )
+    # Validate no extra items
+    unknown = [str(k) for k in payload_item_map if k not in {i.item_id for i in stop.items}]
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown item_ids in payload: {', '.join(unknown)}",
+        )
     for item in stop.items:
         pi = payload_item_map.get(item.item_id)
         if pi:
+            if pi.gross_weight_kg <= Decimal("0"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Gross weight must be > 0 for item {item.item_id}",
+                )
+            if pi.delivered_boxes <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Delivered boxes must be > 0 for item {item.item_id}",
+                )
+            if pi.empty_box_weight_kg < Decimal("0"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Empty box weight cannot be negative for item {item.item_id}",
+                )
             net_weight = pi.gross_weight_kg - (Decimal(pi.delivered_boxes) * pi.empty_box_weight_kg)
             if net_weight <= Decimal("0"):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Net weight must be greater than zero")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Net weight must be > 0 for item {item.item_id} (gross {pi.gross_weight_kg} - boxes {pi.delivered_boxes}*{pi.empty_box_weight_kg})",
+                )
+            # Guard against unrealistic values
+            if net_weight > Decimal("10000"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Net weight {net_weight}kg exceeds sanity limit for item {item.item_id}",
+                )
             item.delivered_weight_kg = q_kg(net_weight)
-            item.gross_weight_kg = pi.gross_weight_kg
+            item.gross_weight_kg = q_kg(pi.gross_weight_kg)
             item.delivered_boxes = pi.delivered_boxes
-            item.empty_box_weight_kg = pi.empty_box_weight_kg
+            item.empty_box_weight_kg = q_kg(pi.empty_box_weight_kg)
             item.delivered_bird_count = pi.delivered_bird_count
             item.gross_amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
-    
+            if payload.weight_override_reason:
+                item.weight_override_reason = payload.weight_override_reason[:500]
+            if payload.scale_device_id:
+                stop.scale_device_id = payload.scale_device_id[:120]
+
     stop.status = DeliveryStopStatus.WEIGHED
     stop.weighed_at = now_ist()
     await db.flush()
@@ -91,17 +138,19 @@ def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillP
     total_amount = ZERO
     for item in stop.items:
         if item.delivered_weight_kg is None or item.gross_amount is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop items not weighed fully")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Stop items not weighed fully"
+            )
         total_amount += item.gross_amount
         items_out.append(
             BillItemPreviewOut(
                 item_id=item.item_id,
                 weight_kg=item.delivered_weight_kg,
                 rate_per_kg=item.rate_per_kg,
-                amount=item.gross_amount
+                amount=item.gross_amount,
             )
         )
-    
+
     cash = q_money(payload.cash_payment)
     upi = q_money(payload.upi_payment)
     balance = q_money(total_amount - cash - upi)
@@ -138,7 +187,7 @@ async def preview_bill(
 
 async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
     year = bill_date.year
-    seq = await db.scalar(select(BillSequence).where(BillSequence.year == year))
+    seq = await db.scalar(select(BillSequence).where(BillSequence.year == year).with_for_update())
     if seq is None:
         seq = BillSequence(year=year, last_value=0)
         db.add(seq)
@@ -162,12 +211,18 @@ async def commit_bill(
 
     checkout_id = (payload.checkout_id or "").strip() or str(uuid4())
 
+    # checkout_id scoping: check by checkout_id globally for idempotency, but ensure same stop
     by_checkout = await db.scalar(
         select(DeliveryBill)
         .options(selectinload(DeliveryBill.items))
         .where(DeliveryBill.checkout_id == checkout_id)
     )
     if by_checkout:
+        if by_checkout.delivery_stop_id != stop_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="checkout_id already used for different stop",
+            )
         return DeliveryBillOut.model_validate(by_checkout, from_attributes=True)
 
     existing = await db.scalar(
@@ -197,15 +252,16 @@ async def commit_bill(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Credit limit exceeded (limit {retailer.credit_limit}, "
-                f"would be {q_money(retailer.credit_balance + preview.balance_amount)})"
+                f"Credit limit exceeded: limit {retailer.credit_limit}, "
+                f"current {retailer.credit_balance}, bill balance {preview.balance_amount}, "
+                f"would be {q_money(retailer.credit_balance + preview.balance_amount)}"
             ),
         )
 
     bill_date = today_ist()
     bill_number = await _next_bill_number(db, bill_date)
     print_status = payload.print_status or PrintStatus.PENDING
-    
+
     bill = DeliveryBill(
         bill_number=bill_number,
         checkout_id=checkout_id,
@@ -219,8 +275,23 @@ async def commit_bill(
         print_status=print_status,
     )
     db.add(bill)
-    await db.flush()
-    
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        # Race on checkout_id or bill_number or delivery_stop_id — fetch existing
+        existing_race = await db.scalar(
+            select(DeliveryBill)
+            .options(selectinload(DeliveryBill.items))
+            .where(
+                (DeliveryBill.checkout_id == checkout_id)
+                | (DeliveryBill.delivery_stop_id == stop_id)
+            )
+        )
+        if existing_race:
+            return DeliveryBillOut.model_validate(existing_race, from_attributes=True)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bill already exists")
+
     for prev_item in preview.items:
         bill_item = DeliveryBillItem(
             delivery_bill_id=bill.id,
@@ -228,6 +299,7 @@ async def commit_bill(
             weight_kg=prev_item.weight_kg,
             rate_per_kg=prev_item.rate_per_kg,
             amount=prev_item.amount,
+            box_charge=Decimal("0.00"),
         )
         db.add(bill_item)
 
@@ -256,12 +328,24 @@ async def commit_bill(
         if order:
             order.status = OrderStatus.FULFILLED
 
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Concurrent bill commit conflict"
+        ) from exc
 
     if payment:
         payment.delivery_bill_id = bill.id
 
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Payment conflict"
+        ) from exc
 
     reloaded = await db.scalar(
         select(DeliveryBill)
@@ -270,6 +354,14 @@ async def commit_bill(
     )
     assert reloaded is not None
     return DeliveryBillOut.model_validate(reloaded, from_attributes=True)
+
+
+_VALID_PRINT_TRANSITIONS: dict[PrintStatus, set[PrintStatus]] = {
+    PrintStatus.PENDING: {PrintStatus.PRINTED, PrintStatus.FAILED, PrintStatus.SKIPPED},
+    PrintStatus.FAILED: {PrintStatus.PRINTED, PrintStatus.SKIPPED, PrintStatus.PENDING},
+    PrintStatus.PRINTED: set(),
+    PrintStatus.SKIPPED: set(),
+}
 
 
 async def update_bill_print_status(
@@ -282,8 +374,17 @@ async def update_bill_print_status(
     )
     if bill is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found")
-    bill.print_status = payload.print_status
-    await db.flush()
+    current = bill.print_status
+    target = payload.print_status
+    if current != target:
+        allowed = _VALID_PRINT_TRANSITIONS.get(current, set())
+        if target not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Invalid print status transition {current.value} -> {target.value}",
+            )
+        bill.print_status = target
+        await db.flush()
     return DeliveryBillOut.model_validate(bill, from_attributes=True)
 
 
@@ -298,7 +399,9 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
                 func.coalesce(func.sum(RetailerDailyOrderItem.requested_kg), 0),
                 func.coalesce(func.sum(RetailerDailyOrderItem.total_boxes), 0),
             )
-            .outerjoin(RetailerDailyOrderItem, RetailerDailyOrder.id == RetailerDailyOrderItem.order_id)
+            .outerjoin(
+                RetailerDailyOrderItem, RetailerDailyOrder.id == RetailerDailyOrderItem.order_id
+            )
             .where(RetailerDailyOrder.order_date == day)
         )
     ).first()
@@ -318,13 +421,16 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
         await db.execute(
             select(
                 func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0),
-                func.coalesce(func.sum(DeliveryBill.total_amount), 0), # Note: this might double count if joined naively, so we separate it.
-            ).select_from(DeliveryBill)
-             .outerjoin(DeliveryBillItem, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
-             .where(DeliveryBill.bill_date == day)
+                func.coalesce(
+                    func.sum(DeliveryBill.total_amount), 0
+                ),  # Note: this might double count if joined naively, so we separate it.
+            )
+            .select_from(DeliveryBill)
+            .outerjoin(DeliveryBillItem, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
+            .where(DeliveryBill.bill_date == day)
         )
     ).first()
-    
+
     bill_totals = (
         await db.execute(
             select(

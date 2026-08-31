@@ -57,4 +57,9 @@ def create_access_token_for_user(user: Any) -> str:
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    try:
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    except Exception:
+        if settings.backup_secret_key:
+            return jwt.decode(token, settings.backup_secret_key, algorithms=[settings.algorithm])
+        raise

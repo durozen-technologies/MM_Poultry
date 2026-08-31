@@ -152,31 +152,36 @@ async def _create_portal_user(
 ) -> User:
     from app.db.tenant_schema import set_search_path
 
-    await set_search_path(db, None)
-    normalized = await require_username_available(db, username)
-    await set_search_path(db, schema_name)
-    user = User(
-        username=normalized,
-        password_hash=get_password_hash(password),
-        role=UserRole.RETAILER,
-        organization_id=organization_id,
-        retailer_id=retailer_id,
-    )
-    db.add(user)
     try:
-        await db.flush()
-    except IntegrityError as exc:
-        reraise_username_conflict(exc)
-    await set_search_path(db, None)
-    await upsert_auth_index(
-        db,
-        username=user.username,
-        organization_id=organization_id,
-        schema_name=schema_name,
-        user_id=user.id,
-    )
-    await set_search_path(db, schema_name)
-    return user
+        await set_search_path(db, None)
+        normalized = await require_username_available(db, username)
+        await set_search_path(db, schema_name)
+        user = User(
+            username=normalized,
+            password_hash=get_password_hash(password),
+            role=UserRole.RETAILER,
+            organization_id=organization_id,
+            retailer_id=retailer_id,
+        )
+        db.add(user)
+        try:
+            await db.flush()
+        except IntegrityError as exc:
+            reraise_username_conflict(exc)
+        await set_search_path(db, None)
+        await upsert_auth_index(
+            db,
+            username=user.username,
+            organization_id=organization_id,
+            schema_name=schema_name,
+            user_id=user.id,
+        )
+        return user
+    finally:
+        try:
+            await set_search_path(db, schema_name)
+        except Exception:
+            pass
 
 
 async def list_retailer_users(db: AsyncSession, organization_id: UUID) -> list[UserOut]:
@@ -223,6 +228,9 @@ async def update_retailer_user(
 async def delete_retailer_user(
     db: AsyncSession, organization_id: UUID, user_id: UUID, schema_name: str
 ) -> None:
+    from app.db.tenant_schema import set_search_path
+    from app.models.organization import UserAuthIndex
+
     user = await db.scalar(select(User).where(User.id == user_id, User.role == UserRole.RETAILER))
     if not user:
         raise HTTPException(status_code=404, detail="Retailer portal user not found")
@@ -230,13 +238,14 @@ async def delete_retailer_user(
     await db.delete(user)
     await db.flush()
 
-    from app.db.tenant_schema import set_search_path
-    from app.models.organization import UserAuthIndex
-
-    await set_search_path(db, None)
-    auth_index = await db.scalar(select(UserAuthIndex).where(UserAuthIndex.user_id == user_id))
-    if auth_index:
-        await db.delete(auth_index)
-    await db.flush()
-    await set_search_path(db, schema_name)
-
+    try:
+        await set_search_path(db, None)
+        auth_index = await db.scalar(select(UserAuthIndex).where(UserAuthIndex.user_id == user_id))
+        if auth_index:
+            await db.delete(auth_index)
+        await db.flush()
+    finally:
+        try:
+            await set_search_path(db, schema_name)
+        except Exception:
+            pass

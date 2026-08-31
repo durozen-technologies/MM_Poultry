@@ -11,17 +11,17 @@ from app.schemas.dates import IstDate, IstDateOptional, IstDateTime
 
 class DeliveryRunCreate(BaseModel):
     farm_load_id: UUID | None = None
-    order_ids: list[UUID]
+    order_ids: list[UUID] = Field(..., min_length=1)
     run_date: IstDateOptional = None
     driver_user_id: UUID | None = None
-    driver_name: str | None = None
+    driver_name: str | None = Field(default=None, max_length=120)
     vehicle_id: UUID | None = None
-    vehicle_number: str | None = None
+    vehicle_number: str | None = Field(default=None, max_length=40)
 
 
 class DeliveryStopItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: UUID
     delivery_stop_id: UUID
     item_id: UUID
@@ -74,6 +74,6 @@ class WeighItemRequest(BaseModel):
 
 
 class WeighRequest(BaseModel):
-    items: list[WeighItemRequest]
-    scale_device_id: str | None = None
-    weight_override_reason: str | None = None
+    items: list[WeighItemRequest] = Field(..., min_length=1)
+    scale_device_id: str | None = Field(default=None, max_length=120)
+    weight_override_reason: str | None = Field(default=None, max_length=500)

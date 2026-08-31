@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +11,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getRetailerDashboard } from "../../api/retailer";
+import { getApiErrorMessage } from "../../api/client";
 import type { RetailerDashboard } from "../../types/api";
 import { formatIstDate, parseIstDate } from "../../utils/ist-date";
 import { useAuthStore } from "../../store/auth-store";
@@ -35,11 +36,18 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
       setDashboard(data);
       setMessage(null);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed to load dashboard");
+      setMessage(getApiErrorMessage(e));
     } finally {
       setBusy(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (message) {
+      const t = setTimeout(() => setMessage(null), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [message]);
 
   useFocusEffect(
     useCallback(() => {

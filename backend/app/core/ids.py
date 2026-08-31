@@ -24,7 +24,8 @@ def _uuid7_get_counter_and_tail() -> tuple[int, int]:
 
 def uuid7() -> UUID:
     if hasattr(uuid, "uuid7"):
-        return uuid.uuid7()
+        with _uuid7_lock:
+            return uuid.uuid7()
 
     timestamp_ms = time.time_ns() // 1_000_000
     global _uuid7_last_timestamp_ms, _uuid7_last_counter

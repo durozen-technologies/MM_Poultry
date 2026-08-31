@@ -1,8 +1,10 @@
 import { useCallback, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/auth-store";
+import { getOrgSettings, updateOrgSettings } from "../../api/settings";
 
 type SettingsItem = {
   title: string;
@@ -23,6 +25,59 @@ const ITEMS: SettingsItem[] = [
 export function AdminSettingsScreen({ navigation }: { navigation: any }) {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const [warn, setWarn] = useState("2.00");
+  const [alert, setAlert] = useState("5.00");
+  const [enforce, setEnforce] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const s = await getOrgSettings();
+      setWarn(String(s.weight_loss_warn_pct));
+      setAlert(String(s.weight_loss_alert_pct));
+      setEnforce(s.enforce_credit_limit);
+    } catch (e: any) {
+      const m = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to load settings";
+      setError(typeof m === "string" ? m : JSON.stringify(m));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { void fetchSettings(); }, [fetchSettings]));
+
+  async function onSave() {
+    const w = parseFloat(warn);
+    const a = parseFloat(alert);
+    if (!Number.isFinite(w) || !Number.isFinite(a) || w <= 0 || a <= 0) {
+      setMsg("Thresholds must be positive numbers");
+      setTimeout(() => setMsg(null), 3000);
+      return;
+    }
+    if (w >= a) {
+      setMsg("Warn must be less than Alert");
+      setTimeout(() => setMsg(null), 3000);
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      await updateOrgSettings({ weight_loss_warn_pct: warn as any, weight_loss_alert_pct: alert as any, enforce_credit_limit: enforce });
+      setMsg("Settings saved");
+      setTimeout(() => setMsg(null), 3000);
+    } catch (e: any) {
+      const m = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to save";
+      setMsg(typeof m === "string" ? m : JSON.stringify(m));
+      setTimeout(() => setMsg(null), 3000);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
@@ -41,9 +96,42 @@ export function AdminSettingsScreen({ navigation }: { navigation: any }) {
           </View>
         ) : null}
 
+        <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4">
+          <Text className="font-semibold text-on-surface mb-3">Operational Settings</Text>
+          {loading ? (
+            <ActivityIndicator color="#012D1D" />
+          ) : error ? (
+            <View>
+              <Text className="text-error text-center">{error}</Text>
+              <Pressable onPress={fetchSettings} className="mt-3 bg-primary px-4 py-2 rounded-xl self-center"><Text className="text-white font-semibold">Retry</Text></Pressable>
+            </View>
+          ) : (
+            <>
+              {msg ? <Text className={`mb-3 font-semibold ${msg.includes("saved") ? "text-primary" : "text-error"}`}>{msg}</Text> : null}
+              <View className="flex-col gap-3">
+                <View>
+                  <Text className="text-on-surface-variant mb-1">Weight Loss Warn %</Text>
+                  <TextInput value={warn} onChangeText={setWarn} keyboardType="decimal-pad" className="bg-surface border border-outline-variant rounded-lg px-3 py-3 text-on-surface" placeholder="2.00" />
+                </View>
+                <View>
+                  <Text className="text-on-surface-variant mb-1">Weight Loss Alert %</Text>
+                  <TextInput value={alert} onChangeText={setAlert} keyboardType="decimal-pad" className="bg-surface border border-outline-variant rounded-lg px-3 py-3 text-on-surface" placeholder="5.00" />
+                </View>
+                <View className="flex-row justify-between items-center mt-2">
+                  <Text className="text-on-surface font-semibold">Enforce Credit Limit</Text>
+                  <Switch value={enforce} onValueChange={setEnforce} trackColor={{ false: "#e0e3e8", true: "#1B4332" }} thumbColor={enforce ? "#fff" : "#717973"} />
+                </View>
+                <Pressable onPress={onSave} disabled={saving} className={`mt-3 h-12 rounded-xl items-center justify-center ${saving ? "bg-primary/50" : "bg-primary"}`}>
+                  {saving ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-bold">Save Settings</Text>}
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+
         <View className="flex-col gap-3">
           {ITEMS.map((item) => (
-            <Pressable accessibilityRole="button" accessibilityLabel="Button"
+            <Pressable
               key={item.screen}
               className="bg-surface-container-lowest rounded-2xl p-4 flex-row items-center gap-4 border border-outline-variant/20 active:bg-surface-container"
               onPress={() => navigation.navigate(item.screen)}
@@ -60,7 +148,7 @@ export function AdminSettingsScreen({ navigation }: { navigation: any }) {
           ))}
         </View>
 
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
+        <Pressable
           className="mt-6 bg-error-container rounded-2xl p-4 flex-row items-center justify-center gap-2 active:opacity-80"
           onPress={() => logout()}
         >

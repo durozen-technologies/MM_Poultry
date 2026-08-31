@@ -34,15 +34,21 @@ def get_engine() -> AsyncEngine:
 
         @event.listens_for(_engine.sync_engine, "connect")
         def _set_ist(dbapi_connection, _connection_record) -> None:  # type: ignore[no-untyped-def]
-            cursor = dbapi_connection.cursor()
-            cursor.execute("SET TIME ZONE 'Asia/Kolkata'")
-            cursor.close()
+            try:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("SET TIME ZONE 'Asia/Kolkata'")
+                cursor.close()
+            except Exception:
+                pass
 
         @event.listens_for(_engine.sync_engine, "checkout")
         def _reset_search_path(dbapi_connection, _connection_record, _connection_proxy) -> None:
-            cursor = dbapi_connection.cursor()
-            cursor.execute("RESET search_path")
-            cursor.close()
+            try:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("RESET search_path")
+                cursor.close()
+            except Exception:
+                pass
 
         _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
     return _engine

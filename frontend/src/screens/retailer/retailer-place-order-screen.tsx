@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRetailerCart } from "../../hooks/use-retailer-cart";
+import type { Item } from "../../types/api";
 
 const BIRD_SIZES = ["Small", "Medium", "Large", "XL"];
 
@@ -40,7 +41,7 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
         ) : items.length === 0 ? (
           <Text className="text-center text-on-surface-variant mt-8">No items available to order.</Text>
         ) : (
-          items.map((item: any) => {
+          items.map((item: Item) => {
             const cartItem = cart[item.id];
             const qty = cartItem ? String(cartItem.total_boxes || 0) : "0";
             const expectedKg = cartItem ? cartItem.requested_kg : "";
