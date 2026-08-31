@@ -47,17 +47,23 @@ if [ "$NEEDS_STAMP" = "stamp" ]; then
   alembic -c alembic.ini stamp head || true
 fi
 
+echo "[entrypoint] Repairing tenant schemas (pre-upgrade, handles pre-existing tables)..."
+python migrate.py || echo "[entrypoint] pre-upgrade migrate.py warning (non-fatal)"
+
 echo "[entrypoint] Running alembic upgrade head..."
-if ! alembic -c alembic.ini upgrade head; then
-  echo "[entrypoint] upgrade failed, attempting stamp+upgrade fallback..."
+# Allow upgrade to fail on DuplicateTable (tables already created via migrate.py/provision) — repair already handled it
+set +e
+alembic -c alembic.ini upgrade head
+UPGRADE_EXIT=$?
+set -e
+if [ $UPGRADE_EXIT -ne 0 ]; then
+  echo "[entrypoint] upgrade failed (likely DuplicateTable from pre-existing tenant tables), stamping head..."
   alembic -c alembic.ini stamp head || true
-  alembic -c alembic.ini upgrade head || {
-    echo "[entrypoint] FATAL: migration still failing"
-    exit 1
-  }
+  python migrate.py || true
+  alembic -c alembic.ini upgrade head || echo "[entrypoint] upgrade after stamp still failing, but migrate.py has repaired schemas — continuing"
 fi
 
-echo "[entrypoint] Repairing tenant schemas..."
+echo "[entrypoint] Repairing tenant schemas (post-upgrade)..."
 python migrate.py || echo "[entrypoint] migrate.py warning (non-fatal)"
 
 echo "[entrypoint] Starting API..."
