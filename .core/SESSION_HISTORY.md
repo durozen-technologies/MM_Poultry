@@ -962,3 +962,11 @@
 ## [2026-08-31T16:38:00+05:30]
 **User:** Dont show backend api url in frontend while exception
 **Agent:** Updated `getApiErrorMessage` in `frontend/src/api/client.ts` to return a clean user-facing error message ('Unable to connect to server. Please check your internet connection and try again.') instead of embedding raw API URLs or environment variable names. Verified with `bun run typecheck`.
+
+## [2026-08-31T16:39:00+05:30]
+**User:** Push
+**Agent:** Committed and pushed changes to `origin/main` (commit `1ef96a6`).
+
+## [2026-08-31T16:44:00+05:30]
+**User:** Make login endpoint ask for username and password only
+**Agent:** Updated `login_user` in `backend/app/services/auth.py` to treat empty/whitespace `organization_slug` values ("") as None. Username + Password lookup now resolves tenant and platform users automatically without requiring organization_slug.

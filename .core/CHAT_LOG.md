@@ -1099,3 +1099,11 @@ The screen now flawlessly serves as a unified master list for both viewing retai
 ## [2026-08-31T16:38:00+05:30]
 **User:** Dont show backend api url in frontend while exception
 **Agent:** Removed raw `API_BASE_URL` and `EXPO_PUBLIC_API_BASE_URL` strings from network exception messages in `frontend/src/api/client.ts`. Replaced with user-friendly connection failure message.
+
+## [2026-08-31T16:39:00+05:30]
+**User:** Push
+**Agent:** Executed `git push origin main`. Pushed commit `1ef96a6`.
+
+## [2026-08-31T16:44:00+05:30]
+**User:** Make login endpoint ask username and password only
+**Agent:** Sanitized `organization_slug` handling in `backend/app/services/auth.py`. Login requests with `"organization_slug": ""` or missing `organization_slug` now work directly using `username` and `password`.
