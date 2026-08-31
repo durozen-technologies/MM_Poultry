@@ -11,14 +11,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Must set env vars BEFORE importing anything that instantiates settings
-# Respect CI env (mmbroilers_test) but default for local dev
-os.environ.setdefault("POSTGRES_DB", "mmbroilers_test")
-os.environ.setdefault("POSTGRES_USER", "postgres")
-os.environ.setdefault("POSTGRES_PASSWORD", "root")
-os.environ.setdefault("POSTGRES_SERVER", "localhost")
-os.environ.setdefault("POSTGRES_PORT", "5432")
+# Legacy suite uses MM_Poultry_test (isolated from ../test's mmbroilers_test) — CI creates both DBs
+os.environ["POSTGRES_DB"] = "MM_Poultry_test"
+os.environ["POSTGRES_USER"] = "postgres"
+os.environ["POSTGRES_PASSWORD"] = "root"
+os.environ["POSTGRES_SERVER"] = "localhost"
+os.environ["POSTGRES_PORT"] = "5432"
 # Disable auth verification in tests for speed, we mock it anyway
-os.environ.setdefault("SECRET_KEY", "test-secret-key-with-32-chars-minimum")
+os.environ["SECRET_KEY"] = "test-secret-key-with-32-chars-minimum"
 
 from app.auth.dependencies import AuthContext, get_current_auth
 from app.core.config import get_settings

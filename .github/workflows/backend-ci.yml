@@ -39,6 +39,11 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: uv sync
+      - name: Create legacy test DB (MM_Poultry_test for backend/tests)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          PGPASSWORD=root createdb -h localhost -U postgres MM_Poultry_test || true
+          PGPASSWORD=root createdb -h localhost -U postgres mmbroilers_test || true
       - name: Ruff
         working-directory: backend
         run: uv run ruff check app

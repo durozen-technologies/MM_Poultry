@@ -938,3 +938,27 @@
 ## [2026-08-31T15:01:00+05:30]
 **User:** push
 **Agent:** Staged all changes, created commit 'fix(backend, test): resolve database session flush, model import, and test assertions' and pushed to origin/main (688a8fa).
+
+## [2026-08-31T16:29:00+05:30]
+**User:** Fix DuplicateTable relation users already exists in Alembic migration
+**Agent:** Added `_stamp_tenant_if_needed` helper to `backend/migrations/env.py` to detect existing tenant tables (e.g. `retailers`, `users`) and auto-stamp `TENANT_MIGRATION_HEAD` into `alembic_version` before executing tenant migration loop. Re-ran `uv run pytest`.
+
+## [2026-08-31T16:32:00+05:30]
+**User:** Fix deadlock in test_farms_delivery_api
+**Agent:** Refactored `_next_order_number` in `backend/app/services/wholesale/orders.py` to use an atomic `UPDATE ... RETURNING` statement instead of `select().with_for_update()`, eliminating database deadlock contention. Re-ran `uv run pytest`.
+
+## [2026-08-31T16:34:00+05:30]
+**User:** Verification of deadlock fix & migration stamp
+**Agent:** Ran full test suite. 126/126 tests passed in 84.30s (down from 136s).
+
+## [2026-08-31T16:35:00+05:30]
+**User:** Refactor _next_order_number in orders.py in a proper professional way
+**Agent:** Refactored `_next_order_number` in `backend/app/services/wholesale/orders.py` using SQLAlchemy PostgreSQL `pg_insert(OrderSequence).on_conflict_do_update(constraint="uq_order_sequence_year", set_={"last_value": OrderSequence.last_value + 1}).returning(OrderSequence.last_value)`. Re-ran `uv run pytest`.
+
+## [2026-08-31T16:36:00+05:30]
+**User:** Eliminate N+1 query problem in orders.py
+**Agent:** Replaced per-item `select(Item)` scalar query loop in `upsert_today_order` with a single batch `Item.id.in_(item_ids)` set validation. Re-ran `uv run pytest`.
+
+## [2026-08-31T16:38:00+05:30]
+**User:** Dont show backend api url in frontend while exception
+**Agent:** Updated `getApiErrorMessage` in `frontend/src/api/client.ts` to return a clean user-facing error message ('Unable to connect to server. Please check your internet connection and try again.') instead of embedding raw API URLs or environment variable names. Verified with `bun run typecheck`.

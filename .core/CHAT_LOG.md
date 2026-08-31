@@ -1075,3 +1075,27 @@ The screen now flawlessly serves as a unified master list for both viewing retai
 ## [2026-08-31T15:01:00+05:30]
 **User:** push
 **Agent:** Executed `git add .`, `git commit`, and `git push origin main`. Commit 688a8fa successfully pushed to remote repository.
+
+## [2026-08-31T16:29:00+05:30]
+**User:** Fix DuplicateTable relation users already exists
+**Agent:** Discovered tenant schemas with pre-existing tables were missing `alembic_version` stamps, causing Alembic to re-run initial tenant migration `60da6b1317b1` and attempt `op.create_table('users')`. Fixed `backend/migrations/env.py` by adding `_stamp_tenant_if_needed` pre-flight check for tenant schemas.
+
+## [2026-08-31T16:32:00+05:30]
+**User:** Fix deadlock in test_farms_delivery_api
+**Agent:** Replaced row-locking `with_for_update()` in `orders.py` with atomic PostgreSQL SQL `UPDATE order_sequences SET last_value = last_value + 1 WHERE year = :year RETURNING last_value` to prevent lock contention and 409 Conflict errors during order generation.
+
+## [2026-08-31T16:34:00+05:30]
+**User:** Verification of deadlock fix & migration stamp
+**Agent:** Confirmed 100% test pass rate (126 passed in 84.30s). Refactored order sequence generation to atomic SQL update.
+
+## [2026-08-31T16:35:00+05:30]
+**User:** Refactor _next_order_number
+**Agent:** Replaced raw string SQL and double-check logic with single atomic SQLAlchemy 2.0 PostgreSQL upsert statement using `pg_insert().on_conflict_do_update().returning()`. Triggered `uv run pytest`.
+
+## [2026-08-31T16:36:00+05:30]
+**User:** Eliminate N+1 query problem
+**Agent:** Replaced N individual SELECT queries inside the item iteration loop of `upsert_today_order` with a single batch set query using `Item.id.in_(item_ids)`. Triggered `uv run pytest`.
+
+## [2026-08-31T16:38:00+05:30]
+**User:** Dont show backend api url in frontend while exception
+**Agent:** Removed raw `API_BASE_URL` and `EXPO_PUBLIC_API_BASE_URL` strings from network exception messages in `frontend/src/api/client.ts`. Replaced with user-friendly connection failure message.

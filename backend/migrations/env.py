@@ -71,6 +71,31 @@ def _stamp_public_if_needed(connection: Connection) -> None:
         pass
 
 
+def _stamp_tenant_if_needed(connection: Connection, schema_name: str) -> None:
+    """If tenant tables exist but alembic_version is missing/empty, stamp tenant head so upgrade is no-op."""
+    from sqlalchemy import text
+    from app.db.tenant_schema import TENANT_MIGRATION_HEAD
+
+    try:
+        has_retailers = connection.dialect.has_table(connection, "retailers", schema=schema_name)
+    except Exception:
+        has_retailers = False
+    if not has_retailers:
+        return
+    try:
+        connection.execute(
+            text(f'CREATE TABLE IF NOT EXISTS "{schema_name}".alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)')
+        )
+        rows = list(connection.execute(text(f'SELECT version_num FROM "{schema_name}".alembic_version')).fetchall())
+        if not rows:
+            connection.execute(
+                text(f'INSERT INTO "{schema_name}".alembic_version (version_num) VALUES (:v) ON CONFLICT DO NOTHING'),
+                {"v": TENANT_MIGRATION_HEAD},
+            )
+    except Exception:
+        pass
+
+
 def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None:
     import os
 
@@ -158,6 +183,7 @@ def do_run_migrations(connection: Connection, tenant_schemas: list[str]) -> None
         os.environ["ALEMBIC_MODE"] = "tenant"
         for schema_name in tenant_schemas:
             print(f"Migrating tenant schema: {schema_name}")
+            _stamp_tenant_if_needed(connection, schema_name)
             tenant_conn = connection.execution_options(schema_translate_map={"tenant": schema_name})
             from sqlalchemy import text
             tenant_conn.execute(text(f'SET search_path TO "{schema_name}"'))

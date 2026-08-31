@@ -67,7 +67,7 @@ export function getApiErrorMessage(error: unknown): string {
       if (data.detail !== undefined) return JSON.stringify(data.detail);
     }
     if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
-      return `Cannot reach API at ${API_BASE_URL}. Check backend is running and EXPO_PUBLIC_API_BASE_URL.`;
+      return "Unable to connect to server. Please check your internet connection and try again.";
     }
     if (error.code === "ECONNABORTED") return "Request timed out. Check your connection.";
     if (error.response?.status === 429) return "Too many requests. Please wait and retry.";

@@ -23,17 +23,22 @@ from app.services.wholesale.retailers import get_retailer
 
 
 async def _next_order_number(db: AsyncSession, order_date: date) -> str:
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+    from app.core.ids import uuid7
+
     year = order_date.year
-    seq = await db.scalar(select(OrderSequence).where(OrderSequence.year == year).with_for_update())
-    if seq is None:
-        seq = OrderSequence(year=year, last_value=0)
-        db.add(seq)
-        await db.flush()
-    seq.last_value += 1
-    await db.flush()
-    # Format: ORD-YY-000000
+    stmt = (
+        pg_insert(OrderSequence)
+        .values(id=uuid7(), year=year, last_value=1)
+        .on_conflict_do_update(
+            constraint="uq_order_sequence_year",
+            set_={"last_value": OrderSequence.last_value + 1},
+        )
+        .returning(OrderSequence.last_value)
+    )
+    last_val = await db.scalar(stmt)
     yy = str(year)[-2:]
-    return f"ORD-{yy}-{seq.last_value:06d}"
+    return f"ORD-{yy}-{(last_val or 1):06d}"
 
 
 async def upsert_today_order(
@@ -98,17 +103,22 @@ async def upsert_today_order(
         db.add(order)
         await db.flush()
 
+    item_ids = [item_in.item_id for item_in in payload.items if item_in.item_id]
+    if item_ids:
+        from app.models.domain import Item
+        from fastapi import HTTPException, status
+
+        existing_items = set(await db.scalars(select(Item.id).where(Item.id.in_(item_ids))))
+        missing = set(item_ids) - existing_items
+        if missing:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Item {next(iter(missing))} not found",
+            )
+
     from sqlalchemy.exc import IntegrityError as _IE
 
     for item_in in payload.items:
-        # Validate item exists in this tenant (avoid FK 500)
-        from app.models.domain import Item
-
-        it = await db.scalar(select(Item).where(Item.id == item_in.item_id))
-        if it is None:
-            from fastapi import HTTPException, status
-
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item {item_in.item_id} not found")
         order_item = RetailerDailyOrderItem(
             order_id=order.id,
             item_id=item_in.item_id,
