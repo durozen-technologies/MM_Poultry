@@ -1,7 +1,7 @@
 {
   "name": "Trader's Hub",
   "slug": "mmbroilers",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "icon": "./assets/logo.jpeg",
   "orientation": "portrait",
   "userInterfaceStyle": "light",
@@ -18,7 +18,7 @@
   "jsEngine": "hermes",
   "android": {
     "package": "com.durozen.mmbroilers",
-    "versionCode": 2,
+    "versionCode": 3,
     "adaptiveIcon": {
       "foregroundImage": "./assets/logo.jpeg",
       "backgroundColor": "#FFFFFF"
