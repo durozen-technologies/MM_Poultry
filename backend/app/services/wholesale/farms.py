@@ -130,8 +130,8 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
         vehicle: Vehicle | None = await db.scalar(select(Vehicle).where(Vehicle.id == payload.vehicle_id))
         if vehicle is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
-        vehicle_number: str = vehicle_number or vehicle.number
-        driver_name: str | None = driver_name or vehicle.driver_name
+        vehicle_number = vehicle_number or vehicle.number
+        driver_name = driver_name or vehicle.driver_name
 
     # Resolve item_id: if not provided, use first active item; if none exists, create fallback
     item_id: UUID | None = payload.item_id
@@ -146,12 +146,12 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
             db.add(fallback)
             await db.flush()
             logger.warning("create_farm_load: no items exist, created fallback item %s", fallback.id)
-            item_id: UUID = fallback.id
+            item_id = fallback.id
         else:
             logger.warning(
                 "create_farm_load: item_id not provided, using fallback item %s (%s)", first.id, first.name
             )
-            item_id: UUID = first.id
+            item_id = first.id
     else:
         from app.models.domain import Item
 
