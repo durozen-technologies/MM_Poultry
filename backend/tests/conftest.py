@@ -11,13 +11,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Must set env vars BEFORE importing anything that instantiates settings
-os.environ["POSTGRES_DB"] = "MM_Poultry_test"
-os.environ["POSTGRES_USER"] = "postgres"
-os.environ["POSTGRES_PASSWORD"] = "root"
-os.environ["POSTGRES_SERVER"] = "localhost"
-os.environ["POSTGRES_PORT"] = "5432"
+# Respect CI env (mmbroilers_test) but default for local dev
+os.environ.setdefault("POSTGRES_DB", "mmbroilers_test")
+os.environ.setdefault("POSTGRES_USER", "postgres")
+os.environ.setdefault("POSTGRES_PASSWORD", "root")
+os.environ.setdefault("POSTGRES_SERVER", "localhost")
+os.environ.setdefault("POSTGRES_PORT", "5432")
 # Disable auth verification in tests for speed, we mock it anyway
-os.environ["SECRET_KEY"] = "testsecret"
+os.environ.setdefault("SECRET_KEY", "test-secret-key-with-32-chars-minimum")
 
 from app.auth.dependencies import AuthContext, get_current_auth
 from app.core.config import get_settings
@@ -28,14 +29,14 @@ from app.models.enums import UserRole
 from app.models.user import User
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_db() -> Generator[None, None, None]:
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_test_db() -> AsyncGenerator[None, None]:
     """Setup the test database with platform and tenant schemas."""
     # Ensure we're at backend root
     original_dir = os.getcwd()
     if not os.path.exists("pyproject.toml"):
         os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    
+
     async def init_db():
         try:
             await reset_test_database_async()
@@ -43,10 +44,11 @@ def setup_test_db() -> Generator[None, None, None]:
             pass
         await create_platform_tables()
         await provision_tenant_schema_async("tenant_test")
-        
+
         # Insert mock organization
         from app.db.database import get_session_factory
         from app.models.organization import Organization
+
         async with get_session_factory()() as session:
             org = Organization(
                 id=UUID("00000000-0000-0000-0000-000000000002"),
@@ -57,16 +59,13 @@ def setup_test_db() -> Generator[None, None, None]:
             )
             session.add(org)
             await session.commit()
-        
-    # Create tables
-    asyncio.run(init_db())
-    
-    yield
-    
+
     async def teardown_db():
         await reset_test_database_async()
-        
-    asyncio.run(teardown_db())
+
+    await init_db()
+    yield
+    await teardown_db()
     os.chdir(original_dir)
 
 
@@ -161,8 +160,4 @@ def mock_super_admin_auth() -> Generator[None, None, None]:
     app.dependency_overrides.pop(get_current_auth, None)
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Removed deprecated event_loop fixture — pytest-asyncio handles loop via asyncio_mode=auto
