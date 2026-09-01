@@ -2,11 +2,11 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,6 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
   const [village, setVillage] = useState("");
-  const [capacity, setCapacity] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +35,6 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
         contact_phone: mobile.trim() || null,
         address: address.trim() || null,
         location: village.trim() || null,
-        capacity: capacity ? parseInt(capacity, 10) : null,
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "farms"] });
       navigation.goBack();
@@ -61,7 +59,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4 flex-col" contentContainerStyle={{ paddingBottom: 100 }}>
+      <KeyboardAwareScrollView enableOnAndroid={true} keyboardShouldPersistTaps="handled" className="flex-1 px-4 py-4 flex-col" contentContainerStyle={{ paddingBottom: 100 }}>
         {error && (
           <Text className="px-4 py-2 mb-4 text-error text-center text-label-md bg-error-container rounded-lg font-semibold">
             {error}
@@ -81,11 +79,6 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               onChangeText={setName}
  />
           </View>
-        </View>
-
-        {/* Contact Information */}
-        <Text className="font-headline-sm text-on-surface mb-3 font-semibold">Contact Information</Text>
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Mobile Number
@@ -96,13 +89,8 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               keyboardType="phone-pad"
               value={mobile}
               onChangeText={setMobile}
- />
+            />
           </View>
-        </View>
-
-        {/* Farm Location */}
-        <Text className="font-headline-sm text-on-surface mb-3 font-semibold">Farm Location & Details</Text>
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
           <View className="flex-col gap-2">
             <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
               Address
@@ -127,18 +115,6 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
               onChangeText={setVillage}
  />
           </View>
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Capacity (Number of Birds)
-            </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
-              placeholder="e.g. 5000"
-              keyboardType="number-pad"
-              value={capacity}
-              onChangeText={setCapacity}
- />
-          </View>
         </View>
 
         {/* Submit Button */}
@@ -158,7 +134,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             </>
           )}
         </Pressable>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

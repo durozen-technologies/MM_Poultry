@@ -2,22 +2,25 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   FlatList,
   Text,
   TextInput,
   View,
+  ScrollView,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
 import { DatePickerField } from "../../components/date-picker-field";
-import { toApiDate, todayIstDate } from "../../utils/ist-date";
+import { toApiDate, todayIstDate, parseIstDate } from "../../utils/ist-date";
 import type { FarmOut, Item } from "../../types/api";
 
-export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
+export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, navigation: any }) {
+  const loadId = route?.params?.loadId;
+  const isEditing = !!loadId;
   const queryClient = useQueryClient();
   const [farms, setFarms] = useState<FarmOut[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
@@ -55,10 +58,28 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
       setFarms(farmsRes.data);
       setItems(itemsRes.data.items || itemsRes.data);
       setVehicles(Array.isArray(vehiclesRes.data) ? vehiclesRes.data : (vehiclesRes.data as any).items || []);
+      
+      if (loadId) {
+        const { data: loadData } = await api.get(`/admin/farm-loads/${loadId}`);
+        setSelectedFarm(loadData.farm_id || "");
+        setSelectedItem(loadData.item_id || "");
+        setSelectedVehicle(loadData.vehicle_id || "");
+        if (loadData.load_date) {
+            setPurchaseDate(parseIstDate(loadData.load_date) || todayIstDate());
+        }
+        setQuantity(loadData.bird_count != null ? String(loadData.bird_count) : "");
+        setWeight(loadData.loaded_weight_kg != null ? String(loadData.loaded_weight_kg) : "");
+        setRate(loadData.rate_per_kg != null ? String(loadData.rate_per_kg) : "");
+        setPaymentMethod(loadData.payment_method || "Bank Transfer");
+        setPaidAmount(loadData.paid_amount != null ? String(loadData.paid_amount) : "");
+        setRemarks(loadData.remarks || "");
+      } else {
+
+      }
     } catch (e) {
-      console.warn("Failed to fetch data", e);
+      console.warn("Failed to fetch data in AdminFarmPurchaseScreen", e);
     }
-  }, []);
+  }, [loadId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,7 +115,7 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
     setLoading(true);
     setError(null);
     try {
-      await api.post("/admin/farm-loads", {
+      const payload = {
         farm_id: selectedFarm,
         item_id: selectedItem,
         vehicle_id: selectedVehicle || null,
@@ -106,9 +127,16 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
         paid_amount: paidNum > 0 ? paidNum : null,
         payment_method: paymentMethod,
         remarks: remarks.trim() || null,
-      });
+      };
+
+      if (isEditing) {
+        await api.patch(`/admin/farm-loads/${loadId}`, payload);
+      } else {
+        await api.post("/admin/farm-loads", payload);
+      }
       queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "farms"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
       navigation.goBack();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to record farm load");
@@ -120,103 +148,103 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
   const selectedItemName = items.find(i => i.id === selectedItem)?.name || "Select Item";
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-[#f9fafb]" edges={["top", "bottom"]}>
       {/* Header */}
-      <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-surface-variant/30">
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-container"
+      <View className="bg-[#0e6832] px-3 pt-1 pb-2 flex-row items-center">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Button"
+          className="w-10 h-10 -ml-2 items-center justify-center rounded-full active:bg-white/10 mr-2"
           onPress={() => navigation.goBack()}
         >
-          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
+          <MaterialIcons name="arrow-back" size={24} color="white" />
         </Pressable>
-        <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold ml-2">
-          Farm Purchase
-        </Text>
+        <View className="flex-1">
+          <Text className="text-white font-headline-sm font-semibold tracking-tight">
+            {isEditing ? "Edit Purchase Order" : "New Farm Purchase"}
+          </Text>
+        </View>
       </View>
 
-      <ScrollView className="flex-1 px-4 pt-6 flex-col" contentContainerStyle={{ paddingBottom: 32 }}>
+      <KeyboardAwareScrollView 
+        enableOnAndroid={true}
+        keyboardShouldPersistTaps="handled"
+        className="flex-1 px-4 pt-4" 
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {error && (
-          <Text className="px-4 py-2 mb-4 text-error text-center text-label-md bg-error-container rounded-lg font-semibold">
+          <Text className="px-3 py-2 mb-4 text-red-600 text-center bg-red-50 rounded-lg font-semibold">
             {error}
           </Text>
         )}
 
-        {/* Purchase Info */}
-        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 z-50">
-          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
-            <MaterialIcons name="info-outline" size={20} className="text-primary" />
-            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
-              Purchase Info
-            </Text>
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
-            <View className="relative z-20">
-              <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-                className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
+        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-50">
+          <View className="flex-row gap-4 mb-4 z-50">
+            <View className="flex-1 relative z-50">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Farm</Text>
+              <Pressable
+                accessibilityRole="button"
+                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
                 onPress={() => setShowFarmDropdown(!showFarmDropdown)}
               >
-                <View className="flex-row items-center gap-3">
-                  <MaterialIcons name="agriculture" size={20} color="#5c5f60" />
-                  <Text className={`font-body-lg text-body-lg ${selectedFarm ? 'text-on-surface' : 'text-secondary'}`}>
-                    {selectedFarmName}
-                  </Text>
-                </View>
-                <MaterialIcons name={showFarmDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
+                <Text className={`text-sm ${selectedFarm ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {selectedFarmName}
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
               </Pressable>
-              
               {showFarmDropdown && (
-                <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
+                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
+                  <ScrollView nestedScrollEnabled className="max-h-48">
                     {farms.length > 0 ? (
                       farms.map((farm) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
+                        <Pressable
                           key={farm.id}
-                          className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
+                          className="px-4 py-3 border-b border-gray-100"
                           onPress={() => {
                             setSelectedFarm(farm.id);
                             setShowFarmDropdown(false);
                           }}
                         >
-                          <Text className="font-body-md text-body-md text-on-surface font-semibold">{farm.name}</Text>
-                          <Text className="font-label-md text-label-md text-on-surface-variant mt-0.5">{farm.owner_name} • {farm.contact_phone}</Text>
+                          <Text className="text-gray-900 font-medium">{farm.name}</Text>
                         </Pressable>
                       ))
                     ) : (
-                      <Text className="p-4 text-center text-on-surface-variant">No farms found.</Text>
+                      <Text className="p-4 text-center text-gray-500">No farms</Text>
                     )}
                   </ScrollView>
                 </View>
               )}
             </View>
-          </View>
 
-          <View className="flex-col gap-2 z-[9] mt-2">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Vehicle (Optional)</Text>
-            <View className="relative z-15">
+            <View className="flex-1 relative z-40">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">
+                Vehicle <Text className="text-gray-400 font-normal">(Optional)</Text>
+              </Text>
               <Pressable
-                className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
+                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
                 onPress={() => setShowVehicleDropdown(!showVehicleDropdown)}
               >
-                <View className="flex-row items-center gap-3">
-                  <MaterialIcons name="local-shipping" size={20} color="#5c5f60" />
-                  <Text className={`font-body-lg ${selectedVehicle ? "text-on-surface" : "text-secondary"}`}>
-                    {vehicles.find((v) => v.id === selectedVehicle)?.number || "Select Vehicle (optional)"}
-                  </Text>
-                </View>
-                <MaterialIcons name={showVehicleDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
+                <Text className={`text-sm ${selectedVehicle ? 'text-gray-900' : 'text-gray-400'}`} numberOfLines={1}>
+                  {vehicles.find((v) => v.id === selectedVehicle)?.number || "Select Vehicle (optional)"}
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
               </Pressable>
               {showVehicleDropdown && (
-                <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden elevation-10">
-                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
-                    <Pressable className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container" onPress={() => { setSelectedVehicle(""); setShowVehicleDropdown(false); }}>
-                      <Text className="text-on-surface-variant">— No vehicle —</Text>
+                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
+                  <ScrollView nestedScrollEnabled className="max-h-48">
+                    <Pressable
+                      className="px-4 py-3 border-b border-gray-100"
+                      onPress={() => { setSelectedVehicle(""); setShowVehicleDropdown(false); }}
+                    >
+                      <Text className="text-gray-500">— No vehicle —</Text>
                     </Pressable>
                     {vehicles.map((v) => (
-                      <Pressable key={v.id} className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container" onPress={() => { setSelectedVehicle(v.id); setShowVehicleDropdown(false); }}>
-                        <Text className="font-semibold text-on-surface">{v.number}</Text>
-                        <Text className="text-on-surface-variant text-sm">{v.capacity_kg ? `${v.capacity_kg} kg` : "No capacity"} {v.driver_name ? `· ${v.driver_name}` : ""}</Text>
+                      <Pressable
+                        key={v.id}
+                        className="px-4 py-3 border-b border-gray-100"
+                        onPress={() => { setSelectedVehicle(v.id); setShowVehicleDropdown(false); }}
+                      >
+                        <Text className="text-gray-900 font-medium">{v.number}</Text>
                       </Pressable>
                     ))}
                   </ScrollView>
@@ -225,213 +253,199 @@ export function AdminFarmPurchaseScreen({ navigation }: { navigation: any }) {
             </View>
           </View>
 
-          <View className="flex-col gap-2 z-[9] mt-2">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Item</Text>
-            <View className="relative z-10">
-              <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-                className="bg-surface-container-lowest rounded-2xl px-4 h-12 flex-row items-center justify-between shadow-sm border border-outline-variant/30 active:bg-surface-container"
+          <View className="flex-row gap-4 mb-2 z-30">
+            <View className="flex-1 relative z-30">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Item</Text>
+              <Pressable
+                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
                 onPress={() => setShowItemDropdown(!showItemDropdown)}
               >
-                <View className="flex-row items-center gap-3">
-                  <MaterialIcons name="category" size={20} color="#5c5f60" />
-                  <Text className={`font-body-lg text-body-lg ${selectedItem ? 'text-on-surface' : 'text-secondary'}`}>
-                    {selectedItemName}
-                  </Text>
-                </View>
-                <MaterialIcons name={showItemDropdown ? "arrow-drop-up" : "arrow-drop-down"} size={24} className="text-on-surface" />
+                <Text className={`text-sm ${selectedItem ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {selectedItemName}
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
               </Pressable>
-              
               {showItemDropdown && (
-                <View className="absolute top-14 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled className="w-full max-h-48">
-                    {items.length > 0 ? (
-                      items.map((item) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-                          key={item.id}
-                          className="px-4 py-3 border-b border-surface-variant/50 active:bg-surface-container"
-                          onPress={() => {
-                            setSelectedItem(item.id);
-                            setShowItemDropdown(false);
-                          }}
-                        >
-                          <Text className="font-body-md text-body-md text-on-surface font-semibold">{item.name}</Text>
-                        </Pressable>
-                      ))
-                    ) : (
-                      <Text className="p-4 text-center text-on-surface-variant">No items found.</Text>
-                    )}
+                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
+                  <ScrollView nestedScrollEnabled className="max-h-48">
+                    {items.map((item) => (
+                      <Pressable
+                        key={item.id}
+                        className="px-4 py-3 border-b border-gray-100"
+                        onPress={() => { setSelectedItem(item.id); setShowItemDropdown(false); }}
+                      >
+                        <Text className="text-gray-900 font-medium">{item.name}</Text>
+                      </Pressable>
+                    ))}
                   </ScrollView>
                 </View>
               )}
             </View>
-          </View>
-
-          <View className="flex-col gap-2 relative z-[8] mt-2">
-            <DatePickerField label="Purchase Date" value={purchaseDate} onChange={setPurchaseDate} maximumDate={new Date()} />
-          </View>
-        </View>
-
-        {/* Bird & Weight */}
-        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
-          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
-            <MaterialIcons name="monitor-weight" size={20} className="text-primary" />
-            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
-              Bird & Weight
-            </Text>
-          </View>
-          
-          <View className="flex-row gap-4">
-            <View className="flex-col gap-2 flex-1">
-              <Text className="font-body-md text-body-md text-on-surface-variant">Quantity (Birds)</Text>
-              <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
-                <TextInput placeholderTextColor="#737373"
-                  className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
-                  placeholder="0"
-                  keyboardType="number-pad"
-                  value={quantity}
-                  onChangeText={setQuantity}
- />
-              </View>
-            </View>
             
-            <View className="flex-col gap-2 flex-1">
-              <Text className="font-body-md text-body-md text-primary font-bold tracking-wide">Total Weight (KG)</Text>
-              <View className="bg-primary/10 rounded-2xl px-4 min-h-[56px] justify-center border-2 border-primary/30 shadow-sm">
-                <TextInput placeholderTextColor="#737373"
-                  className="bg-transparent font-display-lg text-[28px] font-black text-primary p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
-                  placeholder="0.00"
-                  keyboardType="decimal-pad"
-                  value={weight}
-                  onChangeText={setWeight}
- />
-              </View>
-            </View>
-          </View>
-          <View className="flex-col gap-2 mt-4">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Rate (₹ per KG)</Text>
-            <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
-              <TextInput placeholderTextColor="#737373"
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
-                placeholder="0.00"
-                keyboardType="decimal-pad"
-                value={rate}
-                onChangeText={setRate}
- />
+            <View className="flex-1 z-20">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">
+                Purchase Date <Text className="text-gray-400 font-normal text-[10px]"></Text>
+              </Text>
+              <DatePickerField 
+                value={purchaseDate} 
+                onChange={setPurchaseDate} 
+                maximumDate={new Date()} 
+                containerStyle=""
+                inputStyle="h-[46px] border border-gray-200 rounded-lg px-3 bg-white"
+                showIcon={true}
+              />
             </View>
           </View>
         </View>
 
-        {/* Payment */}
-        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
-          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
-            <MaterialIcons name="payments" size={20} className="text-primary" />
-            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
-              Payment
-            </Text>
+        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-10">
+          <View className="flex-row items-center mb-4">
+            <Text className="text-[#0e6832] font-bold text-base mr-3">Bird & Weight</Text>
+            <View className="flex-1 h-[1px] bg-gray-200" />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pb-2 -mx-4 px-4 snap-x">
+
+          <View className="flex-row gap-4 mb-4">
+            <View className="flex-1">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Quantity (Boxes)</Text>
+              <TextInput
+                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
+                placeholder="Enter quantity"
+                placeholderTextColor="#9ca3af"
+                keyboardType="number-pad"
+                value={quantity}
+                onChangeText={setQuantity}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Total Weight (KG)</Text>
+              <TextInput
+                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
+                placeholder="Enter total weight"
+                placeholderTextColor="#9ca3af"
+                keyboardType="decimal-pad"
+                value={weight}
+                onChangeText={setWeight}
+              />
+            </View>
+          </View>
+
+          <View className="w-1/2 pr-2">
+            <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Rate (₹ per KG)</Text>
+            <TextInput
+              className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
+              placeholder="Enter rate per kg"
+              placeholderTextColor="#9ca3af"
+              keyboardType="decimal-pad"
+              value={rate}
+              onChangeText={setRate}
+            />
+          </View>
+        </View>
+
+        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-0">
+          <View className="flex-row items-center mb-4">
+            <Text className="text-[#0e6832] font-bold text-base mr-3">Payment</Text>
+            <View className="flex-1 h-[1px] bg-gray-200" />
+          </View>
+
+          <View className="flex-row flex-wrap gap-2 mb-4">
             {["Bank Transfer", "UPI", "Cash", "Credit"].map((method) => (
-              <Pressable accessibilityRole="button" accessibilityLabel="Button"
+              <Pressable
                 key={method}
-                className={`snap-start shrink-0 rounded-full px-5 py-2 mr-2 shadow-sm ${paymentMethod === method ? "bg-primary" : "bg-surface-container"}`}
+                className={`h-11 rounded-lg border flex-row items-center justify-center px-4 flex-1 min-w-[70px] ${
+                  paymentMethod === method 
+                    ? "border-[#0e6832] bg-[#f0f9f3]" 
+                    : "border-gray-200 bg-white"
+                }`}
                 onPress={() => setPaymentMethod(method)}
               >
-                <Text className={`font-label-md text-label-md ${paymentMethod === method ? "text-on-primary" : "text-on-surface"}`}>
+                <Text className={`text-sm ${
+                  paymentMethod === method ? "text-gray-900 font-medium" : "text-gray-600"
+                }`}>
                   {method}
                 </Text>
+                {paymentMethod === method && (
+                  <View className="absolute top-1 right-1 bg-white rounded-full">
+                    <MaterialIcons name="check-circle" size={14} color="#0e6832" />
+                  </View>
+                )}
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
 
-          <View className="flex-col gap-2 mt-2">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Paid Amount (₹)</Text>
-            <View className="bg-surface-container-lowest rounded-2xl px-4 min-h-[52px] justify-center border border-outline-variant/30 shadow-sm">
-              <TextInput placeholderTextColor="#737373"
-                className="bg-transparent font-headline-md-mobile text-headline-md-mobile text-on-surface p-0 m-0 flex-1 w-full placeholder:text-on-surface-variant"
-                placeholder="0.00"
+          <View className="flex-row gap-4 mb-4">
+            <View className="flex-1">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Paid Amount (₹)</Text>
+              <TextInput
+                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
+                placeholder="Enter paid amount"
+                placeholderTextColor="#9ca3af"
                 keyboardType="decimal-pad"
                 value={paidAmount}
                 onChangeText={setPaidAmount}
- />
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Balance Amount</Text>
+              <View className="h-[46px] bg-[#f0f9f3] rounded-lg px-3 justify-center border border-transparent">
+                <Text className="text-[#0e6832] font-bold text-base">
+                  ₹{balanceAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View className="flex-row items-center justify-between pt-4 mt-2 border-t border-surface-variant/30">
-            <Text className="font-title-md text-title-md text-on-surface font-semibold">Balance Amount</Text>
-            <Text className={`font-headline-sm text-headline-sm font-bold ${balanceAmount > 0 ? 'text-error' : 'text-primary'}`}>
-              ₹{balanceAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-            </Text>
+          <View>
+            <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Remarks</Text>
+            <TextInput
+              className="h-[80px] border border-gray-200 rounded-lg px-3 py-3 text-sm text-gray-900 bg-white"
+              placeholder="Add any remarks (optional)"
+              placeholderTextColor="#9ca3af"
+              multiline
+              textAlignVertical="top"
+              value={remarks}
+              onChangeText={setRemarks}
+            />
           </View>
         </View>
 
-        {/* Remarks */}
-        <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 p-5 flex-col gap-5 mb-6 relative z-0">
-          <View className="flex-row items-center gap-2 border-b border-surface-variant/30 pb-3">
-            <MaterialIcons name="notes" size={20} className="text-primary" />
-            <Text className="font-label-lg text-label-lg text-on-surface uppercase tracking-wider font-bold">
-              Remarks
-            </Text>
+        <View className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 shadow-sm">
+          <Text className="text-[#0e6832] font-bold text-base mb-4">Purchase Summary</Text>
+
+          <View className="flex-row gap-3">
+            <View className="flex-1 border border-gray-200 rounded-lg p-3 items-center">
+              <Text className="text-gray-700 text-[11px] mb-1 font-medium">Total Weight</Text>
+              <Text className="text-[#0e6832] font-bold text-[15px]">
+                {weightNum > 0 ? weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : "0"} KG
+              </Text>
+            </View>
+            <View className="flex-1 border border-gray-200 rounded-lg p-3 items-center">
+              <Text className="text-gray-700 text-[11px] mb-1 font-medium">Rate</Text>
+              <Text className="text-[#0e6832] font-bold text-[15px]">
+                ₹{rateNum > 0 ? rateNum.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0"}
+              </Text>
+            </View>
+            <View className="flex-1 bg-[#f0f9f3] border border-transparent rounded-lg p-3 items-center">
+              <Text className="text-gray-900 text-[11px] font-medium mb-1">Net Payable</Text>
+              <Text className="text-[#0e6832] font-bold text-[15px]">
+                ₹{netPayable > 0 ? netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0"}
+              </Text>
+            </View>
           </View>
-          <TextInput placeholderTextColor="#737373"
-            className="w-full bg-surface-container-lowest rounded-2xl p-4 min-h-[100px] border border-outline-variant/30 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
-            placeholder="Add any notes here..."
-            multiline
-            textAlignVertical="top"
-            value={remarks}
-            onChangeText={setRemarks}
- />
+
+          <Pressable
+            className="w-full bg-[#0e6832] h-14 rounded-xl flex items-center justify-center active:bg-[#0a4f26] mb-4 shadow-sm"
+            onPress={onSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text className="text-white font-bold text-lg">{isEditing ? "Update Load" : "Create Load"}</Text>
+            )}
+          </Pressable>
         </View>
-
-        {/* Summary Card */}
-        <View className="bg-primary/5 rounded-3xl p-6 flex-col gap-3 mb-6 border border-primary/20 shadow-sm">
-          <View className="flex-row items-center gap-2 mb-2">
-            <MaterialIcons name="receipt-long" size={24} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-primary font-bold">Purchase Summary</Text>
-          </View>
-          
-          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Farm</Text>
-            <Text className="font-body-md text-body-md text-on-surface font-semibold">{selectedFarmName}</Text>
-          </View>
-          
-          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Total Weight</Text>
-            <Text className="font-body-md text-body-md text-on-surface font-semibold">{weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 })} KG</Text>
-          </View>
-          
-          <View className="flex-row justify-between items-center py-2 border-b border-primary/10">
-            <Text className="font-body-md text-body-md text-on-surface-variant">Rate</Text>
-            <Text className="font-body-md text-body-md text-on-surface font-semibold">₹{rateNum.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
-          </View>
-          
-          <View className="flex-row justify-between items-center pt-4 mt-2">
-            <Text className="font-title-lg text-title-lg text-on-surface font-bold">Net Payable</Text>
-            <Text className="font-display-sm text-display-sm text-primary font-black tracking-tight">₹{netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
-          </View>
-        </View>
-
-      </ScrollView>
-
-      {/* Bottom Actions */}
-      <View className="bg-surface/90 border-t border-surface-variant/30 p-4 flex-row gap-4">
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-          className="flex-1 bg-transparent border-2 border-primary rounded-2xl py-3 items-center justify-center active:bg-primary/5"
-          onPress={() => navigation.goBack()}
-        >
-          <Text className="font-headline-sm text-headline-sm text-primary font-semibold">Cancel</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" 
-          className="flex-[2] bg-primary rounded-2xl py-3 items-center justify-center active:scale-95 shadow-md shadow-primary/20"
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-             <ActivityIndicator className="text-white" />
-          ) : (
-            <Text className="font-headline-sm text-headline-sm text-on-primary font-semibold">Save Purchase</Text>
-          )}
-        </Pressable>
-      </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

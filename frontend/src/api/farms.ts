@@ -39,3 +39,12 @@ export async function updateFarmLoad(loadId: string, payload: Record<string, unk
   const { data } = await api.patch<FarmLoad>(`/admin/farm-loads/${loadId}`, payload);
   return data;
 }
+
+export async function getFarmLoad(loadId: string) {
+  const { data } = await api.get<FarmLoad>(`/admin/farm-loads/${loadId}`);
+  return data;
+}
+
+export async function deleteFarmLoad(loadId: string) {
+  await api.delete(`/admin/farm-loads/${loadId}`);
+}

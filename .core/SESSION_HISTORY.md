@@ -979,3 +979,115 @@
 **User:** Explain what this problem is and help me fix it: Cannot find module `sqlalchemy.exc`
 **Agent:** Explained why IDE/Language Server failed to resolve `sqlalchemy.exc` (attempting system Python vs `backend/.venv`). Created `pyrightconfig.json` and `.vscode/settings.json` configuring the Python virtual environment path to `backend/.venv` and adding `backend` to `extraPaths`.
 
+## [2026-08-31T19:08:00+05:30]
+**User:** Fix 400 Bad Request error caused by IP mismatch.
+**Agent:** Updated `backend/.env` to include `192.168.1.10` in `ALLOWED_HOSTS` to allow the frontend on the local network to authenticate.
+
+## [2026-08-31T19:10:00+05:30]
+**User:** Fix 500 Internal Server Error in `/api/v1/admin/settings` caused by Pydantic ValidationError on UUID.
+**Agent:** Changed `id: str` to `id: UUID` in `OrgSettingsOut` schema inside `backend/app/schemas/settings.py` and imported `UUID` to resolve the serialization error.
+
+## [2026-08-31T19:16:00+05:30]
+**User:** Fix frontend warning: `EXPO_PUBLIC_API_BASE_URL should use https in production`.
+**Agent:** Updated the check in `frontend/src/api/client.ts` to only emit the HTTPS warning if `process.env.NODE_ENV === "production"`, preventing it from triggering during local network development.
+
+## [2026-08-31T20:18:00+05:30]
+**User:** Fix 500 Internal Server Error in `/api/v1/admin/farm-loads` (UndefinedColumnError for `empty_box_weight`).
+**Agent:** Executed `uv run python migrate.py` to synchronize existing tenant schemas with the latest models, successfully adding the missing `empty_box_weight` column for the `tenant_anbu_chicken` tenant.
+
+## [2026-08-31T20:56:00+05:30]
+**User:** Fix development warnings for `props.pointerEvents is deprecated` and `DateTimePicker is not supported on: web`.
+**Agent:** Suppressed third-party `pointerEvents` and `DateTimePicker` warnings via a `console.warn` interceptor in `App.tsx` for the web platform. Added an HTML5 `<input type="date">` fallback for web environments in both `date-picker-field.tsx` and `confirm-order-modal.tsx` to enable date picking on the web.
+
+## [2026-08-31T21:21:00+05:30]
+**User:** Fix TS error about unused `@ts-expect-error` directives.
+**Agent:** Removed the unnecessary `@ts-expect-error` comments above the `<input type="date">` web fallbacks in `confirm-order-modal.tsx` and `date-picker-field.tsx` since Expo's TypeScript config includes DOM types by default.
+
+
+
+
+
+
+
+
+## [2026-09-01T20:45:00+05:30]
+**User:** in admin -> farms ->load (Farm Purchase). change the UI like uploaded image format, no field to be missed.
+**Agent:** Updated admin-farm-purchase-screen.tsx to match the requested UI layout with new flex boxes, colors, and styling matching the design. Made date-picker-field.tsx accept container/input style injections and an optional icon.
+
+## [2026-09-01T21:11:00+05:30]
+**User:** Farm Purchase screen in that Purchase Summary section make remove the Farm selection alone. remove it
+**Agent:** Removed the Farm dropdown row from the Purchase Summary section in admin-farm-purchase-screen.tsx as requested.
+
+### [2026-09-01 21:40:36]
+- **Request**: make show the inventory concept each items to be purchase brolier total available kg, country chicken available kg, while tapping kg, see the purchase order detailly of it.
+- **Action**: Added backend inventory aggregation service (inventory.py) and API routes. Fixed typing and sorting in backend. Added useAdminInventory hooks and updated AdminFarmsScreen to display inventory dashboard cards. Created new drill-down page AdminInventoryDetailScreen to show active purchase orders.
+
+### [2026-09-01 21:48:08]
+- **Request**: Show 0kg for items with no active stock on the inventory status header, and show empty state when clicking.
+- **Action**: Modified get_inventory_summary in pp/services/wholesale/inventory.py to select from all active items using an outer join with FarmLoad and removed the available weight > 0 filter.
+
+### [2026-09-01 21:54:44]
+- **Request**: Fix issue where creating new items or making a purchase doesn't immediately update inventory status.
+- **Action**: Added queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] }) to item creation/update mutations, farm purchase mutation, and delivery run mutation.
+
+### [2026-09-01 21:57:14]
+- **Request**: Change inventory status from horizontal scroll to a 2-column grid.
+- **Action**: Modified AdminFarmsScreen to use lex-row flex-wrap justify-between with w-[48%] instead of ScrollView horizontal for the inventory status cards.
+
+### [2026-09-01 21:59:28]
+- **Request**: Remove the Recent Farm Loads section from the Admin Farms Screen.
+- **Action**: Deleted the Recent Farm Loads section from dmin-farms-screen.tsx.
+
+### [2026-09-01 22:09:20]
+- **Request**: Move farms list and search to a separate Farms Info page, add a button on the main farms page to navigate there.
+- **Action**: Created \AdminFarmsInfoScreen\ with the list and search functionality. Simplified \AdminFarmsScreen\ to act as a dashboard with a Farms Info navigation button.
+
+### [2026-09-01 22:24:26]
+- **Request**: Add 60/40 search and date filter to Active Purchase Orders (Inventory Details) screen.
+- **Action**: Modified backend get_inventory_item_loads to fetch Farm.contact_phone. Updated frontend InventoryFarmLoadOut schema. Added TextInput (60%) and DatePickerField (40%) to AdminInventoryDetailScreen for local real-time filtering.
+
+### [2026-09-01 22:33:14]
+- **Request**: Convert the simple date picker on the Active Purchase Orders screen into a filter modal with options for Specific Date, Date Range, and Reset.
+- **Action**: Implemented a \Modal\ in \AdminInventoryDetailScreen\ with segmented controls for All, Specific, and Range. Updated local filtering logic to support date ranges.
+
+### [2026-09-01 22:34:53]
+- **Request**: Keep the date filter screen center of page.
+- **Action**: Changed the flexbox layout on the Date Filter Modal from a bottom-sheet (flex-end) to a centered modal.
+
+### [2026-09-01 22:43:07]
+- **Request**: Fix date range filter bug where '25/08/2026 to 01/09/2026' was not returning results, and make the default date be null so it displays 'DD/MM/YYYY'.
+- **Action**: Updated \DatePickerField\ to accept \Date | null\ and display 'DD/MM/YYYY' when empty. Fixed date range comparison in \AdminInventoryDetailScreen\ by converting the API \DD/MM/YYYY\ strings into actual Date objects for numeric comparison instead of lexical string comparison.
+
+### [2026-09-01 22:48:19]
+- **Request**: Remove the capacity field completely from the farm information page.
+- **Action**: Removed the capacity field from the UI in \AdminFarmsInfoScreen\ (list view), \AdminFarmProfileScreen\ (details view), \AdminFarmEditScreen\, and \AdminAddFarmScreen\.
+
+### [2026-09-01 22:53:27]
+- **Request**: In the Farms Details, below the Farm name field remove the Alphanumeric word (e.g., 01A0395B).
+- **Action**: Removed the rendering of the shortened farm ID (\arm.id.split('-')[0].toUpperCase()\) from the farm list item in \AdminFarmsInfoScreen\.
+
+### [2026-09-01 23:10:21]
+- **Request**: Add \KeyboardAwareScrollView\ to the New Load and Add Farm Information screens to prevent the keyboard from hiding fields.
+- **Action**: Replaced \ScrollView\ with \KeyboardAwareScrollView\ in \dmin-farm-purchase-screen.tsx\ (New Load), \dmin-add-farm-screen.tsx\ (Add Farm Information), and \dmin-farm-edit-screen.tsx\ (Edit Farm) to maintain consistency and improve UX.
+
+### [2026-09-01 23:16:02]
+- **Request**: Simplify the Add Farm Information screen by grouping all fields (Farm Name, Mobile Number, Address, Location) into a single section instead of separating them under different headers.
+- **Action**: Removed the 'Contact Information' and 'Farm Location & Details' headers and combined all the input fields into a single card container in both \dmin-add-farm-screen.tsx\ and \dmin-farm-edit-screen.tsx\.
+
+### [2026-09-01 23:23:43]
+- **Request**: Fix the extra UI spacing between the farm name, contact, and address on the Farms Details list after removing the short ID.
+- **Action**: Reduced margins and padding in \dmin-farms-info-screen.tsx\ (\mt-2\ -> \mt-1\, \mt-3 pt-3\ -> \mt-2 pt-2\) to bring the contact details and address closer together for a cleaner layout.
+
+### [2026-09-01 23:29:04]
+- **Request**: Redesign the Farms Dashboard UI to match the provided image reference.
+- **Action**: Overhauled \dmin-farms-screen.tsx\. Changed 'New Load' and 'Farms Info' buttons to use custom colors without icons. Added a horizontal line next to 'Inventory Status'. Updated inventory cards to use a white background with gray borders, large green text for the weight, and a light green pill for the 'Tap for active loads' action.
+
+### [2026-09-01 23:55:00] Completed Active Purchase Orders Edit/Delete Features
+**Request**: Add bill amount to active purchase orders, tap to preview, edit and delete functionality.
+**Action**: Added backend DELETE load endpoint and frontend hooks. Updated AdminInventoryDetailScreen to show Bill Amount and added Bill Preview Modal with Delete (with confirmation alert) and Edit buttons. Modified AdminFarmPurchaseScreen to accept loadId, fetch existing load data, prefill form, and update existing record (PATCH) instead of creating (POST).
+
+### [2026-09-02 00:20:00] Fix PATCH /admin/farm-loads date serialization bug
+**Request**: PATCH farm-load 500 error — asyncpg receives string `'01/09/2026'` instead of `date` object for `load_date`.
+**Root cause**: `update_farm_load` in `farms.py` called `payload.model_dump(exclude_unset=True)` which triggers Pydantic's `PlainSerializer` on `IstDateOptional`, converting the already-parsed `date` back to a DD/MM/YYYY string before passing it to SQLAlchemy/asyncpg.
+**Fix**: Changed to `payload.model_dump(mode="python", exclude_unset=True)` — one character change in `backend/app/services/wholesale/farms.py:213`. No other services affected (all others with date fields use attribute access, not `model_dump`).
+

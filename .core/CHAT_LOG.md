@@ -1116,3 +1116,26 @@ The screen now flawlessly serves as a unified master list for both viewing retai
 **User:** Explain what this problem is and help me fix it: Cannot find module `sqlalchemy.exc`
 **Agent:** Diagnostic: IDE language server (Pyright/Pylance) used system interpreter (`/usr/lib/python3`) instead of the project virtual environment (`backend/.venv`). Created `pyrightconfig.json` and `.vscode/settings.json` pointing `venvPath`, `venv`, and `python.defaultInterpreterPath` to `backend/.venv`.
 
+
+## [2026-09-01T20:45:00+05:30]
+**User:** in admin -> farms ->load (Farm Purchase). change the UI like uploaded image format, no field to be missed.
+**Agent:** Updated admin-farm-purchase-screen.tsx to match the new UI layout. Ran npm run typecheck.
+
+## [2026-09-01T21:11:00+05:30]
+**User:** Farm Purchase screen in that Purchase Summary section make remove the Farm selection alone. remove it
+**Agent:** Removed the Farm selection UI from the Purchase Summary.
+
+### [2026-09-01 21:40:46]
+- **Executed Commands**: uv run ruff check app, uv run mypy app/, 
+pm run typecheck.
+
+### [2026-09-01 23:55:00] Completed Active Purchase Orders Edit/Delete Features
+**Commands Run**:
+- uv run pytest tests/test_admin_farm_loads.py -k test_admin_delete_load
+**Reasoning**: I updated the frontend Inventory Detail screen to include a pressable card and a Bill Preview Modal, which houses the delete and edit functionality. Edit routes back to the AdminFarmPurchaseScreen with the loadId prefilled, dynamically switching to PATCH for updates.
+
+### [2026-09-02 00:05:00] Fixed Edit form pre-filling
+**Reasoning**: The edit form inputs (Quantity, Total Weight, Rate, Paid Amount) were empty because 0 or other numbers were evaluating falsy or not correctly converted to strings. Modified AdminFarmPurchaseScreen to strictly check for null and cast to String.
+
+### [2026-09-02 00:11:00] Fixed missing import in Edit form
+**Reasoning**: Discovered that a missing import for parseIstDate was causing a JavaScript ReferenceError during data binding, which stopped the execution halfway and left the lower fields empty. Added the import to AdminFarmPurchaseScreen.

@@ -25,6 +25,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
     mutationFn: apiItems.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_items"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
       resetForm();
     },
   });
@@ -33,6 +34,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
     mutationFn: ({ id, ...payload }: any) => apiItems.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_items"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
       resetForm();
     },
   });

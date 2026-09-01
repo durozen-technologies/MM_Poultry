@@ -13,6 +13,7 @@ import { AdminAddRetailerScreen } from "../screens/admin/admin-add-retailer-scre
 import { AdminEditRetailerScreen } from "../screens/admin/admin-edit-retailer-screen";
 import { AdminRetailerProfileScreen } from "../screens/admin/admin-retailer-profile-screen";
 import { AdminFarmsScreen } from "../screens/admin/admin-farms-screen";
+import { AdminFarmsInfoScreen } from "../screens/admin/admin-farms-info-screen";
 import { AdminAddFarmScreen } from "../screens/admin/admin-add-farm-screen";
 import { AdminFarmProfileScreen } from "../screens/admin/admin-farm-profile-screen";
 import { AdminFarmLoadDetailScreen } from "../screens/admin/admin-farm-load-detail-screen";
@@ -20,6 +21,7 @@ import { AdminFarmLoadDetailScreen } from "../screens/admin/admin-farm-load-deta
 import { AdminRetailerUsersScreen } from "../screens/admin/admin-retailer-users-screen";
 import { AdminFarmEditScreen } from "../screens/admin/admin-farm-edit-screen";
 import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-screen";
+import { AdminInventoryDetailScreen } from "../screens/admin/admin-inventory-detail-screen";
 import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
 import { AdminSettingsScreen } from "../screens/admin/admin-settings-screen";
@@ -219,6 +221,7 @@ export function AppNavigator() {
               <Stack.Screen name="EditRetailer" component={AdminEditRetailerScreen} />
               <Stack.Screen name="RetailerProfile" component={AdminRetailerProfileScreen} />
               <Stack.Screen name="AddFarm" component={AdminAddFarmScreen} />
+              <Stack.Screen name="AdminFarmsInfo" component={AdminFarmsInfoScreen} />
               <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
               <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
               <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
@@ -231,6 +234,7 @@ export function AppNavigator() {
               <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
               <Stack.Screen name="AdminFarmLoadDetail" component={AdminFarmLoadDetailScreen} />
               <Stack.Screen name="AdminFarmProfile" component={AdminFarmProfileScreen} />
+              <Stack.Screen name="AdminInventoryDetail" component={AdminInventoryDetailScreen} />
 
               <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
               <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />

@@ -103,6 +103,14 @@ async def admin_update_load(
     return await svc.update_farm_load(auth.db, load_id, payload)
 
 
+@router.delete("/admin/farm-loads/{load_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete_load(
+    load_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> None:
+    await svc.delete_farm_load(auth.db, load_id)
+
+
 @router.get("/admin/vehicles", response_model=list[VehicleOut])
 async def admin_list_vehicles(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],

@@ -10,12 +10,25 @@ import { useAuthStore } from "./src/store/auth-store";
 import { cssInterop } from "nativewind";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { Platform } from "react-native";
+
 cssInterop(MaterialIcons, {
   className: { target: "style", nativeStyleToProp: { color: true } }
 });
 cssInterop(MaterialCommunityIcons, {
   className: { target: "style", nativeStyleToProp: { color: true } }
 });
+
+if (Platform.OS === "web") {
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    if (args[0] && typeof args[0] === "string") {
+      if (args[0].includes("props.pointerEvents is deprecated")) return;
+      if (args[0].includes("DateTimePicker is not supported on: web")) return;
+    }
+    originalWarn(...args);
+  };
+}
 
 export default function App() {
   const hydrate = useAuthStore((s) => s.hydrate);

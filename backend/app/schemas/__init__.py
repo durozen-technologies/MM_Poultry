@@ -29,6 +29,11 @@ from app.schemas.farm import (
     VehicleOut,
     VehicleUpdate,
 )
+from app.schemas.inventory import (
+    InventoryItemLoadsOut,
+    InventorySummaryItem,
+    InventorySummaryOut,
+)
 from app.schemas.item import (
     ItemCreate,
     ItemResponse,
@@ -142,4 +147,7 @@ __all__ = [
     "ItemResponse",
     "OrgSettingsOut",
     "OrgSettingsUpdate",
+    "InventorySummaryOut",
+    "InventorySummaryItem",
+    "InventoryItemLoadsOut",
 ]

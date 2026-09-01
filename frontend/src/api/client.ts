@@ -6,6 +6,7 @@ function defaultApiBaseUrl(): string {
   if (raw) {
     const normalized = raw.replace(/\/+$/, "");
     if (
+      process.env.NODE_ENV === "production" &&
       normalized.startsWith("http://") &&
       !normalized.includes("127.0.0.1") &&
       !normalized.includes("10.0.2.2") &&

@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import today_ist
+from app.core.timezone import parse_ist_date, today_ist
 from app.models.domain import (
     Farm,
     FarmLoad,
@@ -213,9 +213,18 @@ async def update_farm_load(db: AsyncSession, load_id: UUID, payload: FarmLoadUpd
     for key, value in payload.model_dump(exclude_unset=True).items():
         if key == "loaded_weight_kg" and value is not None:
             setattr(load, key, q_kg(value))
-        elif key == "load_date" and value is None:
-            continue
+        elif key == "load_date":
+            if value is not None:
+                setattr(load, key, parse_ist_date(value))  # PlainSerializer converts date→str; re-parse
         else:
             setattr(load, key, value)
     await db.flush()
     return FarmLoadOut.model_validate(load, from_attributes=True)
+
+
+async def delete_farm_load(db: AsyncSession, load_id: UUID) -> None:
+    load: FarmLoad | None = await db.scalar(select(FarmLoad).where(FarmLoad.id == load_id))
+    if load is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
+    await db.delete(load)
+    await db.flush()

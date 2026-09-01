@@ -99,6 +99,27 @@ export function ConfirmOrderModal({ order, onClose, onConfirmed }: Props) {
                   />
                 )}
               </View>
+            ) : Platform.OS === "web" ? (
+              <View className="mb-4">
+                <input
+                  type="date"
+                  value={date ? date.toISOString().split("T")[0] : ""}
+                  onChange={(e: any) => {
+                    const d = new Date(e.target.value);
+                    if (!isNaN(d.getTime())) setDate(d);
+                  }}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(115, 115, 115, 0.3)",
+                    backgroundColor: "transparent",
+                    color: "inherit",
+                    fontSize: "16px",
+                    width: "100%",
+                    colorScheme: "dark",
+                  }}
+                />
+              </View>
             ) : (
               <View className="mb-4">
                 <Pressable

@@ -205,3 +205,30 @@ def test_delivery_run_lifecycle(client: TestClient, mock_admin_auth: None) -> No
     comp_resp = client.post(f"/api/v1/delivery/runs/{run_id}/complete")
     # Will likely fail or succeed depending on logic, let's assume it sets status
     assert comp_resp.status_code in [200, 400, 409]
+
+def test_admin_delete_load(client, override_dependencies, setup_test_item, setup_test_farm):
+    item = setup_test_item
+    farm = setup_test_farm
+    
+    # Create load
+    resp = client.post(
+        "/api/v1/admin/farm-loads",
+        json={
+            "farm_id": farm["id"],
+            "item_id": item["id"],
+            "loaded_weight_kg": "2000.00",
+            "rate_per_kg": "110.50",
+            "load_date": "25/08/2026",
+            "status": "OPEN",
+        }
+    )
+    assert resp.status_code == 200
+    load_id = resp.json()["id"]
+    
+    # Delete load
+    del_resp = client.delete(f"/api/v1/admin/farm-loads/{load_id}")
+    assert del_resp.status_code == 204
+    
+    # Verify load is deleted
+    get_resp = client.get(f"/api/v1/admin/farm-loads/{load_id}")
+    assert get_resp.status_code == 404

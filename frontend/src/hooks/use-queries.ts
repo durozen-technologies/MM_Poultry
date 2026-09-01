@@ -2,7 +2,28 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
-import type { DailyOrderOut, FarmOut, FarmLoad, Retailer, OpsDashboard, TodayOrdersResponse } from "../types/api";
+import type { DailyOrderOut, FarmOut, FarmLoad, Retailer, OpsDashboard, TodayOrdersResponse, InventorySummaryOut, InventoryItemLoadsOut } from "../types/api";
+
+export function useAdminInventory() {
+  return useQuery({
+    queryKey: ["admin", "inventory"],
+    queryFn: async () => {
+      const { data } = await api.get<InventorySummaryOut>("/admin/inventory");
+      return data;
+    },
+  });
+}
+
+export function useAdminInventoryItemLoads(itemId: string) {
+  return useQuery({
+    queryKey: ["admin", "inventory", itemId],
+    queryFn: async () => {
+      const { data } = await api.get<InventoryItemLoadsOut>(`/admin/inventory/${itemId}/loads`);
+      return data;
+    },
+    enabled: !!itemId,
+  });
+}
 
 export function useAdminTodayOrders() {
   return useQuery({
@@ -92,6 +113,7 @@ export function useCreateDeliveryRun() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
     },
   });
 }

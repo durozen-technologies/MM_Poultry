@@ -343,3 +343,24 @@ export type ReportSummary = {
   total_collections: string;
   total_loss_kg: string;
 };
+export type InventorySummaryItem = {
+  item_id: string;
+  item_name: string;
+  total_available_kg: string;
+};
+
+export type InventorySummaryOut = {
+  items: InventorySummaryItem[];
+};
+
+export type InventoryFarmLoadOut = FarmLoad & {
+  farm_name: string | null;
+  contact_phone?: string;
+  delivered_weight_kg: string;
+  available_weight_kg: string;
+};
+
+export type InventoryItemLoadsOut = {
+  item_id: string;
+  loads: InventoryFarmLoadOut[];
+};

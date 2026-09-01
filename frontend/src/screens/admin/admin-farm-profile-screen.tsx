@@ -90,7 +90,6 @@ export function AdminFarmProfileScreen({ route, navigation }: { route: any; navi
               <InfoRow label="Location" value={farm?.location || "—"} />
               <InfoRow label="Address" value={farm?.address || "—"} />
               <InfoRow label="Phone" value={farm?.contact_phone || "—"} />
-              <InfoRow label="Capacity" value={farm?.capacity ? String(farm.capacity) : "—"} />
               <InfoRow label="Active" value={farm?.is_active ? "Yes" : "No"} />
             </View>
             <View className="flex-row justify-between items-center mt-4 mb-2">
