@@ -11,7 +11,11 @@ import { usePrinterStore } from "./src/store/printer-store";
 import { cssInterop } from "nativewind";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { Platform } from "react-native";
+import { Platform, LogBox } from "react-native";
+
+LogBox.ignoreLogs([
+  "viewIsDescendantOf() noop: Cannot find view with reactTag",
+]);
 
 cssInterop(MaterialIcons, {
   className: { target: "style", nativeStyleToProp: { color: true } }

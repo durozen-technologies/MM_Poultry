@@ -52,7 +52,8 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
         {(["today", "history"] as Tab[]).map((key) => (
           <Pressable accessibilityRole="button" accessibilityLabel="Button"
             key={key}
-            className={`flex-1 py-2.5 rounded-full items-center ${tab === key ? "bg-white shadow-sm elevation-sm" : ""}`}
+            className="flex-1 py-2.5 rounded-full items-center"
+            style={tab === key ? { backgroundColor: "#fff", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 } : undefined}
             onPress={() => setTab(key)}
           >
             <Text className={tab === key ? "text-[#0052CC] font-bold" : "text-on-surface-variant font-medium"}>
@@ -96,31 +97,52 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
 
 const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPress: () => void }) => {
   const isDelivered = order.status === "FULFILLED";
-  const totalKg = order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
+  const isCancelled = order.status === "CANCELLED";
   
+  let bgClass = "bg-primary-container";
+  let textClass = "text-on-primary-container";
+  if (isDelivered) {
+    bgClass = "bg-[#e8f5e9]";
+    textClass = "text-[#2e7d32]";
+  } else if (isCancelled) {
+    bgClass = "bg-error-container";
+    textClass = "text-on-error-container";
+  }
+
   return (
     <Pressable accessibilityRole="button" accessibilityLabel="Button"
-      className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
+      className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80 relative"
       onPress={onPress}
     >
-      <View className="flex-row justify-between items-start mb-3">
-        <View>
-          <Text className="font-headline-sm text-on-surface font-bold">
-            {totalKg} kg Total
-          </Text>
-          <Text className="font-body-sm text-on-surface-variant mt-1">
-            {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
-          </Text>
-        </View>
-        <View className={`px-3 py-1.5 rounded-md ${isDelivered ? "bg-[#e8f5e9]" : "bg-primary-container"}`}>
-          <Text className={`font-label-sm font-bold uppercase tracking-wider ${isDelivered ? "text-[#2e7d32]" : "text-on-primary-container"}`}>
-            {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
-          </Text>
-        </View>
+      <View className={`absolute right-4 top-4 px-2 py-1 rounded-md ${bgClass}`}>
+        <Text className={`font-bold uppercase tracking-wider text-[10px] ${textClass}`}>
+          {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
+        </Text>
       </View>
-      <View className="flex-row items-center gap-1">
-        <MaterialIcons name="chevron-right" size={18} className="text-on-surface" />
-        <Text className="font-label-md text-primary">View tracking</Text>
+
+      <Text className="font-body-sm text-on-surface-variant mb-2">
+        {formatIstDate(order.order_date)}
+      </Text>
+
+      <View className="flex-col gap-2 mt-1 mb-3">
+        {order.items?.map(it => (
+          <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">
+            <Text className="font-headline-sm text-on-surface font-bold">{it.item_name || "Item"}</Text>
+            <Text className="font-body-md text-on-surface-variant font-medium ml-1">
+              {it.total_boxes || 0} Boxes
+            </Text>
+            {it.requested_kg ? (
+              <Text className="font-body-md text-on-surface-variant ml-1">({it.requested_kg} kg)</Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      <View className="flex-row items-center justify-between border-t border-surface-variant/30 pt-3">
+        <View className="flex-row items-center gap-1">
+          <Text className="font-label-md text-primary">View order details</Text>
+          <MaterialIcons name="chevron-right" size={18} className="text-primary" />
+        </View>
       </View>
     </Pressable>
   );

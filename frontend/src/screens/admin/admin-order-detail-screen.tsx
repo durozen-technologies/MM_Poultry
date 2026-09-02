@@ -1,16 +1,19 @@
-import { Text, View, Pressable, ScrollView } from "react-native";
+import { useState } from "react";
+import { Text, View, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { apiItems } from "../../api/items";
 import type { DailyOrder } from "../../types/api";
 import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
+import { cancelOrder } from "../../api/orders";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
 
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
-  const order = route.params?.order as DailyOrder;
+  const [order, setOrder] = useState<DailyOrder>(route.params?.order as DailyOrder);
+  const [cancelling, setCancelling] = useState(false);
   const user = useAuthStore((s) => s.user);
 
   const { data: itemsPage } = useQuery({
@@ -41,6 +44,32 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
 
   const totalWeight = order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
 
+  const handleCancel = async () => {
+    Alert.alert(
+      "Cancel Order",
+      "Are you sure you want to cancel this order?",
+      [
+        { text: "No", style: "cancel" },
+        { 
+          text: "Yes, Cancel", 
+          style: "destructive",
+          onPress: async () => {
+            setCancelling(true);
+            try {
+              await cancelOrder(order.id);
+              setOrder({ ...order, status: "CANCELLED" });
+            } catch (e: any) {
+              const msg = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to cancel";
+              Alert.alert("Error", typeof msg === "string" ? msg : JSON.stringify(msg));
+            } finally {
+              setCancelling(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <AdminScreenContainer
       noScroll
@@ -59,7 +88,8 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           <View className={`absolute top-0 left-0 w-1.5 h-full ${
             order.status === 'PLACED' ? 'bg-error' : 
             order.status === 'ACKNOWLEDGED' ? 'bg-tertiary' :
-            order.status === 'FULFILLED' ? 'bg-primary' : 'bg-surface-variant'
+            order.status === 'FULFILLED' ? 'bg-primary' : 
+            order.status === 'CANCELLED' ? 'bg-error' : 'bg-surface-variant'
           }`} />
           
           <View className="flex-row justify-between items-center ml-2">
@@ -70,14 +100,16 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
             <View className={`px-3 py-1.5 rounded-full border ${
               order.status === 'PLACED' ? 'bg-error-container/50 border-error/20' : 
               order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20' :
-              order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20' : 'bg-surface-variant/30 border-outline-variant/20'
+              order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20' : 
+              order.status === 'CANCELLED' ? 'bg-error/10 border-error/20' : 'bg-surface-variant/30 border-outline-variant/20'
             }`}>
               <Text className={`font-label-sm uppercase tracking-widest font-bold ${
                 order.status === 'PLACED' ? 'text-error' : 
                 order.status === 'ACKNOWLEDGED' ? 'text-tertiary' :
-                order.status === 'FULFILLED' ? 'text-primary' : 'text-on-surface-variant'
+                order.status === 'FULFILLED' ? 'text-primary' : 
+                order.status === 'CANCELLED' ? 'text-error' : 'text-on-surface-variant'
               }`}>
-                {order.status}
+                {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
               </Text>
             </View>
           </View>
@@ -166,7 +198,25 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
         </View>
 
         {/* Action Buttons */}
-        {user?.role !== "DELIVERY" && (
+        {(order.status === "PLACED" || order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
+          <Pressable 
+            accessibilityRole="button"
+            className="bg-error/10 h-14 rounded-full flex-row items-center justify-center gap-2 border border-error/30 active:scale-[0.98] transition-transform mb-4"
+            onPress={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? (
+              <ActivityIndicator color="#ba1a1a" />
+            ) : (
+              <>
+                <MaterialIcons name="cancel" size={20} className="text-error" />
+                <Text className="text-error font-bold text-label-lg uppercase tracking-wider">Cancel Order</Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
+        {user?.role !== "DELIVERY" && order.status !== "CANCELLED" && (
           <Pressable 
             accessibilityRole="button"
             className="bg-primary h-14 rounded-full flex-row items-center justify-center gap-2 shadow-sm shadow-primary/30 active:scale-[0.98] transition-transform mb-8"

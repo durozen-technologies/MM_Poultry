@@ -4,7 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRetailerCart } from "../../hooks/use-retailer-cart";
 import type { Item } from "../../types/api";
 
-const BIRD_SIZES = ["Small", "Medium", "Large", "XL"];
 
 export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: any; route: any }) {
   const orderId = route.params?.orderId;
@@ -88,25 +87,6 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
                       placeholder="e.g. 50"
                     />
                     
-                    <Text className="font-label-md text-on-surface-variant mb-3">Bird size</Text>
-                    <View className="flex-row flex-wrap gap-2 mb-4">
-                      {BIRD_SIZES.map((size) => {
-                        const active = cartItem?.bird_size === size;
-                        return (
-                          <Pressable accessibilityRole="button"
-                            key={size}
-                            className={`px-5 py-2.5 rounded-full border ${
-                              active ? "bg-[#0052CC] border-[#0052CC]" : "bg-surface-container-lowest border-outline-variant/40"
-                            }`}
-                            onPress={() => updateCartItem(item.id, "bird_size", size)}
-                          >
-                            <Text className={active ? "text-white font-bold tracking-wide" : "text-on-surface"}>
-                              {size}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
 
                     <Text className="font-label-md text-on-surface-variant mb-2">Notes (optional)</Text>
                     <TextInput

@@ -41,30 +41,29 @@ def build_tracking_stages(
         return [OrderTrackingStage(key="cancelled", label="Cancelled", completed=True, active=True)]
 
     stage_defs = [
-        ("pending", "Pending"),
+        ("pending", "Order Placed"),
         ("confirmed", "Confirmed"),
-        ("preparing", "Preparing"),
         ("out_for_delivery", "Out for Delivery"),
         ("delivered", "Delivered"),
     ]
     progress = {
         OrderStatus.PLACED: 0,
         OrderStatus.ACKNOWLEDGED: 1,
-        OrderStatus.PARTIAL: 2,
-        OrderStatus.FULFILLED: 4,
+        OrderStatus.PARTIAL: 3,
+        OrderStatus.FULFILLED: 3,
     }.get(order_status, 0)
 
     if run_in_progress and progress >= 1:
-        progress = max(progress, 3)
+        progress = max(progress, 2)
 
     return [
         OrderTrackingStage(
             key=key,
-            label=label,
-            completed=i < progress,
-            active=i == progress,
+            label=lbl,
+            completed=idx < progress,
+            active=idx == progress,
         )
-        for i, (key, label) in enumerate(stage_defs)
+        for idx, (key, lbl) in enumerate(stage_defs)
     ]
 
 
@@ -148,6 +147,9 @@ async def list_retailer_orders(
         out = DailyOrderOut.model_validate(order, from_attributes=True)
         out.retailer_name = retailer.name
         out.shop_name = retailer.shop_name
+        for i, model_item in enumerate(order.items):
+            if model_item.item:
+                out.items[i].item_name = model_item.item.name
         items.append(out)
 
     next_cursor = str(rows[-1].id) if has_more and rows else None

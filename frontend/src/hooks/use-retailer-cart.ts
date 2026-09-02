@@ -44,7 +44,8 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
 
   const updateCartItem = (itemId: string, field: keyof OrderItemCreate, value: unknown) => {
     setCart((prev) => {
-      const existing = prev[itemId] || { item_id: itemId, total_boxes: 0, requested_kg: "", bird_size: "Medium", notes: "" };
+      const existing = prev[itemId] || { item_id: itemId, total_boxes: 0, requested_kg: "", notes: "" };
+
       let sanitized: unknown = value;
       if (field === "total_boxes") {
         const n = Number(value);
@@ -54,10 +55,6 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
         const s = String(value ?? "");
         const n = Number(s);
         sanitized = s === "" ? "" : (Number.isFinite(n) ? String(n) : "");
-      }
-      if (field === "bird_size") {
-        const allowed = ["Small", "Medium", "Large", "XL"];
-        sanitized = allowed.includes(String(value)) ? String(value) : "Medium";
       }
       if (field === "notes") {
         sanitized = String(value ?? "").slice(0, 500);
@@ -71,7 +68,8 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
 
   const adjustBoxes = (itemId: string, delta: number) => {
     setCart((prev) => {
-      const existing = prev[itemId] || { item_id: itemId, total_boxes: 0, requested_kg: "", bird_size: "Medium", notes: "" };
+      const existing = prev[itemId] || { item_id: itemId, total_boxes: 0, requested_kg: "", notes: "" };
+
       const current = existing.total_boxes || 0;
       const next = Math.max(0, current + delta);
       if (next === 0) {

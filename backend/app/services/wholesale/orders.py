@@ -204,7 +204,6 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
         .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
         .where(
             RetailerDailyOrder.order_date == day,
-            RetailerDailyOrder.status != OrderStatus.CANCELLED,
         )
         .order_by(RetailerDailyOrder.created_at.asc())
     )
@@ -220,11 +219,12 @@ async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
             if model_item.item:
                 out.items[i].item_name = model_item.item.name
         items.append(out)
-        for i in order.items:
-            if i.requested_kg:
-                total_kg += i.requested_kg
-            if i.total_boxes:
-                total_bx += i.total_boxes
+        if order.status != OrderStatus.CANCELLED:
+            for i in order.items:
+                if i.requested_kg:
+                    total_kg += i.requested_kg
+                if i.total_boxes:
+                    total_bx += i.total_boxes
 
     return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total_kg), total_boxes=total_bx)
 
@@ -305,7 +305,6 @@ async def list_orders_by_date(db: AsyncSession, target_date: date) -> TodayOrder
             .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
             .where(
                 RetailerDailyOrder.order_date == target_date,
-                RetailerDailyOrder.status != OrderStatus.CANCELLED,
             )
             .order_by(RetailerDailyOrder.created_at.asc())
         )
@@ -320,11 +319,12 @@ async def list_orders_by_date(db: AsyncSession, target_date: date) -> TodayOrder
                 if model_item.item:
                     out.items[i].item_name = model_item.item.name
             items.append(out)
-            for i in order.items:
-                if i.requested_kg:
-                    total_kg += i.requested_kg
-                if i.total_boxes:
-                    total_bx += i.total_boxes
+            if order.status != OrderStatus.CANCELLED:
+                for i in order.items:
+                    if i.requested_kg:
+                        total_kg += i.requested_kg
+                    if i.total_boxes:
+                        total_bx += i.total_boxes
         return TodayOrdersResponse(items=items, total_requested_kg=q_kg(total_kg), total_boxes=total_bx)
     except Exception as e:
         from fastapi import HTTPException, status

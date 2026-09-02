@@ -42,8 +42,6 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
     }, [refresh])
   );
 
-  const totalKg = order?.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
-
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
       <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
@@ -60,14 +58,13 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
           <>
             <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4">
               <Text className="font-headline-md text-on-surface font-semibold">
-                {totalKg} kg Total
+                Date: {formatIstDate(order.order_date)}
               </Text>
-              <Text className="font-body-md text-on-surface-variant mt-1">
-                {formatIstDate(order.order_date)}
-              </Text>
-              <Text className="font-label-md text-on-surface-variant mt-2">
-                Est. delivery {formatIstDate(order.estimated_delivery_date)}
-              </Text>
+              {order.expected_delivery_date ? (
+                <Text className="font-label-md text-on-surface-variant mt-2">
+                  Delivery: {formatIstDate(order.expected_delivery_date)}
+                </Text>
+              ) : null}
             </View>
 
             <Text className="font-headline-sm text-on-surface mb-3">Order Items</Text>
@@ -79,6 +76,10 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
                 <View className="flex-row items-center gap-3 py-1">
                   <MaterialIcons name="scale" size={18} className="text-on-surface-variant" />
                   <Text className="font-body-md text-on-surface font-semibold">{item.requested_kg} kg</Text>
+                </View>
+                <View className="flex-row items-center gap-3 py-1">
+                  <MaterialIcons name="inventory-2" size={18} className="text-on-surface-variant" />
+                  <Text className="font-body-md text-on-surface">{item.total_boxes || 0} Boxes</Text>
                 </View>
                 <View className="flex-row items-center gap-3 py-1">
                   <MaterialIcons name="egg" size={18} className="text-on-surface-variant" />
@@ -100,6 +101,7 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
                   <View className="items-center">
                     <View
                       className={`w-3 h-3 rounded-full ${
+                        stage.key === "cancelled" ? "bg-error" : 
                         stage.completed || stage.active ? "bg-primary" : "bg-outline-variant"
                       }`}
                     />
@@ -110,10 +112,12 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
                   <View className="flex-1 pb-4">
                     <Text
                       className={`font-body-md ${
+                        stage.key === "cancelled" ? "text-error font-semibold" :
                         stage.active ? "text-primary font-semibold" : "text-on-surface"
                       }`}
                     >
                       {stage.label}
+                      {stage.key === "confirmed" && (stage.completed || stage.active) ? ` on ${formatIstDate(order.order_date)}` : ""}
                     </Text>
                   </View>
                 </View>

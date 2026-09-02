@@ -42,20 +42,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
   const [assignOrder, setAssignOrder] = useState<DailyOrderOut | null>(null);
   const [confirmOrderModal, setConfirmOrderModal] = useState<DailyOrderOut | null>(null);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-  const handleCancel = useCallback(async (order: DailyOrderOut) => {
-    setCancellingId(order.id);
-    try {
-      await cancelOrder(order.id);
-      refetch();
-    } catch (e: any) {
-      const msg = e?.response?.data?.error?.message || e?.response?.data?.detail || e.message || "Failed to cancel";
-      alert(typeof msg === "string" ? msg : JSON.stringify(msg));
-    } finally {
-      setCancellingId(null);
-    }
-  }, [refetch]);
 
   const filteredOrders = useMemo(() => orders.filter((o) => {
     if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
@@ -185,7 +171,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 
             {/* Filter Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-6 overflow-visible">
-              {(["All", "PLACED", "ACKNOWLEDGED", "PARTIAL", "FULFILLED", "CANCELLED"] as const).map((f) => (
+              {(["All", "PLACED", "ACKNOWLEDGED", "FULFILLED", "CANCELLED"] as const).map((f) => (
                 <Pressable
                   key={f}
                   accessibilityRole="button"
@@ -201,7 +187,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
                       filter === f ? "text-white" : "text-on-surface-variant"
                     }`}
                   >
-                    {f === "ACKNOWLEDGED" ? "Confirmed" : f === "All" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
+                    {f === "ACKNOWLEDGED" ? "Confirmed" : f === "FULFILLED" ? "Delivered" : f === "All" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
                   </Text>
                 </Pressable>
               ))}
@@ -227,8 +213,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
         renderItem={({ item: order }) => (
           <OrderListItem 
             order={order}
-            cancellingId={cancellingId}
-            onCancel={() => handleCancel(order)}
             onConfirm={() => setConfirmOrderModal(order)}
             onAssign={() => setAssignOrder(order)}
             onPress={() => navigation.navigate("OrderDetail", { order })}
@@ -264,16 +248,12 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 
 const OrderListItem = React.memo(({
   order,
-  cancellingId,
-  onCancel,
   onConfirm,
   onAssign,
   onPress,
   getStatusColor,
 }: {
   order: DailyOrderOut;
-  cancellingId: string | null;
-  onCancel: () => void;
   onConfirm: () => void;
   onAssign: () => void;
   onPress: () => void;
@@ -295,7 +275,7 @@ const OrderListItem = React.memo(({
         <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1.5 border border-white/10`}>
           <MaterialIcons name={statusColors.icon as any} size={14} className={statusColors.text} />
           <Text className={`font-label-sm font-bold ${statusColors.text}`}>
-            {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+            {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status === 'FULFILLED' ? 'Delivered' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
           </Text>
         </View>
       </View>
@@ -332,22 +312,13 @@ const OrderListItem = React.memo(({
 
       <View className="flex-row justify-end gap-2 pl-2">
         {order.status === "PLACED" && (
-          <>
-            <Pressable
-              className="h-11 px-4 rounded-xl flex-row items-center justify-center border border-error/30 bg-error/5 active:bg-error/10"
-              onPress={onCancel}
-              disabled={cancellingId === order.id}
-            >
-              <Text className="font-label-md text-error font-bold">{cancellingId === order.id ? "..." : "Cancel"}</Text>
-            </Pressable>
-            <Pressable
+          <Pressable
               className="bg-primary h-11 px-5 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80 shadow-sm shadow-primary/20"
               onPress={onConfirm}
             >
               <Text className="font-label-md text-white font-bold">Confirm</Text>
               <MaterialIcons name="check-circle" size={18} color="white" />
             </Pressable>
-          </>
         )}
         
         {order.status === "ACKNOWLEDGED" && (

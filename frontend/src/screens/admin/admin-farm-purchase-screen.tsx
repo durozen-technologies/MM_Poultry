@@ -27,8 +27,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
   const queryClient = useQueryClient();
   const [farms, setFarms] = useState<FarmOut[]>([]);
   const [selectedFarm, setSelectedFarm] = useState<string>("");
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+  const [vehicleNumber, setVehicleNumber] = useState<string>("");
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [purchaseDate, setPurchaseDate] = useState(todayIstDate());
@@ -43,7 +42,6 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
 
   // Dropdown states
   const [showFarmDropdown, setShowFarmDropdown] = useState(false);
-  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
   const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   // Derived values
@@ -55,20 +53,18 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
 
   const fetchData = useCallback(async () => {
     try {
-      const [farmsRes, itemsRes, vehiclesRes] = await Promise.all([
+      const [farmsRes, itemsRes] = await Promise.all([
         api.get("/admin/farms"),
         api.get("/admin/items?active_only=true"),
-        api.get("/admin/vehicles").catch(() => ({ data: [] })),
       ]);
       setFarms(farmsRes.data);
       setItems(itemsRes.data.items || itemsRes.data);
-      setVehicles(Array.isArray(vehiclesRes.data) ? vehiclesRes.data : (vehiclesRes.data as any).items || []);
       
       if (loadId) {
         const { data: loadData } = await api.get(`/admin/farm-loads/${loadId}`);
         setSelectedFarm(loadData.farm_id || "");
         setSelectedItem(loadData.item_id || "");
-        setSelectedVehicle(loadData.vehicle_id || "");
+        setVehicleNumber(loadData.vehicle_number || "");
         if (loadData.load_date) {
             setPurchaseDate(parseIstDate(loadData.load_date) || todayIstDate());
         }
@@ -97,19 +93,13 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
     const w = parseFloat(weight);
     if (!Number.isFinite(w) || w <= 0) return setError("Weight must be a positive number");
     
-    if (selectedVehicle) {
-      const v = vehicles.find((x) => x.id === selectedVehicle);
-      if (v?.capacity_kg && w > parseFloat(v.capacity_kg)) {
-        return setError(`Weight ${w}kg exceeds vehicle capacity ${v.capacity_kg}kg`);
-      }
-    }
     setLoading(true);
     setError(null);
     try {
       const payload = {
         farm_id: selectedFarm,
         item_id: selectedItem,
-        vehicle_id: selectedVehicle || null,
+        vehicle_number: vehicleNumber.trim() || null,
         load_date: toApiDate(purchaseDate),
         bird_count: quantity ? parseInt(quantity, 10) : null,
         loaded_weight_kg: w,
@@ -193,36 +183,14 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
           <View className="flex-row gap-4 z-40">
             <View className="flex-1 relative z-40">
               <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle</Text>
-              <Pressable
-                className="h-14 border border-outline-variant/50 rounded-xl px-4 flex-row items-center justify-between bg-surface-container-lowest active:bg-surface-variant/30"
-                onPress={() => setShowVehicleDropdown(!showVehicleDropdown)}
-              >
-                <Text className={`text-body-md font-medium ${selectedVehicle ? 'text-on-surface' : 'text-on-surface-variant'}`} numberOfLines={1}>
-                  {vehicles.find((v) => v.id === selectedVehicle)?.number || "Optional"}
-                </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} className="text-on-surface-variant" />
-              </Pressable>
-              {showVehicleDropdown && (
-                <View className="absolute top-[80px] left-0 right-0 bg-surface-container-highest border border-outline-variant/30 rounded-xl shadow-lg z-50 max-h-48 overflow-hidden elevation-md">
-                  <ScrollView nestedScrollEnabled>
-                    <Pressable
-                      className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
-                      onPress={() => { setSelectedVehicle(""); setShowVehicleDropdown(false); }}
-                    >
-                      <Text className="text-on-surface-variant font-medium text-body-md">— None —</Text>
-                    </Pressable>
-                    {vehicles.map((v) => (
-                      <Pressable
-                        key={v.id}
-                        className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
-                        onPress={() => { setSelectedVehicle(v.id); setShowVehicleDropdown(false); }}
-                      >
-                        <Text className="text-on-surface font-medium text-body-md">{v.number}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
+              <TextInput
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 bg-surface-container-lowest text-on-surface font-medium text-body-lg focus:border-primary/50 focus:bg-surface"
+                placeholder="Vehicle Number"
+                placeholderTextColor="#666"
+                value={vehicleNumber}
+                onChangeText={setVehicleNumber}
+                autoCapitalize="characters"
+              />
             </View>
 
             <View className="flex-1 z-30">

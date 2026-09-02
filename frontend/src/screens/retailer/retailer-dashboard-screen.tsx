@@ -13,15 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getRetailerDashboard } from "../../api/retailer";
 import { getApiErrorMessage } from "../../api/client";
 import type { RetailerDashboard } from "../../types/api";
-import { formatIstDate, parseIstDate } from "../../utils/ist-date";
+import { formatIstDate } from "../../utils/ist-date";
 import { useAuthStore } from "../../store/auth-store";
 
-function estimatedDeliveryLabel(orderDate: string): string {
-  const d = parseIstDate(orderDate);
-  if (!d) return "—";
-  d.setDate(d.getDate() + 1);
-  return formatIstDate(d);
-}
+
 
 export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
   const user = useAuthStore((s) => s.user);
@@ -127,10 +122,6 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
                             </View>
                           ))}
 
-                          <Text className="font-body-sm text-on-surface-variant mt-2">
-                            <Text className="font-semibold text-on-surface">Est. Delivery: </Text>
-                            {estimatedDeliveryLabel(order.order_date)}
-                          </Text>
                         </View>
                       </View>
                     ))}

@@ -601,7 +601,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20 text-tertiary' :
                         order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-surface-variant/30 border-outline-variant/20 text-on-surface-variant'
                       }`}>
-                        <Text className="font-label-sm uppercase tracking-widest font-bold text-inherit">{order.status}</Text>
+                        <Text className="font-label-sm uppercase tracking-widest font-bold text-inherit">
+                          {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
+                        </Text>
                       </View>
                     </View>
                     <View className="bg-surface-container-highest/30 rounded-xl p-3 border border-outline-variant/10 flex-row justify-between items-center">
