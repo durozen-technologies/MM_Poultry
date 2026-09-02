@@ -106,6 +106,11 @@ graphify-out/
 .cache/
 coverage/
 coverage_report.txt
+opencode_task.txt
+
+# --- Agent session logs ---
+.core/CHAT_LOG.md
+.core/SESSION_HISTORY.md
 
 # Github Token
 .agents/github_token.txt

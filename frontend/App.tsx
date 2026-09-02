@@ -7,6 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./src/query-client";
 import { AppNavigator } from "./src/navigation/app-navigator";
 import { useAuthStore } from "./src/store/auth-store";
+import { usePrinterStore } from "./src/store/printer-store";
 import { cssInterop } from "nativewind";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -31,11 +32,13 @@ if (Platform.OS === "web") {
 }
 
 export default function App() {
-  const hydrate = useAuthStore((s) => s.hydrate);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const hydratePrinter = usePrinterStore((s) => s.hydrate);
 
   useEffect(() => {
-    void hydrate();
-  }, [hydrate]);
+    void hydrateAuth();
+    void hydratePrinter();
+  }, [hydrateAuth, hydratePrinter]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -2,21 +2,24 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  FlatList,
   Text,
   TextInput,
   View,
   ScrollView,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
+
 import { api } from "../../api/client";
 import { DatePickerField } from "../../components/date-picker-field";
 import { toApiDate, todayIstDate, parseIstDate } from "../../utils/ist-date";
 import type { FarmOut, Item } from "../../types/api";
+
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
+import { AdminCard } from "../../components/admin/admin-card";
+import { AdminActionFooter } from "../../components/admin/admin-action-footer";
 
 export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, navigation: any }) {
   const loadId = route?.params?.loadId;
@@ -32,11 +35,16 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
   const [quantity, setQuantity] = useState("");
   const [weight, setWeight] = useState("");
   const [rate, setRate] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
   const [paidAmount, setPaidAmount] = useState("");
   const [remarks, setRemarks] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Dropdown states
+  const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   // Derived values
   const weightNum = parseFloat(weight) || 0;
@@ -44,9 +52,6 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
   const netPayable = weightNum * rateNum;
   const paidNum = parseFloat(paidAmount) || 0;
   const balanceAmount = netPayable - paidNum;
-  const [showFarmDropdown, setShowFarmDropdown] = useState(false);
-  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
-  const [showItemDropdown, setShowItemDropdown] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -70,14 +75,12 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
         setQuantity(loadData.bird_count != null ? String(loadData.bird_count) : "");
         setWeight(loadData.loaded_weight_kg != null ? String(loadData.loaded_weight_kg) : "");
         setRate(loadData.rate_per_kg != null ? String(loadData.rate_per_kg) : "");
-        setPaymentMethod(loadData.payment_method || "Bank Transfer");
+        setPaymentMethod(loadData.payment_method || "UPI");
         setPaidAmount(loadData.paid_amount != null ? String(loadData.paid_amount) : "");
         setRemarks(loadData.remarks || "");
-      } else {
-
       }
     } catch (e) {
-      console.warn("Failed to fetch data in AdminFarmPurchaseScreen", e);
+      console.warn("Failed to fetch data", e);
     }
   }, [loadId]);
 
@@ -88,28 +91,16 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
   );
 
   async function onSubmit() {
-    if (!selectedFarm) {
-      setError("Please select a farm");
-      return;
-    }
-    if (!selectedItem) {
-      setError("Please select an item");
-      return;
-    }
-    if (!weight) {
-      setError("Total Weight is required");
-      return;
-    }
+    if (!selectedFarm) return setError("Please select a farm");
+    if (!selectedItem) return setError("Please select an item");
+    if (!weight) return setError("Total Weight is required");
     const w = parseFloat(weight);
-    if (!Number.isFinite(w) || w <= 0) {
-      setError("Weight must be a positive number");
-      return;
-    }
+    if (!Number.isFinite(w) || w <= 0) return setError("Weight must be a positive number");
+    
     if (selectedVehicle) {
       const v = vehicles.find((x) => x.id === selectedVehicle);
       if (v?.capacity_kg && w > parseFloat(v.capacity_kg)) {
-        setError(`Weight ${w}kg exceeds vehicle capacity ${v.capacity_kg}kg`);
-        return;
+        return setError(`Weight ${w}kg exceeds vehicle capacity ${v.capacity_kg}kg`);
       }
     }
     setLoading(true);
@@ -148,168 +139,144 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
   const selectedItemName = items.find(i => i.id === selectedItem)?.name || "Select Item";
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f9fafb]" edges={["top", "bottom"]}>
-      {/* Header */}
-      <View className="bg-[#0e6832] px-3 pt-1 pb-2 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Button"
-          className="w-10 h-10 -ml-2 items-center justify-center rounded-full active:bg-white/10 mr-2"
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} color="white" />
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-white font-headline-sm font-semibold tracking-tight">
-            {isEditing ? "Edit Purchase Order" : "New Farm Purchase"}
-          </Text>
+    <AdminScreenContainer
+      header={
+        <AdminHeader 
+          title={isEditing ? "Edit Purchase" : "New Purchase"} 
+          subtitle="Record a new farm load securely"
+          onBack={() => navigation.goBack()} 
+        />
+      }
+    >
+      {error && (
+        <View className="bg-error-container/90 px-4 py-3 rounded-xl flex-row items-center mb-4">
+          <MaterialIcons name="error-outline" size={20} className="text-on-error-container mr-2" />
+          <Text className="text-on-error-container text-body-sm font-medium flex-1">{error}</Text>
         </View>
-      </View>
+      )}
 
-      <KeyboardAwareScrollView 
-        enableOnAndroid={true}
-        keyboardShouldPersistTaps="handled"
-        className="flex-1 px-4 pt-4" 
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {error && (
-          <Text className="px-3 py-2 mb-4 text-red-600 text-center bg-red-50 rounded-lg font-semibold">
-            {error}
-          </Text>
-        )}
-
-        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-50">
-          <View className="flex-row gap-4 mb-4 z-50">
-            <View className="flex-1 relative z-50">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Farm</Text>
-              <Pressable
-                accessibilityRole="button"
-                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
-                onPress={() => setShowFarmDropdown(!showFarmDropdown)}
-              >
-                <Text className={`text-sm ${selectedFarm ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {selectedFarmName}
-                </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
-              </Pressable>
-              {showFarmDropdown && (
-                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled className="max-h-48">
-                    {farms.length > 0 ? (
-                      farms.map((farm) => (
-                        <Pressable
-                          key={farm.id}
-                          className="px-4 py-3 border-b border-gray-100"
-                          onPress={() => {
-                            setSelectedFarm(farm.id);
-                            setShowFarmDropdown(false);
-                          }}
-                        >
-                          <Text className="text-gray-900 font-medium">{farm.name}</Text>
-                        </Pressable>
-                      ))
-                    ) : (
-                      <Text className="p-4 text-center text-gray-500">No farms</Text>
-                    )}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            <View className="flex-1 relative z-40">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">
-                Vehicle <Text className="text-gray-400 font-normal">(Optional)</Text>
+      {/* Logistics Card */}
+      <AdminCard title="Logistics" icon="local-shipping" containerClass="z-50">
+        <View className="flex-col gap-4">
+          <View className="relative z-50">
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Farm Source <Text className="text-error">*</Text></Text>
+            <Pressable
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 flex-row items-center justify-between bg-surface-container-lowest active:bg-surface-variant/30"
+              onPress={() => setShowFarmDropdown(!showFarmDropdown)}
+            >
+              <Text className={`text-body-lg font-medium ${selectedFarm ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                {selectedFarmName}
               </Text>
+              <MaterialIcons name="keyboard-arrow-down" size={24} className="text-on-surface-variant" />
+            </Pressable>
+            {showFarmDropdown && (
+              <View className="absolute top-[80px] left-0 right-0 bg-surface-container-highest border border-outline-variant/30 rounded-xl shadow-lg z-50 max-h-48 overflow-hidden elevation-md">
+                <ScrollView nestedScrollEnabled>
+                  {farms.length > 0 ? (
+                    farms.map((farm) => (
+                      <Pressable
+                        key={farm.id}
+                        className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
+                        onPress={() => { setSelectedFarm(farm.id); setShowFarmDropdown(false); }}
+                      >
+                        <Text className="text-on-surface font-medium text-body-lg">{farm.name}</Text>
+                      </Pressable>
+                    ))
+                  ) : (
+                    <Text className="p-5 text-center text-on-surface-variant text-body-md">No farms available</Text>
+                  )}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
+          <View className="flex-row gap-4 z-40">
+            <View className="flex-1 relative z-40">
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle</Text>
               <Pressable
-                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 flex-row items-center justify-between bg-surface-container-lowest active:bg-surface-variant/30"
                 onPress={() => setShowVehicleDropdown(!showVehicleDropdown)}
               >
-                <Text className={`text-sm ${selectedVehicle ? 'text-gray-900' : 'text-gray-400'}`} numberOfLines={1}>
-                  {vehicles.find((v) => v.id === selectedVehicle)?.number || "Select Vehicle (optional)"}
+                <Text className={`text-body-md font-medium ${selectedVehicle ? 'text-on-surface' : 'text-on-surface-variant'}`} numberOfLines={1}>
+                  {vehicles.find((v) => v.id === selectedVehicle)?.number || "Optional"}
                 </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
+                <MaterialIcons name="keyboard-arrow-down" size={20} className="text-on-surface-variant" />
               </Pressable>
               {showVehicleDropdown && (
-                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled className="max-h-48">
+                <View className="absolute top-[80px] left-0 right-0 bg-surface-container-highest border border-outline-variant/30 rounded-xl shadow-lg z-50 max-h-48 overflow-hidden elevation-md">
+                  <ScrollView nestedScrollEnabled>
                     <Pressable
-                      className="px-4 py-3 border-b border-gray-100"
+                      className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
                       onPress={() => { setSelectedVehicle(""); setShowVehicleDropdown(false); }}
                     >
-                      <Text className="text-gray-500">— No vehicle —</Text>
+                      <Text className="text-on-surface-variant font-medium text-body-md">— None —</Text>
                     </Pressable>
                     {vehicles.map((v) => (
                       <Pressable
                         key={v.id}
-                        className="px-4 py-3 border-b border-gray-100"
+                        className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
                         onPress={() => { setSelectedVehicle(v.id); setShowVehicleDropdown(false); }}
                       >
-                        <Text className="text-gray-900 font-medium">{v.number}</Text>
+                        <Text className="text-on-surface font-medium text-body-md">{v.number}</Text>
                       </Pressable>
                     ))}
                   </ScrollView>
                 </View>
               )}
             </View>
-          </View>
 
-          <View className="flex-row gap-4 mb-2 z-30">
-            <View className="flex-1 relative z-30">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Item</Text>
-              <Pressable
-                className="h-[46px] border border-gray-200 rounded-lg px-3 flex-row items-center justify-between bg-white"
-                onPress={() => setShowItemDropdown(!showItemDropdown)}
-              >
-                <Text className={`text-sm ${selectedItem ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {selectedItemName}
-                </Text>
-                <MaterialIcons name="keyboard-arrow-down" size={20} color="#9ca3af" />
-              </Pressable>
-              {showItemDropdown && (
-                <View className="absolute top-[70px] left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-48 overflow-hidden">
-                  <ScrollView nestedScrollEnabled className="max-h-48">
-                    {items.map((item) => (
-                      <Pressable
-                        key={item.id}
-                        className="px-4 py-3 border-b border-gray-100"
-                        onPress={() => { setSelectedItem(item.id); setShowItemDropdown(false); }}
-                      >
-                        <Text className="text-gray-900 font-medium">{item.name}</Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-            
-            <View className="flex-1 z-20">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">
-                Purchase Date <Text className="text-gray-400 font-normal text-[10px]"></Text>
-              </Text>
+            <View className="flex-1 z-30">
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Date</Text>
               <DatePickerField 
                 value={purchaseDate} 
                 onChange={setPurchaseDate} 
                 maximumDate={new Date()} 
                 containerStyle=""
-                inputStyle="h-[46px] border border-gray-200 rounded-lg px-3 bg-white"
-                showIcon={true}
+                inputStyle="h-14 border border-outline-variant/50 rounded-xl px-4 bg-surface-container-lowest"
+                showIcon={false}
               />
             </View>
           </View>
         </View>
+      </AdminCard>
 
-        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-10">
-          <View className="flex-row items-center mb-4">
-            <Text className="text-[#0e6832] font-bold text-base mr-3">Bird & Weight</Text>
-            <View className="flex-1 h-[1px] bg-gray-200" />
+      {/* Load Details Card */}
+      <AdminCard title="Load Details" icon="scale" iconColorClass="text-tertiary" iconBgClass="bg-tertiary/10" containerClass="z-20">
+        <View className="flex-col gap-4">
+          <View className="relative z-20">
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Item <Text className="text-error">*</Text></Text>
+            <Pressable
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 flex-row items-center justify-between bg-surface-container-lowest active:bg-surface-variant/30"
+              onPress={() => setShowItemDropdown(!showItemDropdown)}
+            >
+              <Text className={`text-body-lg font-medium ${selectedItem ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                {selectedItemName}
+              </Text>
+              <MaterialIcons name="keyboard-arrow-down" size={24} className="text-on-surface-variant" />
+            </Pressable>
+            {showItemDropdown && (
+              <View className="absolute top-[80px] left-0 right-0 bg-surface-container-highest border border-outline-variant/30 rounded-xl shadow-lg z-50 max-h-48 overflow-hidden elevation-md">
+                <ScrollView nestedScrollEnabled>
+                  {items.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      className="px-5 py-4 border-b border-outline-variant/20 active:bg-surface-variant/50"
+                      onPress={() => { setSelectedItem(item.id); setShowItemDropdown(false); }}
+                    >
+                      <Text className="text-on-surface font-medium text-body-lg">{item.name}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
-          <View className="flex-row gap-4 mb-4">
+          <View className="flex-row gap-4">
             <View className="flex-1">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Quantity (Boxes)</Text>
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Quantity (Boxes)</Text>
               <TextInput
-                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
-                placeholder="Enter quantity"
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+                placeholder="0"
                 placeholderTextColor="#9ca3af"
                 keyboardType="number-pad"
                 value={quantity}
@@ -317,10 +284,10 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               />
             </View>
             <View className="flex-1">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Total Weight (KG)</Text>
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Total Weight (KG) <Text className="text-error">*</Text></Text>
               <TextInput
-                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
-                placeholder="Enter total weight"
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+                placeholder="0.00"
                 placeholderTextColor="#9ca3af"
                 keyboardType="decimal-pad"
                 value={weight}
@@ -328,12 +295,11 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               />
             </View>
           </View>
-
           <View className="w-1/2 pr-2">
-            <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Rate (₹ per KG)</Text>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Rate (₹ / KG)</Text>
             <TextInput
-              className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
-              placeholder="Enter rate per kg"
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+              placeholder="0.00"
               placeholderTextColor="#9ca3af"
               keyboardType="decimal-pad"
               value={rate}
@@ -341,44 +307,45 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
             />
           </View>
         </View>
+      </AdminCard>
 
-        <View className="bg-white rounded-2xl border border-gray-200 p-4 mb-4 shadow-sm z-0">
-          <View className="flex-row items-center mb-4">
-            <Text className="text-[#0e6832] font-bold text-base mr-3">Payment</Text>
-            <View className="flex-1 h-[1px] bg-gray-200" />
+      {/* Payment Card */}
+      <AdminCard title="Payment" icon="payments" iconColorClass="text-secondary" iconBgClass="bg-secondary/10" containerClass="z-10">
+        <View className="flex-col gap-5">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-2 ml-1">Method</Text>
+            <View className="flex-row gap-3">
+              {["UPI", "Cash"].map((method) => (
+                <Pressable
+                  key={method}
+                  className={`h-12 rounded-xl border flex-row items-center justify-center px-6 flex-1 active:scale-95 transition-colors ${
+                    paymentMethod === method 
+                      ? "border-primary bg-primary-container/20" 
+                      : "border-outline-variant/50 bg-surface-container-lowest"
+                  }`}
+                  onPress={() => setPaymentMethod(method)}
+                >
+                  <Text className={`font-semibold text-body-md ${
+                    paymentMethod === method ? "text-primary" : "text-on-surface-variant"
+                  }`}>
+                    {method}
+                  </Text>
+                  {paymentMethod === method && (
+                    <View className="absolute right-3 bg-white rounded-full">
+                      <MaterialIcons name="check-circle" size={16} className="text-primary" />
+                    </View>
+                  )}
+                </Pressable>
+              ))}
+            </View>
           </View>
 
-          <View className="flex-row flex-wrap gap-2 mb-4">
-            {["Bank Transfer", "UPI", "Cash", "Credit"].map((method) => (
-              <Pressable
-                key={method}
-                className={`h-11 rounded-lg border flex-row items-center justify-center px-4 flex-1 min-w-[70px] ${
-                  paymentMethod === method 
-                    ? "border-[#0e6832] bg-[#f0f9f3]" 
-                    : "border-gray-200 bg-white"
-                }`}
-                onPress={() => setPaymentMethod(method)}
-              >
-                <Text className={`text-sm ${
-                  paymentMethod === method ? "text-gray-900 font-medium" : "text-gray-600"
-                }`}>
-                  {method}
-                </Text>
-                {paymentMethod === method && (
-                  <View className="absolute top-1 right-1 bg-white rounded-full">
-                    <MaterialIcons name="check-circle" size={14} color="#0e6832" />
-                  </View>
-                )}
-              </Pressable>
-            ))}
-          </View>
-
-          <View className="flex-row gap-4 mb-4">
+          <View className="flex-row gap-4">
             <View className="flex-1">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Paid Amount (₹)</Text>
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Amount Paid (₹)</Text>
               <TextInput
-                className="h-[46px] border border-gray-200 rounded-lg px-3 text-sm text-gray-900 bg-white"
-                placeholder="Enter paid amount"
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+                placeholder="0.00"
                 placeholderTextColor="#9ca3af"
                 keyboardType="decimal-pad"
                 value={paidAmount}
@@ -386,9 +353,9 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               />
             </View>
             <View className="flex-1">
-              <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Balance Amount</Text>
-              <View className="h-[46px] bg-[#f0f9f3] rounded-lg px-3 justify-center border border-transparent">
-                <Text className="text-[#0e6832] font-bold text-base">
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Balance</Text>
+              <View className="h-14 bg-error-container/20 rounded-xl px-4 justify-center border border-error-container/30">
+                <Text className="text-on-surface font-bold text-body-lg">
                   ₹{balanceAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                 </Text>
               </View>
@@ -396,10 +363,10 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
           </View>
 
           <View>
-            <Text className="text-gray-700 text-[13px] mb-1.5 font-medium">Remarks</Text>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Remarks</Text>
             <TextInput
-              className="h-[80px] border border-gray-200 rounded-lg px-3 py-3 text-sm text-gray-900 bg-white"
-              placeholder="Add any remarks (optional)"
+              className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
+              placeholder="Optional notes..."
               placeholderTextColor="#9ca3af"
               multiline
               textAlignVertical="top"
@@ -408,44 +375,28 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
             />
           </View>
         </View>
+      </AdminCard>
 
-        <View className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 shadow-sm">
-          <Text className="text-[#0e6832] font-bold text-base mb-4">Purchase Summary</Text>
-
-          <View className="flex-row gap-3">
-            <View className="flex-1 border border-gray-200 rounded-lg p-3 items-center">
-              <Text className="text-gray-700 text-[11px] mb-1 font-medium">Total Weight</Text>
-              <Text className="text-[#0e6832] font-bold text-[15px]">
-                {weightNum > 0 ? weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : "0"} KG
-              </Text>
-            </View>
-            <View className="flex-1 border border-gray-200 rounded-lg p-3 items-center">
-              <Text className="text-gray-700 text-[11px] mb-1 font-medium">Rate</Text>
-              <Text className="text-[#0e6832] font-bold text-[15px]">
-                ₹{rateNum > 0 ? rateNum.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0"}
-              </Text>
-            </View>
-            <View className="flex-1 bg-[#f0f9f3] border border-transparent rounded-lg p-3 items-center">
-              <Text className="text-gray-900 text-[11px] font-medium mb-1">Net Payable</Text>
-              <Text className="text-[#0e6832] font-bold text-[15px]">
-                ₹{netPayable > 0 ? netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0"}
-              </Text>
-            </View>
+      <AdminActionFooter
+        primaryLabel={isEditing ? "Update Purchase" : "Confirm Purchase"}
+        primaryIcon={isEditing ? "update" : "check-circle"}
+        onPrimaryPress={onSubmit}
+        isPrimaryLoading={loading}
+        leftContent={
+          <View>
+            <Text className="text-on-surface-variant text-label-lg font-medium mb-1">Net Payable</Text>
+            <Text className="text-primary font-headline-md font-bold">
+              ₹{netPayable > 0 ? netPayable.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0.00"}
+            </Text>
           </View>
-
-          <Pressable
-            className="w-full bg-[#0e6832] h-14 rounded-xl flex items-center justify-center active:bg-[#0a4f26] mb-4 shadow-sm"
-            onPress={onSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text className="text-white font-bold text-lg">{isEditing ? "Update Load" : "Create Load"}</Text>
-            )}
-          </Pressable>
-        </View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+        }
+        rightContent={
+          <View className="items-end">
+            <Text className="text-on-surface-variant text-label-md font-medium mb-1">{weightNum > 0 ? weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 }) : "0"} kg</Text>
+            <Text className="text-on-surface-variant text-label-md font-medium">@ ₹{rateNum > 0 ? rateNum.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "0"}</Text>
+          </View>
+        }
+      />
+    </AdminScreenContainer>
   );
 }

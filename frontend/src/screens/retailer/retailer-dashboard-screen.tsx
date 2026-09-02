@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -55,8 +55,8 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
     }, [refresh])
   );
 
-  const todayOrders = dashboard?.today_orders || [];
-  const editableOrder = todayOrders.find(o => o.status === "PLACED");
+  const todayOrders = useMemo(() => dashboard?.today_orders || [], [dashboard?.today_orders]);
+  const editableOrder = useMemo(() => todayOrders.find(o => o.status === "PLACED"), [todayOrders]);
 
   return (
     <View className="flex-1 bg-surface relative">
@@ -203,7 +203,7 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
   );
 }
 
-function SummaryCard({
+const SummaryCard = React.memo(({
   icon,
   label,
   value,
@@ -217,7 +217,7 @@ function SummaryCard({
   hint?: string;
   isDebt?: boolean;
   isCredit?: boolean;
-}) {
+}) => {
   return (
     <View className="w-[48%] bg-white rounded-2xl p-4 border border-black/5 shadow-sm elevation-sm flex-col justify-between min-h-[110px]">
       <View className="flex-row items-center gap-2 mb-2">
@@ -234,4 +234,4 @@ function SummaryCard({
       </View>
     </View>
   );
-}
+});

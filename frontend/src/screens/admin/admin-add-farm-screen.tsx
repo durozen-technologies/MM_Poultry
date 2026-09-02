@@ -1,16 +1,17 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/client";
+
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
+import { AdminCard } from "../../components/admin/admin-card";
+import { AdminActionFooter } from "../../components/admin/admin-action-footer";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
@@ -45,96 +46,84 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
-      {/* Header */}
-      <View className="h-16 px-4 flex-row items-center bg-surface/80">
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-variant/50 mr-2"
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
-        </Pressable>
-        <Text className="font-headline-sm text-headline-sm text-primary font-semibold">
-          Farm Information
-        </Text>
-      </View>
+    <AdminScreenContainer
+      header={
+        <AdminHeader 
+          title="Add New Farm" 
+          subtitle="Register a new farm for purchasing"
+          onBack={() => navigation.goBack()} 
+        />
+      }
+    >
+      {error && (
+        <View className="bg-error-container/90 px-4 py-3 rounded-xl flex-row items-center">
+          <MaterialIcons name="error-outline" size={20} className="text-on-error-container mr-2" />
+          <Text className="text-on-error-container text-body-sm font-medium flex-1">{error}</Text>
+        </View>
+      )}
 
-      <KeyboardAwareScrollView enableOnAndroid={true} keyboardShouldPersistTaps="handled" className="flex-1 px-4 py-4 flex-col" contentContainerStyle={{ paddingBottom: 100 }}>
-        {error && (
-          <Text className="px-4 py-2 mb-4 text-error text-center text-label-md bg-error-container rounded-lg font-semibold">
-            {error}
-          </Text>
-        )}
-
-        {/* Basic Details Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+      <AdminCard title="Farm Details" icon="store">
+        <View className="flex-col gap-4">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Farm Name <Text className="text-error">*</Text>
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput 
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter farm name"
+              placeholderTextColor="#9ca3af"
               value={name}
               onChangeText={setName}
- />
+            />
           </View>
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Mobile Number
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput 
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter mobile number"
+              placeholderTextColor="#9ca3af"
               keyboardType="phone-pad"
               value={mobile}
               onChangeText={setMobile}
             />
           </View>
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Address
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
+            <TextInput 
+              className="h-24 border border-outline-variant/50 rounded-xl p-4 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Enter full address"
+              placeholderTextColor="#9ca3af"
               multiline
               textAlignVertical="top"
               value={address}
               onChangeText={setAddress}
- />
+            />
           </View>
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Location (City/Region)
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput 
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter village or city"
+              placeholderTextColor="#9ca3af"
               value={village}
               onChangeText={setVillage}
- />
+            />
           </View>
         </View>
+      </AdminCard>
 
-        {/* Submit Button */}
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="w-full bg-primary h-14 rounded-2xl flex-row items-center justify-center active:scale-95 mb-6 shadow-md shadow-primary/30"
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator className="text-white" />
-          ) : (
-            <>
-              <MaterialIcons name="save" size={20} className="text-white" />
-              <Text className="font-label-md text-label-md text-on-primary font-semibold ml-2">
-                Save Farm
-              </Text>
-            </>
-          )}
-        </Pressable>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+      <AdminActionFooter
+        primaryLabel="Save Farm"
+        primaryIcon="save"
+        onPrimaryPress={onSubmit}
+        isPrimaryLoading={loading}
+      />
+    </AdminScreenContainer>
   );
 }

@@ -84,9 +84,8 @@ export function useDeliveryRun() {
     }
   }
 
-  async function weighAndBill() {
-    if (!activeStop) return;
-    if (billing) return;
+  const weighAndBill = async (options?: { skipScale?: boolean; skipPrint?: boolean }) => {
+    if (!activeStop || !run) return;
     setBilling(true);
     setMsg(null);
     // Idempotent checkout ID — keep stable across retries for same stop
@@ -123,7 +122,7 @@ export function useDeliveryRun() {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           await weighStop(activeStop.id, {
-            scale_device_id: "BLE-SCALE",
+            scale_device_id: options?.skipScale ? "MANUAL" : "BLE-SCALE",
             items: itemsPayload,
           });
           weighDone = true;
@@ -180,21 +179,25 @@ export function useDeliveryRun() {
 
       // Step 3: Print — never fail the billing if print fails; update status accordingly
       let printStatus: "PRINTED" | "FAILED" | "SKIPPED" = "FAILED";
-      try {
-        printStatus = await printThermalReceipt({
-          shopName: "Demo Wholesaler",
-          billNumber: bill.bill_number,
-          retailerName: activeStop.retailer_name || "",
-          weightKg: String(totalWeight),
-          rate: "Mixed",
-          total: bill.total_amount,
-          cash: bill.cash_payment,
-          upi: bill.upi_payment,
-          balance: bill.balance_amount,
-          items: itemsForPrint,
-        });
-      } catch {
-        printStatus = "FAILED";
+      if (options?.skipPrint) {
+        printStatus = "SKIPPED";
+      } else {
+        try {
+          printStatus = await printThermalReceipt({
+            shopName: "Demo Wholesaler",
+            billNumber: bill.bill_number,
+            retailerName: activeStop.retailer_name || "",
+            weightKg: String(totalWeight),
+            rate: "Mixed",
+            total: bill.total_amount,
+            cash: bill.cash_payment,
+            upi: bill.upi_payment,
+            balance: bill.balance_amount,
+            items: itemsForPrint,
+          });
+        } catch {
+          printStatus = "FAILED";
+        }
       }
 
       let updated = bill;

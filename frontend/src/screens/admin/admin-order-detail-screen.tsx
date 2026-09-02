@@ -1,11 +1,13 @@
 import { Text, View, Pressable, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { apiItems } from "../../api/items";
 import type { DailyOrder } from "../../types/api";
 import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
+
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
 
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const order = route.params?.order as DailyOrder;
@@ -21,77 +23,184 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
 
   if (!order) {
     return (
-      <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background items-center justify-center">
-        <Text className="text-on-surface-variant">Order not found</Text>
-      </SafeAreaView>
+      <AdminScreenContainer
+        header={
+          <AdminHeader 
+            title="Not Found" 
+            onBack={() => navigation.goBack()} 
+          />
+        }
+      >
+        <View className="py-12 items-center justify-center px-4">
+          <MaterialIcons name="search-off" size={48} className="text-on-surface-variant/50 mb-4" />
+          <Text className="text-on-surface-variant text-center font-medium">Order details could not be found.</Text>
+        </View>
+      </AdminScreenContainer>
     );
   }
 
-  return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
-      <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
-        <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full" onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
-        </Pressable>
-        <Text className="font-headline-sm text-on-surface font-semibold ml-2">Order Details</Text>
-      </View>
+  const totalWeight = order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
 
-      <ScrollView className="flex-1 px-4 py-4">
-        <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 flex-col gap-4">
-          <View className="flex-row justify-between items-start">
-            <View>
-              <Text className="font-headline-md text-on-surface font-semibold">
-                {order.shop_name || order.retailer_name}
-              </Text>
-              <Text className="font-body-md text-on-surface-variant mt-1">{order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`}</Text>
+  return (
+    <AdminScreenContainer
+      noScroll
+      header={
+        <AdminHeader 
+          title="Order Details" 
+          subtitle={order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`}
+          onBack={() => navigation.goBack()} 
+        />
+      }
+    >
+      <ScrollView className="flex-1 px-4 pt-2" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        
+        {/* Status Banner */}
+        <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-5 mb-6 shadow-sm relative overflow-hidden">
+          <View className={`absolute top-0 left-0 w-1.5 h-full ${
+            order.status === 'PLACED' ? 'bg-error' : 
+            order.status === 'ACKNOWLEDGED' ? 'bg-tertiary' :
+            order.status === 'FULFILLED' ? 'bg-primary' : 'bg-surface-variant'
+          }`} />
+          
+          <View className="flex-row justify-between items-center ml-2">
+            <View className="flex-row items-center gap-2">
+              <MaterialIcons name="info-outline" size={20} className="text-on-surface-variant" />
+              <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider">Status</Text>
             </View>
-            <View className="bg-surface-variant px-3 py-1 rounded-full">
-              <Text className="font-label-md text-on-surface-variant font-semibold">{order.status}</Text>
+            <View className={`px-3 py-1.5 rounded-full border ${
+              order.status === 'PLACED' ? 'bg-error-container/50 border-error/20' : 
+              order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20' :
+              order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20' : 'bg-surface-variant/30 border-outline-variant/20'
+            }`}>
+              <Text className={`font-label-sm uppercase tracking-widest font-bold ${
+                order.status === 'PLACED' ? 'text-error' : 
+                order.status === 'ACKNOWLEDGED' ? 'text-tertiary' :
+                order.status === 'FULFILLED' ? 'text-primary' : 'text-on-surface-variant'
+              }`}>
+                {order.status}
+              </Text>
             </View>
           </View>
-
-          <DetailRow icon="event" label="Order Date" value={formatIstDate(order.order_date)} />
-          <DetailRow icon="scale" label="Total Requested" value={`${order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg`} />
         </View>
 
-        <Text className="font-headline-sm text-on-surface font-semibold mt-6 mb-3">Order Items</Text>
-        
-        {order.items?.map((item) => (
-          <View key={item.id} className="bg-surface-container-lowest rounded-xl p-4 mb-2 border border-outline-variant/20">
-             <Text className="font-body-lg text-on-surface font-semibold mb-2">
-               {getItemName(item.item_id)}
-             </Text>
-             <DetailRow icon="scale" label="Requested" value={`${item.requested_kg} kg`} />
-             <DetailRow icon="egg" label="Bird Size" value={item.bird_size || "Any"} />
-             {item.notes ? (
-                <DetailRow icon="notes" label="Notes" value={item.notes} />
-             ) : null}
+        {/* Order Info */}
+        <View className="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 mb-6 shadow-sm">
+          <View className="flex-row items-center gap-2 mb-4">
+            <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
+              <MaterialIcons name="receipt-long" size={16} className="text-primary" />
+            </View>
+            <Text className="font-title-md font-bold text-on-surface">Order Information</Text>
           </View>
-        ))}
+          
+          <View className="bg-surface-container-highest/30 rounded-2xl p-1 border border-outline-variant/10">
+            <InfoRow label="Retailer" value={order.shop_name || order.retailer_name || "Unknown"} icon="storefront" isFirst />
+            <InfoRow label="Order Date" value={formatIstDate(order.order_date)} icon="event" />
+            
+            <View className="h-[1px] bg-outline-variant/20 my-2 mx-3" />
+            
+            <View className="flex-row justify-between items-center p-3">
+              <View className="flex-row items-center gap-2">
+                <View className="w-8 items-center">
+                  <MaterialIcons name="scale" size={16} className="text-on-surface-variant" />
+                </View>
+                <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Total Weight</Text>
+              </View>
+              <View className="flex-row items-end gap-1">
+                <Text className="font-title-md font-black text-primary">{totalWeight.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+                <Text className="font-label-md font-bold text-primary mb-0.5">KG</Text>
+              </View>
+            </View>
+          </View>
+        </View>
 
-        {user?.role !== "DELIVERY" ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Button"
-            className="bg-primary h-12 rounded-xl items-center justify-center mt-6 mb-8"
+        {/* Order Items */}
+        <View className="flex-row items-center gap-2 mb-4 ml-1">
+          <MaterialIcons name="list-alt" size={20} className="text-on-surface" />
+          <Text className="font-title-lg font-bold text-on-surface">Requested Items</Text>
+          <View className="bg-surface-variant/30 px-2 py-0.5 rounded-full ml-auto">
+            <Text className="font-label-sm font-bold text-on-surface-variant">{order.items?.length || 0}</Text>
+          </View>
+        </View>
+        
+        <View className="flex-col gap-3 mb-8">
+          {order.items?.map((item, idx) => (
+            <View key={item.id} className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 shadow-sm relative overflow-hidden">
+              <View className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
+              
+              <View className="flex-row justify-between items-start mb-3">
+                <View className="flex-1 pr-4">
+                  <Text className="font-title-sm text-on-surface font-bold mb-1">
+                    {getItemName(item.item_id)}
+                  </Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <MaterialIcons name="egg" size={14} className="text-on-surface-variant" />
+                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider">
+                      Size: {item.bird_size || "Any"}
+                    </Text>
+                  </View>
+                </View>
+                <View className="items-end bg-primary/10 px-3 py-2 rounded-xl border border-primary/20">
+                  <Text className="font-label-sm font-bold text-primary uppercase tracking-wider mb-0.5">Weight</Text>
+                  <View className="flex-row items-end gap-0.5">
+                    <Text className="font-title-md font-black text-primary">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+                    <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
+                  </View>
+                </View>
+              </View>
+              
+              {item.notes ? (
+                <View className="bg-surface-variant/30 rounded-xl p-3 border border-outline-variant/10 flex-row gap-2">
+                  <MaterialIcons name="notes" size={16} className="text-on-surface-variant mt-0.5" />
+                  <Text className="font-body-sm text-on-surface-variant flex-1">{item.notes}</Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
+          
+          {(!order.items || order.items.length === 0) && (
+            <View className="bg-surface-container-lowest rounded-2xl p-6 border border-dashed border-outline-variant/50 items-center justify-center">
+              <MaterialIcons name="hourglass-empty" size={32} className="text-on-surface-variant/50 mb-2" />
+              <Text className="font-body-md text-on-surface-variant text-center">No items found in this order.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        {user?.role !== "DELIVERY" && (
+          <Pressable 
+            accessibilityRole="button"
+            className="bg-primary h-14 rounded-full flex-row items-center justify-center gap-2 shadow-sm shadow-primary/30 active:scale-[0.98] transition-transform mb-8"
             onPress={() => navigation.navigate("DeliveryRuns")}
           >
-            <Text className="text-on-primary font-semibold">Create Delivery Run</Text>
+            <MaterialIcons name="local-shipping" size={20} color="white" />
+            <Text className="text-white font-bold text-label-lg uppercase tracking-wider">Create Delivery Run</Text>
           </Pressable>
-        ) : (
-          <View className="mb-8" />
         )}
       </ScrollView>
-    </SafeAreaView>
+    </AdminScreenContainer>
   );
 }
 
-function DetailRow({ icon, label, value }: { icon: keyof typeof MaterialIcons.glyphMap; label: string; value: string }) {
+function InfoRow({ 
+  label, 
+  value, 
+  icon,
+  isFirst = false, 
+  isLast = false
+}: { 
+  label: string; 
+  value: string; 
+  icon: keyof typeof MaterialIcons.glyphMap;
+  isFirst?: boolean; 
+  isLast?: boolean;
+}) {
   return (
-    <View className="flex-row items-center gap-3 py-2 border-b border-surface-variant/40">
-      <MaterialIcons name={icon} size={20} className="text-on-surface" />
-      <View className="flex-1">
-        <Text className="font-label-md text-on-surface-variant">{label}</Text>
-        <Text className="font-body-md text-on-surface font-semibold">{value}</Text>
+    <View className={`flex-row items-center p-3 ${!isLast ? 'border-b border-outline-variant/10' : ''}`}>
+      <View className="w-8 items-center">
+        <MaterialIcons name={icon} size={16} className="text-on-surface-variant" />
       </View>
+      <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider w-24">{label}</Text>
+      <Text className={`font-title-sm font-bold flex-1 text-right truncate text-on-surface`}>{value}</Text>
     </View>
   );
 }

@@ -154,7 +154,7 @@ async def _create_portal_user(
 
     try:
         await set_search_path(db, None)
-        normalized = await require_username_available(db, username)
+        normalized = await require_username_available(db, username, organization_id)
         await set_search_path(db, schema_name)
         user = User(
             username=normalized,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { FlatList, ActivityIndicator,
   Pressable,
   RefreshControl,
@@ -62,6 +62,10 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListHeaderComponent={
           <>
             {summary ? (
@@ -87,45 +91,51 @@ export function RetailerBillsScreen({ navigation }: { navigation: any }) {
             {busy && bills.length === 0 ? <ActivityIndicator className="text-primary mt-6" /> : null}
           </>
         }
-        renderItem={({ item: bill }) => {
-          const isPaid = Number(bill.balance_amount) <= 0;
-          return (
-            <Pressable accessibilityRole="button" accessibilityLabel="Button"
-              className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
-              onPress={() => navigation.navigate("BillDetail", { billId: bill.id })}
-            >
-              <View className="flex-row justify-between items-start">
-                <View>
-                  <Text className="font-headline-sm text-on-surface font-bold">{bill.bill_number}</Text>
-                  <Text className="font-body-sm text-on-surface-variant mt-1">
-                    {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0} kg Total
-                  </Text>
-                </View>
-                <Text className="font-headline-sm text-[#0052CC] font-bold">₹{bill.total_amount}</Text>
-              </View>
-              <View className="flex-row items-center justify-between mt-4">
-                <View className={`px-3 py-1.5 rounded-md ${isPaid ? "bg-[#e8f5e9]" : "bg-error-container"}`}>
-                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${isPaid ? "text-[#2e7d32]" : "text-error"}`}>
-                    {isPaid ? "Paid" : "Due"}
-                  </Text>
-                </View>
-                {!isPaid && (
-                  <Text className="font-label-md text-error font-bold">Bal: ₹{bill.balance_amount}</Text>
-                )}
-              </View>
-            </Pressable>
-          );
-        }}
+        renderItem={({ item: bill }) => (
+          <BillListItem bill={bill} onPress={() => navigation.navigate("BillDetail", { billId: bill.id })} />
+        )}
       />
     </SafeAreaView>
   );
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
+const Summary = React.memo(({ label, value }: { label: string; value: string }) => {
   return (
     <View className="w-1/2">
       <Text className="font-label-xs text-white/70 uppercase tracking-wider mb-1">{label}</Text>
       <Text className="font-headline-sm text-white font-bold">{value}</Text>
     </View>
   );
-}
+});
+
+const BillListItem = React.memo(({ bill, onPress }: { bill: DeliveryBill; onPress: () => void }) => {
+  const isPaid = Number(bill.balance_amount) <= 0;
+  const totalKg = bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0;
+  
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Button"
+      className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
+      onPress={onPress}
+    >
+      <View className="flex-row justify-between items-start">
+        <View>
+          <Text className="font-headline-sm text-on-surface font-bold">{bill.bill_number}</Text>
+          <Text className="font-body-sm text-on-surface-variant mt-1">
+            {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {totalKg} kg Total
+          </Text>
+        </View>
+        <Text className="font-headline-sm text-[#0052CC] font-bold">₹{bill.total_amount}</Text>
+      </View>
+      <View className="flex-row items-center justify-between mt-4">
+        <View className={`px-3 py-1.5 rounded-md ${isPaid ? "bg-[#e8f5e9]" : "bg-error-container"}`}>
+          <Text className={`font-label-sm font-bold uppercase tracking-wider ${isPaid ? "text-[#2e7d32]" : "text-error"}`}>
+            {isPaid ? "Paid" : "Due"}
+          </Text>
+        </View>
+        {!isPaid && (
+          <Text className="font-label-md text-error font-bold">Bal: ₹{bill.balance_amount}</Text>
+        )}
+      </View>
+    </Pressable>
+  );
+});

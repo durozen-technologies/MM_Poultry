@@ -8,11 +8,13 @@ import {
   ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/auth-store";
 import { useAdminTodayOrders, useAdminDashboard } from "../../hooks/use-queries";
 import { toApiDate, todayIstDate } from "../../utils/ist-date";
 import { MetricCard } from "./components/metric-card";
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
+import { AdminCard } from "../../components/admin/admin-card";
 
 export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const logout = useAuthStore((s) => s.logout);
@@ -42,164 +44,175 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
   const lossPercent = dashboard?.loss_pct || "0";
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/80">
-        <Text className="font-headline-sm text-on-surface">Dashboard</Text>
-        <View className="flex-row items-center gap-3">
-          <Pressable accessibilityRole="button"
-            className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
-            onPress={refresh}
-          >
-            <MaterialIcons name="refresh" size={24} className="text-on-surface" />
-          </Pressable>
-          <Pressable accessibilityRole="button"
-            className="w-11 h-11 flex items-center justify-center rounded-full active:bg-surface-variant/50"
-            onPress={logout}
-          >
-            <MaterialIcons name="logout" size={24} className="text-on-surface" />
-          </Pressable>
-        </View>
-      </View>
-
-      <ScrollView
-        className="flex-1 w-full"
-        contentContainerClassName="pb-24"
-        refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
-      >
+    <AdminScreenContainer
+      header={
+        <AdminHeader 
+          title="Dashboard" 
+          subtitle="Overview of today's business"
+          showBackButton={false}
+          rightContent={
+            <View className="flex-row items-center gap-3">
+              <Pressable
+                accessibilityRole="button"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/20 active:bg-white/30"
+                onPress={refresh}
+              >
+                <MaterialIcons name="refresh" size={24} color="white" />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-error-container active:bg-error-container/80"
+                onPress={logout}
+              >
+                <MaterialIcons name="logout" size={22} className="text-error" />
+              </Pressable>
+            </View>
+          }
+        />
+      }
+      refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
+    >
+      <View className="flex-col gap-6">
         {errorMsg && (
-          <View className="px-4 py-2 mb-4 bg-error-container mx-4 rounded-lg">
-            <Text className="text-error text-center text-label-md">{errorMsg}</Text>
+          <View className="bg-error-container/90 px-4 py-3 rounded-xl flex-row items-center">
+            <MaterialIcons name="error-outline" size={20} className="text-on-error-container mr-2" />
+            <Text className="text-on-error-container text-body-sm font-medium flex-1">{errorMsg}</Text>
           </View>
         )}
 
-        <View className="px-4 flex-col gap-4">
-          <Text className="font-headline-sm text-on-surface mt-2">Today's Overview</Text>
+        <View>
+          <Text className="font-title-lg text-on-surface font-bold ml-1 mb-3">Today's Overview</Text>
           <View className="flex-row flex-wrap justify-between gap-y-3">
             <MetricCard icon="shopping-cart" label="Today's Orders" value={dashboard?.order_count || 0} valueColor="text-primary" />
             <MetricCard icon="inventory-2" label="Total Ordered" value={orderedBoxes} valueColor="text-primary" />
             <MetricCard icon="local-shipping" label="Delivered KG" value={deliveredKg} />
             <MetricCard icon="pending-actions" label="Pending KG" value={pendingKg} />
           </View>
+        </View>
 
-          <View className="bg-primary-container rounded-2xl p-4 mt-2 shadow-sm overflow-hidden relative">
-            <View className="absolute -right-8 -top-8 w-32 h-32 bg-primary rounded-full opacity-20" />
-            <Text className="font-label-md text-on-primary-container">Today's Sales</Text>
-            <Text className="font-display-lg text-on-primary">₹{totalSales.toLocaleString("en-IN")}</Text>
-            
-            <View className="flex-row justify-between mt-4 z-10">
-              <View>
-                <Text className="font-label-md text-on-primary-container">Collection</Text>
-                <Text className="font-headline-sm text-on-primary">₹{collection.toLocaleString("en-IN")}</Text>
-              </View>
-              <View>
-                <Text className="font-label-md text-on-primary-container">Outstanding</Text>
-                <Text className="font-headline-sm text-on-primary">₹{outstanding.toLocaleString("en-IN")}</Text>
-              </View>
+        {/* Sales Card */}
+        <View className="bg-primary rounded-3xl p-6 shadow-sm overflow-hidden relative">
+          <View className="absolute -right-8 -top-8 w-40 h-40 bg-white/10 rounded-full" />
+          <View className="absolute -left-12 -bottom-12 w-32 h-32 bg-white/5 rounded-full" />
+          
+          <Text className="font-label-lg text-primary-fixed uppercase font-bold tracking-wider mb-2">Today's Sales</Text>
+          <Text className="font-display-lg text-white font-bold">₹{totalSales.toLocaleString("en-IN")}</Text>
+          
+          <View className="flex-row justify-between mt-6 z-10">
+            <View>
+              <Text className="font-label-md text-primary-fixed-dim mb-1">Collection</Text>
+              <Text className="font-title-lg text-white font-bold">₹{collection.toLocaleString("en-IN")}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="font-label-md text-primary-fixed-dim mb-1">Outstanding</Text>
+              <Text className="font-title-lg text-white font-bold">₹{outstanding.toLocaleString("en-IN")}</Text>
             </View>
           </View>
+        </View>
 
-          <View className="bg-surface-container-lowest rounded-2xl p-4 mt-2 shadow-sm border border-outline-variant/30">
-            <Text className="font-label-md text-on-surface-variant uppercase tracking-widest mb-3">Farm Metrics</Text>
-            <View className="flex-row justify-between items-end mb-4">
-              <View>
-                <Text className="font-label-md text-on-surface-variant">Loaded Weight</Text>
-                <Text className="font-headline-sm text-on-surface">{loadedKg} KG</Text>
-              </View>
-              <View className="items-end">
-                <Text className="font-label-md text-on-surface-variant">Weight Loss</Text>
-                <Text className="font-headline-sm text-error">{lossKg} KG</Text>
-              </View>
+        {/* Farm Metrics Card */}
+        <AdminCard title="Farm Metrics" icon="agriculture" iconColorClass="text-tertiary" iconBgClass="bg-tertiary/10">
+          <View className="flex-row justify-between items-end mb-4">
+            <View>
+              <Text className="font-label-md text-on-surface-variant font-medium mb-1">Loaded Weight</Text>
+              <Text className="font-headline-sm text-on-surface font-bold">{loadedKg} KG</Text>
             </View>
-            <View className="w-full bg-surface-variant h-2 rounded-full overflow-hidden mb-2">
-              <View className="bg-error h-full rounded-full" style={{ width: `${Math.min(100, Number(lossPercent))}%` }} />
-            </View>
-            <View className="flex-row justify-between items-center">
-              <Text className="font-body-md text-on-surface-variant">Industry Avg: 2.5%</Text>
-              <Text className="font-label-md text-error">{lossPercent}% Loss</Text>
+            <View className="items-end">
+              <Text className="font-label-md text-on-surface-variant font-medium mb-1">Weight Loss</Text>
+              <Text className="font-headline-sm text-error font-bold">{lossKg} KG</Text>
             </View>
           </View>
+          <View className="w-full bg-surface-container-highest h-3 rounded-full overflow-hidden mb-3 border border-outline-variant/20">
+            <View className="bg-error h-full rounded-full" style={{ width: `${Math.min(100, Number(lossPercent))}%` }} />
+          </View>
+          <View className="flex-row justify-between items-center">
+            <Text className="font-label-md text-on-surface-variant font-medium">Industry Avg: 2.5%</Text>
+            <Text className="font-label-md text-error font-bold">{lossPercent}% Loss</Text>
+          </View>
+        </AdminCard>
 
-          <Text className="font-headline-sm text-on-surface mt-4 mb-2">Quick Actions</Text>
+        {/* Quick Actions */}
+        <View>
+          <Text className="font-title-lg text-on-surface font-bold ml-1 mb-3">Quick Actions</Text>
           <View className="flex-row flex-wrap justify-between gap-y-3">
-            <Pressable accessibilityRole="button"
-              className="w-[48%] bg-surface-container-lowest rounded-xl p-3 flex-row items-center justify-center gap-2 shadow-sm border border-outline-variant/30"
-              onPress={() => navigation.navigate("AddRetailer")}
-            >
-              <MaterialIcons name="person-add" size={20} className="text-primary" />
-              <Text className="font-label-md text-on-surface">Add Retailer</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button"
-              className="w-[48%] bg-surface-container-lowest rounded-xl p-3 flex-row items-center justify-center gap-2 shadow-sm border border-outline-variant/30"
-              onPress={() => navigation.navigate("Orders")}
-            >
-              <MaterialIcons name="add-shopping-cart" size={20} className="text-primary" />
-              <Text className="font-label-md text-on-surface">Add Order</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button"
-              className="w-[48%] bg-surface-container-lowest rounded-xl p-3 flex-row items-center justify-center gap-2 shadow-sm border border-outline-variant/30"
-              onPress={() => navigation.navigate("FarmPurchase")}
-            >
-              <MaterialIcons name="rv-hookup" size={20} className="text-primary" />
-              <Text className="font-label-md text-on-surface">Start Loading</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button"
-              className="w-[48%] bg-surface-container-lowest rounded-xl p-3 flex-row items-center justify-center gap-2 shadow-sm border border-outline-variant/30"
-              onPress={() => navigation.navigate("Retailers")}
-            >
-              <MaterialIcons name="payments" size={20} className="text-primary" />
-              <Text className="font-label-md text-on-surface">Payment</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button"
-              className="w-[48%] bg-surface-container-lowest rounded-xl p-3 flex-row items-center justify-center gap-2 shadow-sm border border-outline-variant/30 mt-3"
+            {[
+              { icon: "person-add", label: "Add Retailer", route: "AddRetailer", color: "text-secondary" },
+              { icon: "add-shopping-cart", label: "Add Order", route: "Orders", color: "text-primary" },
+              { icon: "rv-hookup", label: "Start Loading", route: "FarmPurchase", color: "text-tertiary" },
+              { icon: "payments", label: "Payment", route: "Retailers", color: "text-secondary" },
+            ].map((action, idx) => (
+              <Pressable
+                key={idx}
+                accessibilityRole="button"
+                className="w-[48%] bg-surface-container-lowest rounded-2xl p-4 flex-col items-center justify-center gap-2 border border-outline-variant/30 active:scale-95 shadow-sm"
+                onPress={() => navigation.navigate(action.route)}
+              >
+                <View className={`w-10 h-10 rounded-full ${action.color === 'text-primary' ? 'bg-primary/10' : action.color === 'text-secondary' ? 'bg-secondary/10' : 'bg-tertiary/10'} items-center justify-center`}>
+                  <MaterialIcons name={action.icon as any} size={20} className={action.color} />
+                </View>
+                <Text className="font-label-md text-on-surface font-semibold text-center">{action.label}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              accessibilityRole="button"
+              className="w-full bg-surface-container-lowest rounded-2xl p-4 flex-row items-center justify-center gap-3 border border-outline-variant/30 active:scale-95 shadow-sm mt-1"
               onPress={() => navigation.navigate("Expenses")}
             >
-              <MaterialIcons name="receipt" size={20} className="text-primary" />
-              <Text className="font-label-md text-on-surface">Expenses</Text>
+              <View className="w-10 h-10 rounded-full bg-error/10 items-center justify-center">
+                <MaterialIcons name="receipt" size={20} className="text-error" />
+              </View>
+              <Text className="font-label-md text-on-surface font-semibold">Log Expenses</Text>
             </Pressable>
           </View>
+        </View>
 
-          <View className="flex-row items-center justify-between mt-4">
-            <Text className="font-headline-sm text-on-surface">Recent Orders</Text>
+        {/* Recent Orders */}
+        <View className="mb-4">
+          <View className="flex-row items-center justify-between ml-1 mb-3">
+            <Text className="font-title-lg text-on-surface font-bold">Recent Orders</Text>
             <Pressable accessibilityRole="button" onPress={() => navigation.navigate("Orders")}>
-              <Text className="font-label-md text-primary px-2 py-1">View All</Text>
+              <Text className="font-label-md text-primary font-bold">View All</Text>
             </Pressable>
           </View>
 
           {orders.slice(0, 3).map((order) => (
-            <View key={order.id} className="bg-surface-container-lowest shadow-sm border border-outline-variant/30 rounded-xl p-4 mt-2">
-              <View className="flex-row justify-between items-start mb-3">
-                <View>
-                  <Text className="font-headline-sm text-on-surface">{order.shop_name || order.retailer_name}</Text>
-                  <Text className="font-body-md text-on-surface-variant">Order {order.order_number || `#${order.id.slice(0, 5)}`}</Text>
+            <Pressable
+              key={order.id}
+              className="bg-surface-container-lowest shadow-sm border border-outline-variant/30 rounded-2xl p-5 mb-3 active:scale-[0.98] transition-transform"
+              onPress={() => navigation.navigate("OrderDetail", { order })}
+            >
+              <View className="flex-row justify-between items-start mb-4">
+                <View className="flex-1 pr-4">
+                  <Text className="font-title-md text-on-surface font-bold" numberOfLines={1}>{order.shop_name || order.retailer_name}</Text>
+                  <Text className="font-body-sm text-on-surface-variant mt-0.5 font-medium">Order {order.order_number || `#${order.id.slice(0, 5)}`}</Text>
                 </View>
-                <View className="bg-surface-variant rounded-full px-3 py-1">
-                  <Text className="font-label-md text-on-surface-variant">{order.status}</Text>
+                <View className="bg-surface-variant/50 rounded-full px-3 py-1">
+                  <Text className="font-label-sm text-on-surface font-semibold">{order.status}</Text>
                 </View>
               </View>
-              <View className="h-[1px] bg-surface-variant w-full mb-3" />
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center gap-1">
-                  <MaterialIcons name="scale" size={20} className="text-on-surface" />
-                  <Text className="font-body-md text-on-surface">{order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || '-'} KG ({order.items?.reduce((s, it) => s + (it.total_boxes || 0), 0) || 0} Boxes)</Text>
+              
+              <View className="flex-row justify-between items-center bg-surface-container-highest rounded-xl p-3">
+                <View className="flex-row items-center gap-2">
+                  <MaterialIcons name="scale" size={20} className="text-primary" />
+                  <Text className="font-label-md text-on-surface font-semibold">
+                    {order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || '-'} KG
+                    <Text className="text-on-surface-variant font-normal"> ({order.items?.reduce((s, it) => s + (it.total_boxes || 0), 0) || 0} Boxes)</Text>
+                  </Text>
                 </View>
-                <Pressable accessibilityRole="button"
-                  className="px-3 py-1 bg-surface-container rounded-full"
-                  onPress={() => navigation.navigate("OrderDetail", { order })}
-                >
-                  <Text className="font-label-md text-primary">Details</Text>
-                </Pressable>
+                <MaterialIcons name="chevron-right" size={20} className="text-on-surface-variant" />
               </View>
-            </View>
+            </Pressable>
           ))}
 
           {orders.length === 0 && (
-             <View className="bg-surface-container-lowest p-6 rounded-xl mt-2 items-center justify-center border border-outline-variant/30">
-                <Text className="text-on-surface-variant font-body-md">No orders today yet.</Text>
-             </View>
+            <View className="bg-surface-container-lowest py-8 rounded-2xl items-center justify-center border border-outline-variant/30">
+              <MaterialIcons name="inbox" size={48} className="text-on-surface-variant/50 mb-2" />
+              <Text className="text-on-surface-variant font-body-lg">No orders today yet.</Text>
+            </View>
           )}
-
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+      </View>
+    </AdminScreenContainer>
   );
 }

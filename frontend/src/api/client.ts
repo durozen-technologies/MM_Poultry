@@ -42,6 +42,11 @@ export const setOnUnauthorized = (callback: (() => void) | null) => {
   onUnauthorizedCallback = callback;
 };
 
+/** Check if an error is an Axios error with a specific HTTP status code. */
+export function isHttpStatus(error: unknown, status: number): boolean {
+  return isAxiosError(error) && error.response?.status === status;
+}
+
 /** Extract human-readable message from Axios / backend envelope. */
 export function getApiErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {

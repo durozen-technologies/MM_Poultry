@@ -1,16 +1,17 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, getApiErrorMessage } from "../../api/client";
+
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
+import { AdminCard } from "../../components/admin/admin-card";
+import { AdminActionFooter } from "../../components/admin/admin-action-footer";
 
 export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
@@ -75,293 +76,264 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
-      {/* Header */}
-      <View className="h-16 px-4 flex-row items-center bg-surface/80">
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full active:bg-surface-variant/50 mr-2"
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
-        </Pressable>
-        <Text className="font-headline-sm text-headline-sm text-primary font-semibold">
-          Add Retailer
-        </Text>
-      </View>
+    <AdminScreenContainer
+      header={
+        <AdminHeader 
+          title="Add Retailer" 
+          subtitle="Onboard a new wholesale or retail customer"
+          onBack={() => navigation.goBack()} 
+        />
+      }
+    >
+      {error && (
+        <View className="bg-error-container/90 px-4 py-3 rounded-xl flex-row items-center">
+          <MaterialIcons name="error-outline" size={20} className="text-on-error-container mr-2" />
+          <Text className="text-on-error-container text-body-sm font-medium flex-1">{error}</Text>
+        </View>
+      )}
 
-      <ScrollView className="flex-1 px-4 py-6 flex-col" contentContainerStyle={{ paddingBottom: 100 }}>
-        {error && (
-          <Text className="px-4 py-2 mb-4 text-error text-center text-label-md bg-error-container rounded-lg">
-            {error}
-          </Text>
-        )}
-
-        {/* Basic Details Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-row items-center gap-2">
-            <MaterialIcons name="storefront" size={20} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Basic Details
-            </Text>
-          </View>
-          
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+      {/* Basic Details Card */}
+      <AdminCard title="Basic Details" icon="storefront">
+        <View className="flex-col gap-4">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Company / Business Name <Text className="text-error">*</Text>
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter Retailer/Company Name"
+              placeholderTextColor="#9ca3af"
               value={name}
               onChangeText={setName}
- />
+            />
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Shop Name
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. SR Chicken Center"
+              placeholderTextColor="#9ca3af"
               value={shopName}
               onChangeText={setShopName}
- />
+            />
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Owner Name
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="person" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="person" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Enter owner name"
+                placeholderTextColor="#9ca3af"
                 value={ownerName}
                 onChangeText={setOwnerName}
- />
+              />
             </View>
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Category
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Wholesale, Retail"
+              placeholderTextColor="#9ca3af"
               value={category}
               onChangeText={setCategory}
- />
+            />
           </View>
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Notes / Remarks
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[80px] placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Any additional notes..."
+              placeholderTextColor="#9ca3af"
               multiline
               textAlignVertical="top"
               value={notes}
               onChangeText={setNotes}
- />
+            />
           </View>
         </View>
+      </AdminCard>
 
-        {/* Contact Details Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-row items-center gap-2">
-            <MaterialIcons name="contacts" size={20} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Contact Details
-            </Text>
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+      {/* Contact Details Card */}
+      <AdminCard title="Contact Details" icon="contacts" iconColorClass="text-secondary" iconBgClass="bg-secondary/10">
+        <View className="flex-col gap-4">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Primary Phone <Text className="text-error">*</Text>
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="phone-iphone" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="phone-iphone" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="10-digit primary number"
+                placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={setPhone}
- />
+              />
             </View>
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               WhatsApp
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="chat" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="chat" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="WhatsApp number"
+                placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
                 value={whatsapp}
                 onChangeText={setWhatsapp}
- />
+              />
             </View>
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Alternate Phone
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="phone" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="phone" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Other phone number"
+                placeholderTextColor="#9ca3af"
                 keyboardType="phone-pad"
                 value={alternatePhone}
                 onChangeText={setAlternatePhone}
- />
+              />
             </View>
           </View>
         </View>
+      </AdminCard>
 
-        {/* Location & Delivery Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-row items-center gap-2">
-            <MaterialIcons name="location-on" size={20} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Location & Delivery
-            </Text>
+      {/* Location & Delivery Card */}
+      <AdminCard title="Location & Delivery" icon="location-on" iconColorClass="text-tertiary" iconBgClass="bg-tertiary/10">
+        <View className="flex-col gap-4">
+          <View className="flex-row gap-4">
+            <View className="flex-1">
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
+                Area
+              </Text>
+              <TextInput
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+                placeholder="e.g. Downtown"
+                placeholderTextColor="#9ca3af"
+                value={area}
+                onChangeText={setArea}
+              />
+            </View>
+            <View className="flex-1">
+              <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
+                Route Name
+              </Text>
+              <TextInput
+                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
+                placeholder="e.g. Route A"
+                placeholderTextColor="#9ca3af"
+                value={routeName}
+                onChangeText={setRouteName}
+              />
+            </View>
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Area
-            </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
-              placeholder="e.g. Downtown"
-              value={area}
-              onChangeText={setArea}
- />
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
-              Route Name
-            </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
-              placeholder="e.g. Route A"
-              value={routeName}
-              onChangeText={setRouteName}
- />
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Preferred Delivery Time
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface h-12 rounded-lg border border-surface-variant px-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Morning 6 AM"
+              placeholderTextColor="#9ca3af"
               value={preferredDeliveryTime}
               onChangeText={setPreferredDeliveryTime}
- />
+            />
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Full Address
             </Text>
-            <TextInput placeholderTextColor="#737373"
-              className="w-full bg-surface rounded-lg border border-surface-variant p-4 font-body-md text-body-md text-on-surface min-h-[100px] placeholder:text-on-surface-variant"
+            <TextInput
+              className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Enter complete address"
+              placeholderTextColor="#9ca3af"
               multiline
               textAlignVertical="top"
               value={address}
               onChangeText={setAddress}
- />
+            />
           </View>
         </View>
+      </AdminCard>
 
-        {/* Portal Access Card */}
-        <View className="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex-col gap-4 border border-outline-variant/30 mb-6">
-          <View className="flex-row items-center gap-2">
-            <MaterialIcons name="security" size={20} className="text-primary" />
-            <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-              Portal Access
-            </Text>
-          </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+      {/* Portal Access Card */}
+      <AdminCard title="Portal Access" icon="security" iconColorClass="text-error" iconBgClass="bg-error/10">
+        <View className="flex-col gap-4">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Username <Text className="text-error">*</Text>
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="account-circle" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="account-circle" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Unique login username"
+                placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={username}
                 onChangeText={setUsername}
- />
+              />
             </View>
           </View>
-
-          <View className="flex-col gap-2">
-            <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">
+          <View>
+            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Password <Text className="text-error">*</Text>
             </Text>
             <View className="relative flex-row items-center">
-              <View className="absolute left-3 z-10">
-                <MaterialIcons name="lock" size={18} className="text-on-surface-variant" />
+              <View className="absolute left-4 z-10">
+                <MaterialIcons name="lock" size={20} className="text-on-surface-variant" />
               </View>
-              <TextInput placeholderTextColor="#737373"
-                className="w-full bg-surface h-12 rounded-lg border border-surface-variant pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant"
+              <TextInput
+                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Secure password"
+                placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
                 autoCorrect={false}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
- />
+              />
             </View>
           </View>
         </View>
+      </AdminCard>
 
-        <Pressable accessibilityRole="button" accessibilityLabel="Button"
-          className="w-full bg-primary h-14 rounded-2xl flex-row items-center justify-center active:scale-95 mb-6"
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator className="text-white" />
-          ) : (
-            <>
-              <MaterialIcons name="save" size={20} className="text-white" />
-              <Text className="font-label-md text-label-md text-on-primary font-semibold ml-2">
-                Save Retailer
-              </Text>
-            </>
-          )}
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+      <AdminActionFooter
+        primaryLabel="Save Retailer"
+        primaryIcon="save"
+        onPrimaryPress={onSubmit}
+        isPrimaryLoading={loading}
+      />
+    </AdminScreenContainer>
   );
 }

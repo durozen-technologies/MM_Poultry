@@ -80,6 +80,12 @@ async def create_delivery_run(db: AsyncSession, payload: DeliveryRunCreate) -> D
             )
             if order is None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+            _eligible = {OrderStatus.PLACED, OrderStatus.ACKNOWLEDGED, OrderStatus.PARTIAL}
+            if order.status not in _eligible:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Order {order_id} is {order.status.value} — only PLACED/ACKNOWLEDGED/PARTIAL orders can be dispatched",
+                )
 
             stop = DeliveryStop(
                 delivery_run_id=run.id,
@@ -170,13 +176,16 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     return out
 
 
-async def get_active_run(db: AsyncSession) -> DeliveryRunOut | None:
-    run = await db.scalar(
+async def get_active_run(db: AsyncSession, driver_user_id: UUID | None = None) -> DeliveryRunOut | None:
+    stmt = (
         select(DeliveryRun)
         .where(DeliveryRun.status.in_([DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS]))
         .order_by(DeliveryRun.created_at.desc())
         .limit(1)
     )
+    if driver_user_id is not None:
+        stmt = stmt.where(DeliveryRun.driver_user_id == driver_user_id)
+    run = await db.scalar(stmt)
     if run is None:
         return None
     return await get_delivery_run(db, run.id)

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, RefreshControl, ScrollView } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, FlatList, Pressable, TextInput, RefreshControl, ScrollView, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -39,20 +39,22 @@ export function DeliveryHomeScreen() {
   } = useDeliveryRun();
   const [refreshing, setRefreshing] = useState(false);
   const [printerModalVisible, setPrinterModalVisible] = useState(false);
+  const [skipPrint, setSkipPrint] = useState(false);
+  const [skipScale, setSkipScale] = useState(false);
   const connectedPrinter = usePrinterStore((s) => s.connectedPrinter);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
-  };
+  }, [refresh]);
 
   const { data: itemsPage } = useQuery({
     queryKey: ["delivery_items"],
     queryFn: () => apiItems.list(true),
   });
   const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i: { id: string; name: string }) => i.id === id)?.name || "Unknown Item";
+  const getItemName = useCallback((id: string) => allItems.find((i: { id: string; name: string }) => i.id === id)?.name || "Unknown Item", [allItems]);
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
@@ -103,43 +105,17 @@ export function DeliveryHomeScreen() {
               keyExtractor={(s) => s.id}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
               ListEmptyComponent={<Text className="text-on-surface-variant text-center py-4">No stops in this run</Text>}
-              renderItem={({ item }) => {
-                const totalReq = item.items?.reduce((sum, it) => sum + Number(it.ordered_kg || 0), 0) || 0;
-                return (
-                  <Pressable accessibilityRole="button"
-                    className={`bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden ${
-                      activeStop?.id === item.id ? "border-primary" : "border-outline-variant/20"
-                    }`}
-                    onPress={() => { setActiveStop(item); setWeights({}); }}
-                  >
-                    {/* Left indicator bar */}
-                    <View className={`absolute top-0 left-0 w-1 h-full ${activeStop?.id === item.id ? 'bg-primary' : 'bg-transparent'}`} />
-
-                    <View className="flex-row items-center justify-between mb-2">
-                      <View className="flex-row items-center gap-2">
-                        <View className={`w-8 h-8 rounded-full items-center justify-center ${activeStop?.id === item.id ? 'bg-primary' : 'bg-surface-variant'}`}>
-                          <Text className={`font-bold ${activeStop?.id === item.id ? 'text-on-primary' : 'text-on-surface-variant'}`}>{item.sequence}</Text>
-                        </View>
-                        <Text className="font-headline-sm text-on-surface font-bold">
-                          {item.retailer_name}
-                        </Text>
-                      </View>
-                      <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-error-container' : 'bg-primary-container'}`}>
-                        <Text className={`font-label-md font-semibold ${item.status === 'PENDING' ? 'text-error' : 'text-on-primary-container'}`}>
-                          {item.status}
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View className="flex-row items-center gap-2 mt-1 pl-10">
-                      <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
-                      <Text className="font-body-md text-on-surface-variant">
-                        Ordered <Text className="font-bold text-on-surface">{totalReq} kg</Text>
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              }}
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              removeClippedSubviews={true}
+              renderItem={({ item }) => (
+                <StopListItem 
+                  item={item} 
+                  isActive={activeStop?.id === item.id} 
+                  onPress={() => { setActiveStop(item); setWeights({}); }} 
+                />
+              )}
             />
           </>
         )}
@@ -165,9 +141,11 @@ export function DeliveryHomeScreen() {
                     <Text className="text-sm text-on-surface-variant mb-2">Req: {item.ordered_kg} kg @ ₹{item.rate_per_kg}/kg</Text>
                     
                     <View className="flex-row items-center gap-2 mb-2">
-                      <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.5]" onPress={() => simulateScale(item.item_id)}>
-                        <MaterialIcons name="bluetooth" size={20} className="text-primary" />
-                      </Pressable>
+                      {!skipScale && (
+                        <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.5]" onPress={() => simulateScale(item.item_id)}>
+                          <MaterialIcons name="bluetooth" size={20} className="text-primary" />
+                        </Pressable>
+                      )}
                       <TextInput
                         className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
                         value={weights[item.item_id] || ""}
@@ -209,8 +187,22 @@ export function DeliveryHomeScreen() {
               <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={cash} onChangeText={setCash} placeholder="Cash" keyboardType="decimal-pad" />
               <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={upi} onChangeText={setUpi} placeholder="UPI" keyboardType="decimal-pad" />
             </View>
-            <Pressable accessibilityRole="button" className={`rounded-lg py-3 items-center mb-2 ${billing ? "bg-primary/50" : "bg-primary"}`} onPress={weighAndBill} disabled={billing}>
-              <Text className="text-on-primary font-semibold">{billing ? "Billing..." : "Weigh → Commit → Print"}</Text>
+
+            <View className="flex-row justify-between items-center mb-4 mt-2 px-1">
+              <View className="flex-row items-center gap-2">
+                <Switch value={!skipScale} onValueChange={(v) => setSkipScale(!v)} />
+                <Text className="text-on-surface text-sm">Bluetooth Scale</Text>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <Switch value={!skipPrint} onValueChange={(v) => setSkipPrint(!v)} />
+                <Text className="text-on-surface text-sm">Print Receipt</Text>
+              </View>
+            </View>
+
+            <Pressable accessibilityRole="button" className={`rounded-lg py-3 items-center mb-2 ${billing ? "bg-primary/50" : "bg-primary"}`} onPress={() => weighAndBill({ skipPrint, skipScale })} disabled={billing}>
+              <Text className="text-on-primary font-semibold">
+                {billing ? "Billing..." : (!skipScale && !skipPrint ? "Weigh → Commit → Print" : (!skipScale ? "Weigh → Commit" : (!skipPrint ? "Commit → Print" : "Commit")))}
+              </Text>
             </Pressable>
             <Pressable accessibilityRole="button" className="border border-error rounded-lg py-3 items-center" onPress={onSkipStop}>
               <Text className="text-error font-semibold">Skip Stop</Text>
@@ -232,3 +224,40 @@ export function DeliveryHomeScreen() {
     </SafeAreaView>
   );
 }
+
+const StopListItem = React.memo(({ item, isActive, onPress }: { item: any, isActive: boolean, onPress: () => void }) => {
+  const totalReq = item.items?.reduce((sum: number, it: any) => sum + Number(it.ordered_kg || 0), 0) || 0;
+  return (
+    <Pressable accessibilityRole="button"
+      className={`bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden ${
+        isActive ? "border-primary" : "border-outline-variant/20"
+      }`}
+      onPress={onPress}
+    >
+      <View className={`absolute top-0 left-0 w-1 h-full ${isActive ? 'bg-primary' : 'bg-transparent'}`} />
+
+      <View className="flex-row items-center justify-between mb-2">
+        <View className="flex-row items-center gap-2">
+          <View className={`w-8 h-8 rounded-full items-center justify-center ${isActive ? 'bg-primary' : 'bg-surface-variant'}`}>
+            <Text className={`font-bold ${isActive ? 'text-on-primary' : 'text-on-surface-variant'}`}>{item.sequence}</Text>
+          </View>
+          <Text className="font-headline-sm text-on-surface font-bold">
+            {item.retailer_name}
+          </Text>
+        </View>
+        <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-error-container' : 'bg-primary-container'}`}>
+          <Text className={`font-label-md font-semibold ${item.status === 'PENDING' ? 'text-error' : 'text-on-primary-container'}`}>
+            {item.status}
+          </Text>
+        </View>
+      </View>
+      
+      <View className="flex-row items-center gap-2 mt-1 pl-10">
+        <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
+        <Text className="font-body-md text-on-surface-variant">
+          Ordered <Text className="font-bold text-on-surface">{totalReq} kg</Text>
+        </Text>
+      </View>
+    </Pressable>
+  );
+});

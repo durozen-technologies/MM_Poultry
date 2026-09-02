@@ -10,6 +10,7 @@ from app.models.enums import UserRole
 class LoginRequest(BaseModel):
     username: str
     password: str
+    organization_slug: str | None = None
 
 
 class UserOut(BaseModel):

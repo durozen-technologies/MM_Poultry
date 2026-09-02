@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { FlatList, ActivityIndicator,
   Pressable,
   RefreshControl,
@@ -69,6 +69,10 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={busy} onRefresh={refresh} />}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListHeaderComponent={
           <>
             {message ? (
@@ -82,36 +86,42 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
             <Text className="text-on-surface-variant text-center mt-8">No orders found</Text>
           ) : null
         }
-        renderItem={({ item: order }) => {
-          const isDelivered = order.status === "FULFILLED";
-          return (
-            <Pressable accessibilityRole="button" accessibilityLabel="Button"
-              className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
-              onPress={() => navigation.navigate("OrderDetail", { orderId: order.id })}
-            >
-              <View className="flex-row justify-between items-start mb-3">
-                <View>
-                  <Text className="font-headline-sm text-on-surface font-bold">
-                    {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0} kg Total
-                  </Text>
-                  <Text className="font-body-sm text-on-surface-variant mt-1">
-                    {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
-                  </Text>
-                </View>
-                <View className={`px-3 py-1.5 rounded-md ${isDelivered ? "bg-[#e8f5e9]" : "bg-primary-container"}`}>
-                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${isDelivered ? "text-[#2e7d32]" : "text-on-primary-container"}`}>
-                    {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
-                  </Text>
-              </View>
-            </View>
-            <View className="flex-row items-center gap-1">
-              <MaterialIcons name="chevron-right" size={18} className="text-on-surface" />
-              <Text className="font-label-md text-primary">View tracking</Text>
-            </View>
-          </Pressable>
-          );
-        }}
+        renderItem={({ item: order }) => (
+          <OrderListItem order={order} onPress={() => navigation.navigate("OrderDetail", { orderId: order.id })} />
+        )}
       />
     </SafeAreaView>
   );
 }
+
+const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPress: () => void }) => {
+  const isDelivered = order.status === "FULFILLED";
+  const totalKg = order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
+  
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Button"
+      className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80"
+      onPress={onPress}
+    >
+      <View className="flex-row justify-between items-start mb-3">
+        <View>
+          <Text className="font-headline-sm text-on-surface font-bold">
+            {totalKg} kg Total
+          </Text>
+          <Text className="font-body-sm text-on-surface-variant mt-1">
+            {formatIstDate(order.order_date)} · {order.items?.length || 0} Items
+          </Text>
+        </View>
+        <View className={`px-3 py-1.5 rounded-md ${isDelivered ? "bg-[#e8f5e9]" : "bg-primary-container"}`}>
+          <Text className={`font-label-sm font-bold uppercase tracking-wider ${isDelivered ? "text-[#2e7d32]" : "text-on-primary-container"}`}>
+            {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
+          </Text>
+        </View>
+      </View>
+      <View className="flex-row items-center gap-1">
+        <MaterialIcons name="chevron-right" size={18} className="text-on-surface" />
+        <Text className="font-label-md text-primary">View tracking</Text>
+      </View>
+    </Pressable>
+  );
+});

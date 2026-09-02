@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   FlatList,
   Pressable,
@@ -25,14 +25,16 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
 
-  const filteredOrders = orders.filter((o) => {
-    if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
-    if (filter !== "All" && o.status !== filter) return false;
-    return true;
-  });
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o: any) => {
+      if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+      if (filter !== "All" && o.status !== filter) return false;
+      return true;
+    });
+  }, [orders, searchQuery, filter]);
 
-  const pendingCount = orders.filter((o) => o.status === "PLACED").length;
-  const confirmedCount = orders.filter((o) => o.status === "ACKNOWLEDGED").length;
+  const pendingCount = useMemo(() => orders.filter((o: any) => o.status === "PLACED").length, [orders]);
+  const confirmedCount = useMemo(() => orders.filter((o: any) => o.status === "ACKNOWLEDGED").length, [orders]);
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -73,6 +75,10 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListHeaderComponent={
           <>
             {/* Search & Top Actions */}
@@ -164,67 +170,73 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
         }
 
         ItemSeparatorComponent={() => <View className="h-4" />}
-        renderItem={({ item: order }) => {
-          const statusColors = getStatusColor(order.status);
-          return (
-            <View
-              className="bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-2 border border-outline-variant/20 flex-col gap-3 relative overflow-hidden"
-            >
-              {/* Left indicator bar */}
-              <View className={`absolute top-0 left-0 w-1 h-full ${order.status === 'PLACED' ? 'bg-error' : 'bg-primary-fixed-dim'}`} />
-              
-              <View className="flex-row items-center justify-between w-full">
-                <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-                  {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}
-                </Text>
-                <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1`}>
-                  <MaterialIcons name={statusColors.icon as any} size={14} color={statusColors.text === 'text-on-primary-fixed' ? '#002114' : (statusColors.text === 'text-on-error-container' ? '#93000a' : '#181c20')} />
-                  <Text className={`font-label-md text-label-md font-semibold ${statusColors.text}`}>
-                    {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="flex-row items-center gap-2">
-                <MaterialIcons name="storefront" size={18} className="text-on-surface" />
-                <Text className="font-body-md text-body-md text-on-surface-variant">
-                  {order.shop_name || order.retailer_name || "Unknown Retailer"}
-                </Text>
-              </View>
-
-              <View className="flex-row gap-3 mt-1 bg-surface-container-low p-3 rounded-lg">
-                <View className="flex-col gap-1 flex-1">
-                  <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Total Req.</Text>
-                  <Text className="font-body-lg text-body-lg text-on-surface font-bold">
-                    {order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || '-'} KG ({order.items?.reduce((sum, it) => sum + (it.total_boxes || 0), 0) || 0} Boxes)
-                  </Text>
-                </View>
-                <View className="flex-col gap-1 flex-1">
-                  <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Items</Text>
-                  <Text className="font-body-lg text-body-lg text-on-surface font-bold">{order.items?.length || 0}</Text>
-                </View>
-                <View className="flex-col gap-1 flex-1">
-                  <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Notes</Text>
-                  <Text className="font-body-lg text-body-lg text-on-surface font-bold truncate" numberOfLines={1}>
-                    {order.items?.some((i) => i.notes) ? "Yes" : "None"}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="mt-3 pt-3 flex-row justify-end border-t border-surface-variant/30">
-                <Pressable accessibilityRole="button" accessibilityLabel="Button"
-                  className="bg-transparent h-10 px-4 rounded-xl flex-row items-center justify-center gap-2 active:bg-surface-variant/50"
-                  onPress={() => navigation.navigate("OrderDetail", { order })}
-                >
-                  <Text className="font-label-md text-label-md text-primary font-semibold">View Details</Text>
-                  <MaterialIcons name="arrow-forward" size={18} className="text-primary" />
-                </Pressable>
-              </View>
-            </View>
-          );
-        }}
+        renderItem={({ item: order }) => (
+          <OrderListItem 
+            order={order} 
+            statusColors={getStatusColor(order.status)} 
+            onPress={() => navigation.navigate("OrderDetail", { order })} 
+          />
+        )}
       />
 
     </SafeAreaView>
   );
 }
+
+const OrderListItem = React.memo(({ order, statusColors, onPress }: { order: any, statusColors: any, onPress: () => void }) => {
+  return (
+    <View
+      className="bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-2 border border-outline-variant/20 flex-col gap-3 relative overflow-hidden"
+    >
+      <View className={`absolute top-0 left-0 w-1 h-full ${order.status === 'PLACED' ? 'bg-error' : 'bg-primary-fixed-dim'}`} />
+      
+      <View className="flex-row items-center justify-between w-full">
+        <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+          {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}
+        </Text>
+        <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1`}>
+          <MaterialIcons name={statusColors.icon as any} size={14} color={statusColors.text === 'text-on-primary-fixed' ? '#002114' : (statusColors.text === 'text-on-error-container' ? '#93000a' : '#181c20')} />
+          <Text className={`font-label-md text-label-md font-semibold ${statusColors.text}`}>
+            {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex-row items-center gap-2">
+        <MaterialIcons name="storefront" size={18} className="text-on-surface" />
+        <Text className="font-body-md text-body-md text-on-surface-variant">
+          {order.shop_name || order.retailer_name || "Unknown Retailer"}
+        </Text>
+      </View>
+
+      <View className="flex-row gap-3 mt-1 bg-surface-container-low p-3 rounded-lg">
+        <View className="flex-col gap-1 flex-1">
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Total Req.</Text>
+          <Text className="font-body-lg text-body-lg text-on-surface font-bold">
+            {order.items?.reduce((sum: number, it: any) => sum + Number(it.requested_kg || 0), 0) || '-'} KG ({order.items?.reduce((sum: number, it: any) => sum + (it.total_boxes || 0), 0) || 0} Boxes)
+          </Text>
+        </View>
+        <View className="flex-col gap-1 flex-1">
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Items</Text>
+          <Text className="font-body-lg text-body-lg text-on-surface font-bold">{order.items?.length || 0}</Text>
+        </View>
+        <View className="flex-col gap-1 flex-1">
+          <Text className="font-label-md text-label-md text-on-surface-variant font-semibold">Notes</Text>
+          <Text className="font-body-lg text-body-lg text-on-surface font-bold truncate" numberOfLines={1}>
+            {order.items?.some((i: any) => i.notes) ? "Yes" : "None"}
+          </Text>
+        </View>
+      </View>
+
+      <View className="mt-3 pt-3 flex-row justify-end border-t border-surface-variant/30">
+        <Pressable accessibilityRole="button" accessibilityLabel="Button"
+          className="bg-transparent h-10 px-4 rounded-xl flex-row items-center justify-center gap-2 active:bg-surface-variant/50"
+          onPress={onPress}
+        >
+          <Text className="font-label-md text-label-md text-primary font-semibold">View Details</Text>
+          <MaterialIcons name="arrow-forward" size={18} className="text-primary" />
+        </Pressable>
+      </View>
+    </View>
+  );
+});

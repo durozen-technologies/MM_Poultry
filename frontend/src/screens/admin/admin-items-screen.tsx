@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { View, Text, FlatList, ActivityIndicator, Pressable, TextInput, Switch } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiItems } from "../../api/items";
 import type { Item } from "../../types/api";
-import { Ionicons } from "@expo/vector-icons";
+
+import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
+import { AdminHeader } from "../../components/admin/admin-header";
+import { AdminCard } from "../../components/admin/admin-card";
 
 export function AdminItemsScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
@@ -16,7 +18,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const { data: page, isLoading, refetch } = useQuery({
+  const { data: page, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin_items"],
     queryFn: () => apiItems.list(),
   });
@@ -74,135 +76,246 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background" edges={["top", "bottom"]}>
-        <ActivityIndicator size="large" className="text-primary" />
-      </SafeAreaView>
-    );
-  }
+  const items = useMemo(() => page?.items || [], [page?.items]);
+  const activeCount = useMemo(() => items.filter((i: Item) => i.is_active).length, [items]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/90 border-b border-outline-variant/20">
-        <View className="flex-row items-center">
-          <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full active:bg-surface-variant/50" onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
-          </Pressable>
-          <Text className="font-headline-sm text-on-surface font-semibold ml-2">Items</Text>
-        </View>
-        {!isAdding && !editingItem && (
-          <Pressable
-            onPress={() => setIsAdding(true)}
-            className="bg-primary px-4 h-10 rounded-full flex-row items-center active:scale-95"
-          >
-            <MaterialIcons name="add" size={20} className="text-on-primary" />
-            <Text className="text-on-primary font-semibold ml-1">Add Item</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <View className="flex-1 p-4">
-        {(isAdding || editingItem) && (
-          <View className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm mb-4 border border-outline-variant/20">
-            <Text className="font-headline-sm text-on-surface mb-4">
-              {editingItem ? "Edit Item" : "New Item"}
-            </Text>
-            
-            <View className="mb-4">
-              <Text className="font-label-md text-on-surface-variant mb-1 uppercase font-semibold">Name</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="e.g. Broiler Chicken"
-                placeholderTextColor="#717973"
-                className="bg-surface border border-outline-variant rounded-lg p-3 text-on-surface font-body-md h-12"
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="font-label-md text-on-surface-variant mb-1 uppercase font-semibold">Description</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Optional description"
-                placeholderTextColor="#717973"
-                className="bg-surface border border-outline-variant rounded-lg p-3 text-on-surface font-body-md h-12"
-              />
-            </View>
-
-            {editingItem && (
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="font-label-md text-on-surface-variant uppercase font-semibold">Active</Text>
-                <Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: "#e0e3e8", true: "#1B4332" }} thumbColor={isActive ? "#ffffff" : "#717973"} />
-              </View>
-            )}
-
-            <View className="flex-row gap-3">
+    <AdminScreenContainer
+      noScroll
+      header={
+        <AdminHeader 
+          title="Product Items" 
+          subtitle="Manage inventory item categories"
+          onBack={() => navigation.goBack()} 
+          rightContent={
+            <View className="flex-row gap-2">
               <Pressable
-                onPress={resetForm}
-                className="flex-1 bg-surface-variant p-3 rounded-xl items-center justify-center active:scale-95 h-12"
+                accessibilityRole="button"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest active:bg-surface-variant"
+                onPress={() => refetch()}
               >
-                <Text className="text-on-surface-variant font-semibold">Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSave}
-                disabled={createMutation.isPending || updateMutation.isPending || !name}
-                className={`flex-1 p-3 rounded-xl items-center justify-center h-12 active:scale-95 ${
-                  !name ? "bg-surface-variant opacity-50" : "bg-primary"
-                }`}
-              >
-                {createMutation.isPending || updateMutation.isPending ? (
-                  <ActivityIndicator color="white" />
+                {isRefetching ? (
+                  <ActivityIndicator size="small" className="text-primary" />
                 ) : (
-                  <Text className={`font-semibold ${!name ? "text-on-surface-variant" : "text-on-primary"}`}>Save</Text>
+                  <MaterialIcons name="refresh" size={22} className="text-on-surface" />
                 )}
               </Pressable>
-            </View>
-          </View>
-        )}
-
-        <FlatList
-          data={page?.items || []}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          keyExtractor={(item) => item.id}
-          refreshing={isLoading}
-          onRefresh={refetch}
-          renderItem={({ item }) => (
-            <View className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm mb-3 flex-row items-center justify-between border border-outline-variant/20">
-              <View className="flex-1">
-                <Text className="font-headline-sm text-on-surface">
-                  {item.name}
-                </Text>
-                {item.description ? (
-                  <Text className="font-body-md text-on-surface-variant mt-1">
-                    {item.description}
-                  </Text>
-                ) : null}
-                <View className="flex-row mt-2">
-                  {!item.is_active && (
-                    <View className="bg-error-container px-2 py-1 rounded-md">
-                      <Text className="text-on-error-container text-[10px] uppercase font-semibold">Inactive</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-              <Pressable
-                onPress={() => handleEdit(item)}
-                className="p-3 bg-primary-container/10 rounded-full active:bg-primary-container/30"
-              >
-                <Ionicons name="pencil" size={18} className="text-primary" />
-              </Pressable>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View className="items-center justify-center py-8">
-              <Ionicons name="cube-outline" size={48} className="text-outline" />
-              <Text className="font-body-md text-on-surface-variant mt-4">No items found.</Text>
+              {!isAdding && !editingItem && (
+                <Pressable
+                  accessibilityRole="button"
+                  className="h-10 px-4 rounded-full flex-row items-center justify-center bg-primary active:bg-primary/90 shadow-sm shadow-primary/30"
+                  onPress={() => setIsAdding(true)}
+                >
+                  <MaterialIcons name="add" size={20} color="white" className="mr-1.5" />
+                  <Text className="text-label-md text-white font-bold">Add</Text>
+                </Pressable>
+              )}
             </View>
           }
         />
-      </View>
-    </SafeAreaView>
+      }
+    >
+      <FlatList
+        data={items}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyExtractor={(item) => item.id}
+        refreshing={isLoading}
+        onRefresh={refetch}
+        className="flex-1 px-4"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        ListHeaderComponent={
+          <>
+            <View className="pt-2">
+              {/* Form Card */}
+              {(isAdding || editingItem) && (
+                <View className="mb-6">
+                  <AdminCard 
+                    title={editingItem ? "Edit Item" : "New Item"} 
+                    icon={editingItem ? "edit" : "add-circle"} 
+                    iconColorClass="text-secondary" 
+                    iconBgClass="bg-secondary/10" 
+                    containerClass="relative"
+                  >
+                    <Pressable 
+                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-variant/30 items-center justify-center z-10"
+                      onPress={resetForm}
+                    >
+                      <MaterialIcons name="close" size={16} className="text-on-surface-variant" />
+                    </Pressable>
+                    
+                    <View className="flex-col gap-4">
+                      <View>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Item Name <Text className="text-error">*</Text></Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="inventory" size={20} className="text-on-surface-variant" />
+                          </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="e.g. Broiler Chicken" 
+                            value={name} 
+                            onChangeText={setName} 
+                            placeholderTextColor="#9ca3af" 
+                          />
+                        </View>
+                      </View>
+                      
+                      <View>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Description (Optional)</Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="description" size={20} className="text-on-surface-variant" />
+                          </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="Brief description of the item" 
+                            value={description} 
+                            onChangeText={setDescription} 
+                            placeholderTextColor="#9ca3af" 
+                          />
+                        </View>
+                      </View>
+
+                      {editingItem && (
+                        <View className="flex-row items-center justify-between p-3 bg-surface-container-highest/30 rounded-xl border border-outline-variant/10">
+                          <View className="flex-row items-center gap-2">
+                            <MaterialIcons name={isActive ? "check-circle" : "cancel"} size={20} className={isActive ? "text-primary" : "text-on-surface-variant"} />
+                            <Text className="font-label-md font-bold text-on-surface">Active Status</Text>
+                          </View>
+                          <Switch 
+                            value={isActive} 
+                            onValueChange={setIsActive} 
+                            trackColor={{ false: "#e0e3e8", true: "#115E29" }} 
+                            thumbColor={isActive ? "#ffffff" : "#717973"} 
+                          />
+                        </View>
+                      )}
+
+                      <Pressable 
+                        className={`h-13 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+                          !name.trim() ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
+                        }`}
+                        onPress={handleSave}
+                        disabled={createMutation.isPending || updateMutation.isPending || !name.trim()}
+                      >
+                        {createMutation.isPending || updateMutation.isPending ? (
+                          <ActivityIndicator color="#ffffff" />
+                        ) : (
+                          <>
+                            <MaterialIcons name={editingItem ? "save" : "add-circle"} size={18} color={!name.trim() ? "#717973" : "white"} />
+                            <Text className={`font-bold text-label-lg ${!name.trim() ? "text-on-surface-variant" : "text-white"}`}>
+                              {editingItem ? "Save Changes" : "Create Item"}
+                            </Text>
+                          </>
+                        )}
+                      </Pressable>
+                    </View>
+                  </AdminCard>
+                </View>
+              )}
+
+              {/* KPI Banner */}
+              {!isAdding && !editingItem && items.length > 0 && (
+                <View className="bg-primary/10 rounded-2xl p-4 border border-primary/20 flex-row items-center justify-between mb-6 shadow-sm">
+                  <View className="flex-row items-center gap-3">
+                    <View className="w-10 h-10 rounded-full bg-primary/20 items-center justify-center">
+                      <MaterialIcons name="category" size={20} className="text-primary" />
+                    </View>
+                    <View>
+                      <Text className="font-label-md text-primary font-bold tracking-wider uppercase mb-0.5">Active Items</Text>
+                      <View className="flex-row items-end gap-1">
+                        <Text className="font-display-sm text-primary font-black leading-tight">{activeCount}</Text>
+                        <Text className="font-body-md text-primary/80 font-bold mb-0.5">/ {items.length}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* List Header */}
+              <View className="flex-row items-center justify-between ml-1 mb-3">
+                <Text className="font-title-lg text-on-surface font-bold">All Items</Text>
+              </View>
+
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="py-12 items-center">
+              <ActivityIndicator size="large" className="text-primary mb-4" />
+              <Text className="text-on-surface-variant font-medium">Loading items...</Text>
+            </View>
+          ) : (
+            <View className="bg-surface-container-lowest rounded-3xl p-8 border border-dashed border-outline-variant/50 items-center justify-center mb-6 mt-2">
+              <View className="w-16 h-16 bg-surface-variant/30 rounded-full items-center justify-center mb-4">
+                <MaterialIcons name="inventory-2" size={32} className="text-on-surface-variant/70" />
+              </View>
+              <Text className="font-title-md text-on-surface font-bold mb-1">No Items Found</Text>
+              <Text className="font-body-md text-on-surface-variant text-center mb-6">
+                You haven't defined any product items yet. Create your first item to start managing inventory.
+              </Text>
+              {!isAdding && !editingItem && (
+                <Pressable
+                  className="bg-primary px-6 py-3 rounded-full flex-row items-center"
+                  onPress={() => setIsAdding(true)}
+                >
+                  <MaterialIcons name="add" size={20} color="white" className="mr-2" />
+                  <Text className="text-white font-bold">Add First Item</Text>
+                </Pressable>
+              )}
+            </View>
+          )
+        }
+        ItemSeparatorComponent={ItemSeparator}
+        renderItem={({ item }) => <ItemListItem item={item} onEdit={handleEdit} />}
+      />
+    </AdminScreenContainer>
   );
 }
+
+const ItemSeparator = React.memo(() => <View className="h-3" />);
+
+const ItemListItem = React.memo(({ item, onEdit }: { item: Item; onEdit: (item: Item) => void }) => {
+  return (
+    <View className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/20 flex-row justify-between items-center relative overflow-hidden">
+      <View className={`absolute top-0 left-0 w-1.5 h-full z-10 ${item.is_active ? 'bg-primary' : 'bg-surface-variant'}`} />
+      
+      <View className="p-4 pl-5 flex-1 flex-row items-center gap-4">
+        <View className={`w-12 h-12 rounded-full items-center justify-center ${item.is_active ? 'bg-primary/10' : 'bg-surface-variant/30'}`}>
+          <MaterialIcons name="inventory" size={24} className={item.is_active ? 'text-primary' : 'text-on-surface-variant'} />
+        </View>
+        
+        <View className="flex-1 pr-2">
+          <View className="flex-row items-center gap-2 mb-1">
+            <Text className="font-title-md text-on-surface font-bold">{item.name}</Text>
+            {!item.is_active && (
+              <View className="bg-surface-variant/50 px-2 py-0.5 rounded-full">
+                <Text className="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider">Inactive</Text>
+              </View>
+            )}
+          </View>
+          {item.description ? (
+            <Text className="font-body-md text-on-surface-variant truncate" numberOfLines={1}>
+              {item.description}
+            </Text>
+          ) : (
+            <Text className="font-body-sm text-on-surface-variant/50 italic">No description</Text>
+          )}
+        </View>
+      </View>
+
+      <Pressable 
+        accessibilityRole="button" 
+        onPress={() => onEdit(item)} 
+        className="w-12 h-12 rounded-full items-center justify-center mr-2 active:bg-surface-container-highest transition-colors"
+      >
+        <MaterialIcons name="edit" size={20} className="text-on-surface-variant" />
+      </Pressable>
+    </View>
+  );
+});

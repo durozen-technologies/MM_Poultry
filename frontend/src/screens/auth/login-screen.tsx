@@ -10,7 +10,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth-store";
-import { getApiErrorMessage } from "../../api/client";
+import { getApiErrorMessage, isHttpStatus } from "../../api/client";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
@@ -18,7 +18,9 @@ export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [orgSlug, setOrgSlug] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showOrgField, setShowOrgField] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,14 +32,21 @@ export function LoginScreen() {
       setLoading(true);
       setError(null);
       try {
-        await login(username.trim(), password);
+        await login(username.trim(), password, orgSlug.trim() || undefined);
+        setShowOrgField(false);
       } catch (e) {
-        setError(getApiErrorMessage(e));
+        if (isHttpStatus(e, 409)) {
+          // Multiple accounts with same username — need org code to disambiguate
+          setShowOrgField(true);
+          setError("Multiple accounts found. Please enter your Organization Code below.");
+        } else {
+          setError(getApiErrorMessage(e));
+        }
       } finally {
         setLoading(false);
       }
     }, 300);
-  }, [loading, login, username, password]);
+  }, [loading, login, username, password, orgSlug]);
 
   return (
     <View className="flex-1 bg-surface relative">
@@ -112,6 +121,24 @@ export function LoginScreen() {
                   </View>
                 </View>
 
+                {showOrgField ? (
+                  <Animated.View entering={FadeInDown} className="flex-col gap-2">
+                    <Text className="text-label-md text-on-surface font-semibold ml-1">ORGANIZATION CODE</Text>
+                    <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30">
+                      <View className="absolute left-4 z-10">
+                        <MaterialIcons name="business" size={22} className="text-[#012D1D]/70" />
+                      </View>
+                      <TextInput
+                        className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
+                        placeholder="e.g. demo"
+                        autoCapitalize="none"
+                        value={orgSlug}
+                        onChangeText={setOrgSlug}
+                      />
+                    </View>
+                  </Animated.View>
+                ) : null}
+
                 {error ? (
                   <Animated.View entering={FadeInDown} className="bg-error-container p-3 rounded-xl flex-row items-center">
                     <MaterialIcons name="error-outline" size={18} className="text-on-error-container mr-2" />
@@ -140,3 +167,4 @@ export function LoginScreen() {
     </View>
   );
 }
+

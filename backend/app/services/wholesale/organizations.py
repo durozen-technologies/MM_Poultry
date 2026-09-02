@@ -134,7 +134,7 @@ async def create_tenant_admin(
 
     try:
         await set_search_path(db, None)
-        username = await require_username_available(db, payload.username)
+        username = await require_username_available(db, payload.username, org_id)
         await set_search_path(db, org.schema_name)
 
         user = User(
@@ -176,7 +176,7 @@ async def create_delivery_user(
 
     try:
         await set_search_path(db, None)
-        username = await require_username_available(db, payload.username)
+        username = await require_username_available(db, payload.username, org_id)
         await set_search_path(db, org.schema_name)
 
         user = User(

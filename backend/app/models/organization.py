@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, String, text
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import UUID_SQL_TYPE, uuid7
@@ -35,7 +35,11 @@ class UserAuthIndex(Base, BaseModelMixin):
     __tablename__ = "user_auth_index"
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
-    username_lower: Mapped[str] = mapped_column(String(80), nullable=False, unique=True, index=True)
+    username_lower: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     organization_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True, index=True)
+
+    __table_args__ = (
+        UniqueConstraint("username_lower", "organization_id", name="uq_user_auth_index_username_org"),
+    )
     schema_name: Mapped[str] = mapped_column(String(63), nullable=False)
     user_id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, nullable=False)

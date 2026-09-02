@@ -1,5 +1,7 @@
 import { Alert, Linking, Platform, Share } from "react-native";
 import { formatReceipt, sanitizeForThermal } from "./ble-scale";
+import { printText } from "../utils/printer";
+import { usePrinterStore } from "../store/printer-store";
 
 export type PrintPayload = {
   shopName: string;
@@ -58,20 +60,16 @@ function buildEscPosText(payload: PrintPayload, width: 32 | 48 = 32): string {
 async function tryNativePrint(text: string): Promise<boolean> {
   if (Platform.OS !== "android") return false;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("@haroldtran/react-native-thermal-printer");
-    const ThermalPrinter = mod?.default ?? mod;
-    // API variations: printBluetooth / printTcp / print
-    if (ThermalPrinter?.printBluetooth) {
-      await ThermalPrinter.printBluetooth({ payload: text });
-      return true;
+    const printer = usePrinterStore.getState().connectedPrinter;
+    if (!printer) {
+      console.warn("No printer configured.");
+      return false; // Will fall back to Share
     }
-    if (ThermalPrinter?.print) {
-      await ThermalPrinter.print({ payload: text });
-      return true;
-    }
+    
+    await printText(printer, text);
+    return true;
   } catch (e) {
-    // Module not installed (Expo Go) or no paired printer — fall through
+    // Module not installed (Expo Go) or connection failed — fall through
     console.warn("Thermal printer not available:", (e as Error)?.message);
   }
   return false;

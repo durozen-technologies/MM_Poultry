@@ -53,7 +53,8 @@ async def admin_create_run(
 async def delivery_active_run(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
 ) -> DeliveryRunOut | None:
-    return await svc.get_active_run(auth.db)
+    driver_id = auth.user.id if auth.user.role == UserRole.DELIVERY else None
+    return await svc.get_active_run(auth.db, driver_user_id=driver_id)
 
 
 @router.post("/delivery/runs/{run_id}/start", response_model=DeliveryRunOut)

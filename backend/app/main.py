@@ -52,7 +52,7 @@ def create_app() -> FastAPI:
 
     # TrustedHost: skip in test DB to allow httpx ASGITransport base_url="http://test"
     is_test_db = settings.postgres_db.endswith("_test")
-    if not is_test_db and settings.allowed_hosts and settings.allowed_hosts != ["*"]:
+    if not is_test_db and settings.production and settings.allowed_hosts and settings.allowed_hosts != ["*"]:
         hosts = list(settings.allowed_hosts)
         # Always allow test client hosts
         for h in ("testserver", "test"):
