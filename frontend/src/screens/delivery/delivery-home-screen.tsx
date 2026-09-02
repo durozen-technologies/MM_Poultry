@@ -7,6 +7,8 @@ import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
 import { apiItems } from "../../api/items";
 import { useDeliveryRun } from "../../hooks/use-delivery-run";
+import { PrinterSetupModal } from "../../components/printer-setup-modal";
+import { usePrinterStore } from "../../store/printer-store";
 
 export function DeliveryHomeScreen() {
   const logout = useAuthStore((s) => s.logout);
@@ -36,6 +38,8 @@ export function DeliveryHomeScreen() {
     refresh,
   } = useDeliveryRun();
   const [refreshing, setRefreshing] = useState(false);
+  const [printerModalVisible, setPrinterModalVisible] = useState(false);
+  const connectedPrinter = usePrinterStore((s) => s.connectedPrinter);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -55,6 +59,9 @@ export function DeliveryHomeScreen() {
       <View className="px-4 py-3 flex-row justify-between items-center bg-primary">
         <Text className="text-on-primary text-headline-sm font-semibold">Delivery</Text>
         <View className="flex-row items-center gap-3">
+          <Pressable accessibilityRole="button" onPress={() => setPrinterModalVisible(true)} className="p-1">
+            <MaterialIcons name="print" size={24} color={connectedPrinter ? "#4ade80" : "#ffffff"} />
+          </Pressable>
           <Pressable accessibilityRole="button" onPress={handleRefresh} className="p-1">
             <MaterialIcons name="refresh" size={24} className="text-on-primary" />
           </Pressable>
@@ -217,6 +224,11 @@ export function DeliveryHomeScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      <PrinterSetupModal
+        visible={printerModalVisible}
+        onClose={() => setPrinterModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

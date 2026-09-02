@@ -1091,3 +1091,12 @@
 **Root cause**: `update_farm_load` in `farms.py` called `payload.model_dump(exclude_unset=True)` which triggers Pydantic's `PlainSerializer` on `IstDateOptional`, converting the already-parsed `date` back to a DD/MM/YYYY string before passing it to SQLAlchemy/asyncpg.
 **Fix**: Changed to `payload.model_dump(mode="python", exclude_unset=True)` — one character change in `backend/app/services/wholesale/farms.py:213`. No other services affected (all others with date fields use attribute access, not `model_dump`).
 
+
+### [2026-09-02 09:22:24] Fixed 400 Bad Request on Login
+**Reasoning**: Discovered TrustedHostMiddleware was rejecting requests because ALLOWED_HOSTS in backend/.env still had the old IP 192.168.1.8 instead of the new IP 192.168.1.2. Updated the .env file with the correct local IP.
+
+### [2026-09-02 09:44:32] Fixed failing test suite
+**Reasoning**: Discovered test_admin_delete_load was using undefined fixtures setup_test_item and setup_test_farm. Replaced the fixture usage with explicit API calls to create the farm and item, allowing all 127 backend tests to pass.
+
+### [2026-09-02 10:09:49] Added Thermal Printer Integration to Delivery Login
+**Reasoning**: Ported Duro_Tracker printer implementation to provide BLE thermal printing for Delivery Users on the login screen. Created printer-store for state persistence, PrinterSetupModal for scanning/connecting, and updated login-screen.tsx with a new Printer Setup button.
