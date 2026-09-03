@@ -150,3 +150,15 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 - Added **order_number** to RetailerDailyOrder table.
 - Updated logic to generate bills as Bill-YY-000000 format.
 
+### [2026-09-03 14:45:00] Delivery Routes (area groups)
+
+**Route (`routes`)** ? tenant table
+- `id`, `name` (required, unique case-insensitive per tenant), `area` (optional), `description`, `sort_order`, `is_active`, `created_at`, `updated_at`.
+
+**Retailer linkage**
+- `retailers.route_id` FK ? `routes.id`, nullable, `ON DELETE SET NULL`.
+- One retailer belongs to at most one route.
+- Legacy `retailers.route_name` kept; synced from linked route name on assign/unassign/rename (read-only via API writes through `route_id`).
+
+**Retailer `area`** remains independent optional locality within a route.
+

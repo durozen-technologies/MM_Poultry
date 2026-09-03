@@ -12,6 +12,7 @@ import { AdminScreenContainer } from "../../components/admin/admin-screen-contai
 import { AdminHeader } from "../../components/admin/admin-header";
 import { AdminCard } from "../../components/admin/admin-card";
 import { AdminActionFooter } from "../../components/admin/admin-action-footer";
+import { RoutePicker } from "../../components/admin/route-picker";
 
 export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const [whatsapp, setWhatsapp] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
-  const [routeName, setRouteName] = useState("");
+  const [routeId, setRouteId] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
@@ -57,7 +58,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         whatsapp: whatsapp.trim() || null,
         address: address.trim() || null,
         area: area.trim() || null,
-        route_name: routeName.trim() || null,
+        route_id: routeId,
         category: category.trim() || null,
         email: email.trim() || null,
         notes: notes.trim() || null,
@@ -243,15 +244,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             </View>
             <View className="flex-1">
               <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-                Route Name
+                Delivery Route
               </Text>
-              <TextInput
-                className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-                placeholder="e.g. Route A"
-                placeholderTextColor="#9ca3af"
-                value={routeName}
-                onChangeText={setRouteName}
-              />
+              <RoutePicker value={routeId} onChange={setRouteId} />
             </View>
           </View>
           <View>

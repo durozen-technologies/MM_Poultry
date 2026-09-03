@@ -10,14 +10,19 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAdminTodayOrders } from "../../hooks/use-queries";
+import { useAdminTodayOrders, useDeliveryRoutes } from "../../hooks/use-queries";
 import type { OrderStatus } from "../../types/api";
 
 
 
 export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets();
-  const { data, isLoading, isRefetching, refetch } = useAdminTodayOrders();
+  const { data: routes = [] } = useDeliveryRoutes();
+  const [routeFilter, setRouteFilter] = useState<string | null>(null);
+  const { data, isLoading, isRefetching, refetch } = useAdminTodayOrders({
+    routeId: routeFilter && routeFilter !== "unassigned" ? routeFilter : null,
+    unassignedOnly: routeFilter === "unassigned",
+  });
   
   const orders = data?.items || [];
   const totalKg = data?.total_requested_kg || "0";
@@ -135,6 +140,29 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
 
             {/* Filter Chips */}
             <View className="pt-4">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 flex-row gap-2 mb-2">
+                <Pressable
+                  onPress={() => setRouteFilter(null)}
+                  className={`h-10 px-4 rounded-full items-center justify-center mr-2 ${routeFilter === null ? "bg-primary" : "bg-surface-container"}`}
+                >
+                  <Text className={`font-label-md font-semibold ${routeFilter === null ? "text-on-primary" : "text-on-surface"}`}>All</Text>
+                </Pressable>
+                {routes.map((r) => (
+                  <Pressable
+                    key={r.id}
+                    onPress={() => setRouteFilter(r.id)}
+                    className={`h-10 px-4 rounded-full items-center justify-center mr-2 ${routeFilter === r.id ? "bg-primary" : "bg-surface-container"}`}
+                  >
+                    <Text className={`font-label-md font-semibold ${routeFilter === r.id ? "text-on-primary" : "text-on-surface"}`}>{r.name}</Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  onPress={() => setRouteFilter("unassigned")}
+                  className={`h-10 px-4 rounded-full items-center justify-center mr-2 ${routeFilter === "unassigned" ? "bg-primary" : "bg-surface-container"}`}
+                >
+                  <Text className={`font-label-md font-semibold ${routeFilter === "unassigned" ? "text-on-primary" : "text-on-surface"}`}>Unassigned</Text>
+                </Pressable>
+              </ScrollView>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 flex-row gap-2">
                 {(["All", "PLACED", "ACKNOWLEDGED", "PARTIAL", "FULFILLED", "CANCELLED"] as const).map((f) => (
                   <Pressable accessibilityRole="button" accessibilityLabel="Button"
@@ -208,6 +236,11 @@ const OrderListItem = React.memo(({ order, statusColors, onPress }: { order: any
           {order.shop_name || order.retailer_name || "Unknown Retailer"}
         </Text>
       </View>
+      {(order.route_name || order.retailer_area) ? (
+        <Text className="text-sm text-on-surface-variant pl-7">
+          {[order.route_name ? `Route: ${order.route_name}` : null, order.retailer_area].filter(Boolean).join(" · ")}
+        </Text>
+      ) : null}
 
       <View className="flex-row gap-3 mt-1 bg-surface-container-low p-3 rounded-lg">
         <View className="flex-col gap-1 flex-1">

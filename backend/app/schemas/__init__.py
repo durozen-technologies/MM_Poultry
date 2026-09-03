@@ -81,6 +81,14 @@ from app.schemas.retailer_portal import (
     RetailerOrdersPage,
     RetailerProfileOut,
 )
+from app.schemas.route import (
+    RouteCreate,
+    RouteDetailOut,
+    RouteOut,
+    RouteRetailerOut,
+    RouteRetailersReplace,
+    RouteUpdate,
+)
 from app.schemas.settings import OrgSettingsOut, OrgSettingsUpdate
 
 __all__ = [
@@ -150,4 +158,10 @@ __all__ = [
     "InventorySummaryOut",
     "InventorySummaryItem",
     "InventoryItemLoadsOut",
+    "RouteCreate",
+    "RouteUpdate",
+    "RouteOut",
+    "RouteDetailOut",
+    "RouteRetailerOut",
+    "RouteRetailersReplace",
 ]

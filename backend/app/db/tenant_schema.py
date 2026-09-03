@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "d85bf12c9678"
+TENANT_MIGRATION_HEAD = "f1a2b3c4d5e6"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -59,6 +59,7 @@ def _tenant_table_names() -> set[str]:
     # Tables that live in tenant schemas (not public control plane).
     return {
         "users",
+        "routes",
         "retailers",
         "items",
         "retailer_item_rates",
@@ -281,7 +282,7 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS category VARCHAR(60)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(12,2) NOT NULL DEFAULT 0.00",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS preferred_delivery_time VARCHAR(40)",
-        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS vehicle_id UUID",
+        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS route_id UUID",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS rate_per_kg NUMERIC(12,2)",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS total_amount NUMERIC(12,2)",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(12,2)",
@@ -330,6 +331,7 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
         for table in Base.metadata.sorted_tables:
             if table.name in {
+                "routes",
                 "vehicles",
                 "org_settings",
                 "expense_categories",
@@ -373,6 +375,62 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                     END IF;
                   END IF;
                 END $$;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'fk_retailers_route_id'
+                  ) THEN
+                    ALTER TABLE retailers
+                      ADD CONSTRAINT fk_retailers_route_id
+                      FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE SET NULL;
+                  END IF;
+                END $$;
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                INSERT INTO routes (id, name, is_active, created_at, updated_at)
+                SELECT gen_random_uuid(), n.name, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                FROM (
+                    SELECT DISTINCT trim(route_name) AS name
+                    FROM retailers
+                    WHERE route_name IS NOT NULL AND trim(route_name) <> ''
+                ) n
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM routes r WHERE lower(r.name) = lower(n.name)
+                )
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE retailers r
+                SET route_id = rt.id
+                FROM routes rt
+                WHERE r.route_id IS NULL
+                  AND r.route_name IS NOT NULL
+                  AND trim(r.route_name) <> ''
+                  AND lower(trim(r.route_name)) = lower(rt.name)
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE retailers r
+                SET route_name = rt.name
+                FROM routes rt
+                WHERE r.route_id = rt.id
+                  AND (r.route_name IS NULL OR r.route_name <> rt.name)
                 """
             )
         )

@@ -33,14 +33,13 @@ def reraise_username_conflict(exc: IntegrityError) -> None:
     raise exc
 
 
-async def check_tenant_username_available(db: AsyncSession, username: str, organization_id) -> bool:
-    """Check username is available within the given organization and not taken by a super-admin."""
+async def check_username_available(db: AsyncSession, username: str) -> bool:
+    """Check username is available globally in the auth index and not taken by a super-admin."""
     username_lower = normalize_username(username)
 
     existing_index = await db.scalar(
         select(UserAuthIndex).where(
             UserAuthIndex.username_lower == username_lower,
-            UserAuthIndex.organization_id == organization_id,
         )
     )
     if existing_index:
@@ -56,31 +55,14 @@ async def check_tenant_username_available(db: AsyncSession, username: str, organ
     return existing_sa is None
 
 
-# Keep old name for backward compat during migration
-async def check_global_username_available(db: AsyncSession, username: str) -> bool:
-    """Deprecated: use check_tenant_username_available. Kept for super-admin creation."""
-    username_lower = normalize_username(username)
-    existing_sa = await db.scalar(
-        select(User).where(
-            func.lower(User.username) == username_lower,
-            User.organization_id.is_(None),
-        )
-    )
-    return existing_sa is None
-
-
 async def require_username_available(db: AsyncSession, username: str, organization_id=None) -> str:
     username_lower = normalize_username(username)
     if not username_lower:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Username is required"
         )
-    if organization_id is not None:
-        if not await check_tenant_username_available(db, username_lower, organization_id):
-            raise_username_taken()
-    else:
-        if not await check_global_username_available(db, username_lower):
-            raise_username_taken()
+    if not await check_username_available(db, username_lower):
+        raise_username_taken()
     return username_lower
 
 

@@ -28,6 +28,7 @@ from app.services.auth import (
     upsert_auth_index,
 )
 from app.services.wholesale.common import q_money
+from app.services.wholesale.routes import apply_retailer_route_id, retailer_to_out, retailers_to_out
 
 
 async def create_retailer(
@@ -46,7 +47,6 @@ async def create_retailer(
         whatsapp=payload.whatsapp,
         address=payload.address,
         area=payload.area,
-        route_name=payload.route_name,
         category=payload.category,
         notes=payload.notes,
         opening_balance=q_money(payload.opening_balance),
@@ -56,6 +56,9 @@ async def create_retailer(
     )
     db.add(retailer)
     await db.flush()
+    if payload.route_id is not None:
+        await apply_retailer_route_id(db, retailer, payload.route_id)
+        await db.flush()
     if payload.username and payload.password:
         await _create_portal_user(
             db,
@@ -65,7 +68,7 @@ async def create_retailer(
             organization_id=organization_id,
             schema_name=schema_name,
         )
-    return RetailerOut.model_validate(retailer, from_attributes=True)
+    return await retailer_to_out(db, retailer)
 
 
 async def list_retailers(
@@ -81,7 +84,7 @@ async def list_retailers(
     rows = rows[:limit]
     next_cursor = str(rows[-1].id) if has_more and rows else None
     return (
-        [RetailerOut.model_validate(r, from_attributes=True) for r in rows],
+        await retailers_to_out(db, rows),
         has_more,
         next_cursor,
     )
@@ -100,16 +103,17 @@ async def update_retailer(
     retailer = await get_retailer(db, retailer_id)
     data = payload.model_dump(exclude_unset=True)
     if "opening_balance" in data and data["opening_balance"] is not None:
-        # Adjust credit by delta of opening balance change
         old_opening = retailer.opening_balance
         new_opening = q_money(data["opening_balance"])
         retailer.credit_balance = q_money(retailer.credit_balance + (new_opening - old_opening))
         retailer.opening_balance = new_opening
         del data["opening_balance"]
+    if "route_id" in data:
+        await apply_retailer_route_id(db, retailer, data.pop("route_id"))
     for key, value in data.items():
         setattr(retailer, key, value)
     await db.flush()
-    return RetailerOut.model_validate(retailer, from_attributes=True)
+    return await retailer_to_out(db, retailer)
 
 
 async def deactivate_retailer(db: AsyncSession, retailer_id: UUID) -> None:

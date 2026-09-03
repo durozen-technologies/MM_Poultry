@@ -85,8 +85,11 @@ export function RetailerProfileScreen() {
               <InfoRow icon="phone" label="Phone" value={retailer.phone || "—"} />
               <InfoRow icon="chat" label="WhatsApp" value={retailer.whatsapp || "—"} />
               <InfoRow icon="place" label="Address" value={retailer.address || "—"} />
-              <InfoRow icon="map" label="Area" value={retailer.area || "—"} />
               <InfoRow icon="route" label="Route" value={retailer.route_name || "—"} />
+              {retailer.route_area ? (
+                <InfoRow icon="map" label="Route area" value={retailer.route_area} />
+              ) : null}
+              <InfoRow icon="map" label="Area" value={retailer.area || "—"} />
             </View>
 
             <Pressable accessibilityRole="button" accessibilityLabel="Button"

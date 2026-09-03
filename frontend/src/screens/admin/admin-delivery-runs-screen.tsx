@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { FlatList, ActivityIndicator, Pressable, Text, View, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { createDeliveryRun, listDeliveryRuns } from "../../api/delivery";
-import { useAdminTodayOrders, useAdminFarms } from "../../hooks/use-queries";
+import { useAdminTodayOrders, useAdminFarms, useAdminRoutes } from "../../hooks/use-queries";
 import { formatIstDate } from "../../utils/ist-date";
 import { useQuery } from "@tanstack/react-query";
 
@@ -11,10 +11,17 @@ import { AdminHeader } from "../../components/admin/admin-header";
 import { AdminActionFooter } from "../../components/admin/admin-action-footer";
 
 export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
+  const { data: routes = [] } = useAdminRoutes();
+  const [routeFilter, setRouteFilter] = useState<string | null>(null);
   const { data: todayOrders, isLoading: isLoadingOrders, refetch: refetchOrders, isRefetching: isRefetchingOrders } = useAdminTodayOrders();
   const { data: farmsData, isLoading: isLoadingFarms, refetch: refetchFarms, isRefetching: isRefetchingFarms } = useAdminFarms();
 
-  const orders = useMemo(() => todayOrders?.items?.filter((o) => ["PLACED", "ACKNOWLEDGED", "PARTIAL"].includes(o.status)) || [], [todayOrders?.items]);
+  const orders = useMemo(() => {
+    const base = todayOrders?.items?.filter((o) => ["PLACED", "ACKNOWLEDGED", "PARTIAL"].includes(o.status)) || [];
+    if (routeFilter === "unassigned") return base.filter((o) => !o.route_id);
+    if (routeFilter) return base.filter((o) => o.route_id === routeFilter);
+    return base;
+  }, [todayOrders?.items, routeFilter]);
   const loads = useMemo(() => farmsData?.loads?.filter((l) => l.status === "OPEN") || [], [farmsData?.loads]);
 
   const [selectedLoad, setSelectedLoad] = useState<string | null>(null);
@@ -30,6 +37,11 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
 
   const isLoading = isLoadingOrders || isLoadingFarms || isLoadingRuns;
   const isRefetching = isRefetchingOrders || isRefetchingFarms || isRefetchingRuns;
+
+  useEffect(() => {
+    if (!routeFilter) return;
+    setSelectedOrders(new Set(orders.map((o) => o.id)));
+  }, [routeFilter, orders]);
 
   useEffect(() => {
     if (todayOrders?.items && !initialized) {
@@ -226,6 +238,30 @@ export function AdminDeliveryRunsScreen({ navigation }: { navigation: any }) {
                 </ScrollView>
               )}
 
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                <Pressable
+                  onPress={() => setRouteFilter(null)}
+                  className={`px-3 py-2 rounded-full mr-2 ${routeFilter === null ? "bg-primary" : "bg-surface-container"}`}
+                >
+                  <Text className={routeFilter === null ? "text-on-primary font-semibold" : "text-on-surface"}>All routes</Text>
+                </Pressable>
+                {routes.filter((r) => r.is_active).map((r) => (
+                  <Pressable
+                    key={r.id}
+                    onPress={() => setRouteFilter(r.id)}
+                    className={`px-3 py-2 rounded-full mr-2 ${routeFilter === r.id ? "bg-primary" : "bg-surface-container"}`}
+                  >
+                    <Text className={routeFilter === r.id ? "text-on-primary font-semibold" : "text-on-surface"}>{r.name}</Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  onPress={() => setRouteFilter("unassigned")}
+                  className={`px-3 py-2 rounded-full mr-2 ${routeFilter === "unassigned" ? "bg-primary" : "bg-surface-container"}`}
+                >
+                  <Text className={routeFilter === "unassigned" ? "text-on-primary font-semibold" : "text-on-surface"}>Unassigned</Text>
+                </Pressable>
+              </ScrollView>
+
               <View className="flex-row items-center justify-between ml-1 mb-3">
                 <Text className="font-title-lg text-on-surface font-bold">Assign Orders</Text>
                 {orders.length > 0 && (
@@ -326,6 +362,9 @@ const OrderListItem = React.memo(({
         <Text className="font-title-md text-on-surface font-bold truncate">
           {order.shop_name || order.retailer_name}
         </Text>
+        {order.route_name ? (
+          <Text className="text-xs text-on-surface-variant mt-0.5">Route: {order.route_name}</Text>
+        ) : null}
         <View className="flex-row items-center gap-2 mt-1">
           <View className="bg-surface-variant/40 px-2 py-0.5 rounded flex-row items-center">
             <Text className="font-label-sm text-on-surface font-semibold">{weight} KG</Text>

@@ -31,7 +31,9 @@ export type Retailer = {
   whatsapp?: string | null;
   address?: string | null;
   area?: string | null;
+  route_id?: string | null;
   route_name?: string | null;
+  route_area?: string | null;
   category?: string | null;
   notes?: string | null;
   opening_balance: string;
@@ -77,6 +79,10 @@ export type DailyOrder = {
   expected_delivery_date: string | null;
   retailer_name?: string | null;
   shop_name?: string | null;
+  route_id?: string | null;
+  route_name?: string | null;
+  route_area?: string | null;
+  retailer_area?: string | null;
   items: OrderItem[];
 };
 
@@ -189,6 +195,7 @@ export type DeliveryStop = {
   status: string;
   retailer_name?: string | null;
   shop_name?: string | null;
+  route_name?: string | null;
   items: DeliveryStopItem[];
 };
 
@@ -363,4 +370,28 @@ export type InventoryFarmLoadOut = FarmLoad & {
 export type InventoryItemLoadsOut = {
   item_id: string;
   loads: InventoryFarmLoadOut[];
+};
+
+export type Route = {
+  id: string;
+  name: string;
+  area?: string | null;
+  description?: string | null;
+  sort_order?: number | null;
+  is_active: boolean;
+  retailer_count: number;
+  today_order_count?: number;
+};
+
+export type RouteRetailer = {
+  id: string;
+  name: string;
+  shop_name?: string | null;
+  phone?: string | null;
+  area?: string | null;
+  is_active: boolean;
+};
+
+export type RouteDetail = Route & {
+  retailers: RouteRetailer[];
 };

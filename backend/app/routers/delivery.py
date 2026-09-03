@@ -17,6 +17,8 @@ from app.schemas import (
     DeliveryRunOut,
     DeliveryStopOut,
     PrintStatusUpdate,
+    RouteOut,
+    TodayOrdersResponse,
     WeighRequest,
 )
 from app.services import wholesale as svc
@@ -27,6 +29,21 @@ class SkipRequest(BaseModel):
 
 
 router = APIRouter()
+
+
+@router.get("/delivery/routes", response_model=list[RouteOut])
+async def delivery_list_routes(
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> list[RouteOut]:
+    return await svc.list_delivery_routes(auth.db)
+
+
+@router.get("/delivery/routes/{route_id}/orders", response_model=TodayOrdersResponse)
+async def delivery_route_orders(
+    route_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> TodayOrdersResponse:
+    return await svc.list_orders_for_route(auth.db, route_id)
 
 
 @router.get("/admin/delivery-runs", response_model=list[DeliveryRunOut])

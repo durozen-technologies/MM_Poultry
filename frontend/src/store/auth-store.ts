@@ -34,8 +34,8 @@ async function saveSession(token: string, user: User) {
     const ls = getLocalStorage();
     if (ls) {
       try {
-        ls.setItem(TOKEN_KEY, token);
-        ls.setItem(USER_KEY, JSON.stringify(user));
+        if (token) ls.setItem(TOKEN_KEY, String(token));
+        if (user) ls.setItem(USER_KEY, JSON.stringify(user));
         return;
       } catch (e) {
         console.warn("Failed to save session to localStorage", e);
@@ -43,15 +43,15 @@ async function saveSession(token: string, user: User) {
     }
   }
   try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    if (token) await SecureStore.setItemAsync(TOKEN_KEY, String(token));
+    if (user) await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
   } catch (e) {
     console.warn("Failed to save session", e);
     const ls = getLocalStorage();
     if (ls) {
       try {
-        ls.setItem(TOKEN_KEY, token);
-        ls.setItem(USER_KEY, JSON.stringify(user));
+        if (token) ls.setItem(TOKEN_KEY, String(token));
+        if (user) ls.setItem(USER_KEY, JSON.stringify(user));
       } catch {}
     }
   }

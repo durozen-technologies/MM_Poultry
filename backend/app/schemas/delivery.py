@@ -46,6 +46,7 @@ class DeliveryStopOut(BaseModel):
     status: DeliveryStopStatus
     retailer_name: str | None = None
     shop_name: str | None = None
+    route_name: str | None = None
     items: list[DeliveryStopItemOut] = []
 
 

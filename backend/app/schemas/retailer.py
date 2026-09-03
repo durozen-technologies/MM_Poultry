@@ -17,7 +17,7 @@ class RetailerCreate(BaseModel):
     whatsapp: str | None = Field(default=None, max_length=30)
     address: str | None = Field(default=None, max_length=500)
     area: str | None = Field(default=None, max_length=120)
-    route_name: str | None = Field(default=None, max_length=120)
+    route_id: UUID | None = None
     category: str | None = Field(default=None, max_length=60)
     notes: str | None = Field(default=None, max_length=500)
     opening_balance: Decimal = Field(default=Decimal("0.00"), ge=0)
@@ -36,7 +36,7 @@ class RetailerUpdate(BaseModel):
     whatsapp: str | None = Field(default=None, max_length=30)
     address: str | None = Field(default=None, max_length=500)
     area: str | None = Field(default=None, max_length=120)
-    route_name: str | None = Field(default=None, max_length=120)
+    route_id: UUID | None = None
     category: str | None = Field(default=None, max_length=60)
     notes: str | None = Field(default=None, max_length=500)
     is_active: bool | None = None
@@ -57,7 +57,9 @@ class RetailerOut(BaseModel):
     whatsapp: str | None = None
     address: str | None
     area: str | None = None
+    route_id: UUID | None = None
     route_name: str | None = None
+    route_area: str | None = None
     category: str | None = None
     notes: str | None
     is_active: bool

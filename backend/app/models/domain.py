@@ -48,6 +48,26 @@ class Item(Base, BaseModelMixin):
     )
 
 
+class Route(Base, BaseModelMixin):
+    __tablename__ = "routes"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    area: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        onupdate=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+
+
 class Retailer(Base, BaseModelMixin):
     __tablename__ = "retailers"
 
@@ -70,6 +90,9 @@ class Retailer(Base, BaseModelMixin):
     owner_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     whatsapp: Mapped[str | None] = mapped_column(String(30), nullable=True)
     area: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    route_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("routes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     route_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     credit_limit: Mapped[Decimal] = mapped_column(

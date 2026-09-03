@@ -17,3 +17,4 @@ class CursorPage(BaseModel, Generic[T]):
     items: list[T]
     has_more: bool = False
     next_cursor: str | None = None
+    total_count: int | None = None

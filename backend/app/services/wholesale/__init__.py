@@ -10,3 +10,4 @@ from .rates import *
 from .reports import *
 from .retailer_portal import *
 from .retailers import *
+from .routes import *

@@ -91,6 +91,11 @@ export function DeliveryHomeScreen() {
               <Text className="font-headline-sm text-on-surface font-semibold">
                 Run {run.status} · {formatIstDate(run.run_date)}
               </Text>
+              {(() => {
+                const names = [...new Set((run.stops || []).map((s) => s.route_name).filter(Boolean))];
+                const label = names.length === 1 ? `Route: ${names[0]}` : names.length > 1 ? "Mixed routes" : null;
+                return label ? <Text className="text-sm text-on-surface-variant mt-1">{label}</Text> : null;
+              })()}
               <View className="flex-row gap-2 mt-3">
                 <Pressable accessibilityRole="button" className="bg-primary px-4 py-2 rounded-lg flex-1 items-center" onPress={onStartRun}>
                   <Text className="text-on-primary font-semibold">Start</Text>

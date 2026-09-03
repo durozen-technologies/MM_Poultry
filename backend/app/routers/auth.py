@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import AuthContext, get_current_auth
 from app.db.session import get_platform_db
 from app.schemas import LoginRequest, LoginResponse, UsernameAvailableOut, UserOut
-from app.services.auth import check_global_username_available, login_user
+from app.services.auth import check_username_available, login_user
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ async def check_username(
     db: Annotated[AsyncSession, Depends(get_platform_db)],
     username: str = Query(min_length=1),
 ) -> UsernameAvailableOut:
-    available = await check_global_username_available(db, username)
+    available = await check_username_available(db, username)
     if not available:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Username is already taken globally"

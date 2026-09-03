@@ -2,7 +2,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
-import type { DailyOrderOut, FarmOut, FarmLoad, Retailer, OpsDashboard, TodayOrdersResponse, InventorySummaryOut, InventoryItemLoadsOut } from "../types/api";
+import {
+  getRoute,
+  listRoutes,
+  fetchAllUnassignedRetailers,
+  listDeliveryRoutes,
+} from "../api/routes";
+import type {
+  DailyOrderOut,
+  FarmOut,
+  FarmLoad,
+  Retailer,
+  OpsDashboard,
+  TodayOrdersResponse,
+  InventorySummaryOut,
+  InventoryItemLoadsOut,
+} from "../types/api";
 
 export function useAdminInventory() {
   return useQuery({
@@ -25,13 +40,49 @@ export function useAdminInventoryItemLoads(itemId: string) {
   });
 }
 
-export function useAdminTodayOrders() {
+export function useAdminTodayOrders(options?: { routeId?: string | null; unassignedOnly?: boolean }) {
+  const routeId = options?.routeId ?? null;
+  const unassignedOnly = options?.unassignedOnly ?? false;
   return useQuery({
-    queryKey: ["admin", "orders", "today"],
+    queryKey: ["admin", "orders", "today", routeId, unassignedOnly],
     queryFn: async () => {
-      const { data } = await api.get<TodayOrdersResponse>("/admin/orders/today");
+      const { data } = await api.get<TodayOrdersResponse>("/admin/orders/today", {
+        params: {
+          route_id: routeId || undefined,
+          unassigned_only: unassignedOnly || undefined,
+        },
+      });
       return data;
     },
+  });
+}
+
+export function useAdminRoutes() {
+  return useQuery({
+    queryKey: ["admin", "routes"],
+    queryFn: listRoutes,
+  });
+}
+
+export function useRouteDetail(routeId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "routes", routeId],
+    queryFn: () => getRoute(routeId!),
+    enabled: !!routeId,
+  });
+}
+
+export function useUnassignedRetailers() {
+  return useQuery({
+    queryKey: ["admin", "routes", "unassigned"],
+    queryFn: fetchAllUnassignedRetailers,
+  });
+}
+
+export function useDeliveryRoutes() {
+  return useQuery({
+    queryKey: ["delivery", "routes"],
+    queryFn: listDeliveryRoutes,
   });
 }
 

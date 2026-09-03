@@ -11,6 +11,7 @@ from app.models.domain import (
     RetailerDailyOrder,
     RetailerItemRate,
     RetailerReturn,
+    Route,
     TripWeightLoss,
     Vehicle,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "UserAuthIndex",
     "User",
     "UserRole",
+    "Route",
     "Retailer",
     "RetailerDailyOrder",
     "RetailerItemRate",

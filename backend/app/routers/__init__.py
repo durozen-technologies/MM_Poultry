@@ -10,6 +10,7 @@ from app.routers.admin_items import router as admin_items_router
 from app.routers.admin_orders import router as admin_orders_router
 from app.routers.admin_reports import router as admin_reports_router
 from app.routers.admin_retailers import router as admin_retailers_router
+from app.routers.admin_routes import router as admin_routes_router
 from app.routers.admin_settings import router as admin_settings_router
 from app.routers.admin_users import router as admin_users_router
 from app.routers.auth import router as auth_router
@@ -24,6 +25,7 @@ api_router.include_router(super_admin_router)
 api_router.include_router(admin_users_router)
 api_router.include_router(admin_items_router)
 api_router.include_router(admin_retailers_router)
+api_router.include_router(admin_routes_router)
 api_router.include_router(admin_orders_router)
 api_router.include_router(admin_farms_router)
 api_router.include_router(admin_inventory_router)

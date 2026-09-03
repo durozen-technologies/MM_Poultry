@@ -496,6 +496,10 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               <InfoRow label="Full Address" value={retailer.address || "—"} />
               <InfoRow label="Area" value={retailer.area || "—"} />
               <InfoRow label="Route" value={retailer.route_name || "—"} />
+              {retailer.route_area ? (
+                <InfoRow label="Route area" value={retailer.route_area} />
+              ) : null}
+              <InfoRow label="Locality" value={retailer.area || "—"} />
               <InfoRow label="Preferred Time" value={retailer.preferred_delivery_time || "—"} isLast />
             </View>
 

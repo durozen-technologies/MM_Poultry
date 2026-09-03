@@ -21,7 +21,7 @@ async function savePrinterSession(printer: PrinterDevice) {
     const ls = getLocalStorage();
     if (ls) {
       try {
-        ls.setItem(PRINTER_KEY, JSON.stringify(printer));
+        if (printer) ls.setItem(PRINTER_KEY, JSON.stringify(printer));
         return;
       } catch (e) {
         console.warn("Failed to save printer to localStorage", e);
@@ -29,13 +29,13 @@ async function savePrinterSession(printer: PrinterDevice) {
     }
   }
   try {
-    await SecureStore.setItemAsync(PRINTER_KEY, JSON.stringify(printer));
+    if (printer) await SecureStore.setItemAsync(PRINTER_KEY, JSON.stringify(printer));
   } catch (e) {
     console.warn("Failed to save printer session", e);
     const ls = getLocalStorage();
     if (ls) {
       try {
-        ls.setItem(PRINTER_KEY, JSON.stringify(printer));
+        if (printer) ls.setItem(PRINTER_KEY, JSON.stringify(printer));
       } catch {}
     }
   }

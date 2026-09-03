@@ -17,8 +17,12 @@ router = APIRouter()
 @router.get("/admin/orders/today", response_model=TodayOrdersResponse)
 async def admin_today_orders(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
+    route_id: UUID | None = None,
+    unassigned_only: bool = False,
 ) -> TodayOrdersResponse:
-    return await svc.list_today_orders(auth.db)
+    return await svc.list_today_orders(
+        auth.db, route_id=route_id, unassigned_only=unassigned_only
+    )
 
 
 @router.get("/admin/orders", response_model=TodayOrdersResponse)

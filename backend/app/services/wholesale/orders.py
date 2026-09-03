@@ -9,7 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.timezone import today_ist
-from app.models.domain import OrderSequence, Retailer, RetailerDailyOrder, RetailerDailyOrderItem
+from app.models.domain import (
+    OrderSequence,
+    Retailer,
+    RetailerDailyOrder,
+    RetailerDailyOrderItem,
+    Route,
+)
 from app.models.enums import (
     OrderStatus,
 )
@@ -195,26 +201,40 @@ async def get_today_orders_for_retailer(db: AsyncSession, retailer_id: UUID) -> 
     return out_list
 
 
-async def list_today_orders(db: AsyncSession) -> TodayOrdersResponse:
+async def list_today_orders(
+    db: AsyncSession,
+    *,
+    route_id: UUID | None = None,
+    unassigned_only: bool = False,
+) -> TodayOrdersResponse:
     day = today_ist()
 
-    res = await db.execute(
-        select(RetailerDailyOrder, Retailer.name, Retailer.shop_name)
+    stmt = (
+        select(RetailerDailyOrder, Retailer, Route)
         .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
         .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
-        .where(
-            RetailerDailyOrder.order_date == day,
-        )
+        .outerjoin(Route, Route.id == Retailer.route_id)
+        .where(RetailerDailyOrder.order_date == day)
         .order_by(RetailerDailyOrder.created_at.asc())
     )
+    if route_id is not None:
+        stmt = stmt.where(Retailer.route_id == route_id)
+    if unassigned_only:
+        stmt = stmt.where(Retailer.route_id.is_(None))
+
+    res = await db.execute(stmt)
 
     items: list[DailyOrderOut] = []
     total_kg = Decimal("0.000")
     total_bx = 0
-    for order, r_name, r_shop in res:
+    for order, retailer, route in res:
         out = DailyOrderOut.model_validate(order, from_attributes=True)
-        out.retailer_name = r_name
-        out.shop_name = r_shop
+        out.retailer_name = retailer.name
+        out.shop_name = retailer.shop_name
+        out.route_id = retailer.route_id
+        out.route_name = route.name if route else retailer.route_name
+        out.route_area = route.area if route else None
+        out.retailer_area = retailer.area
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name

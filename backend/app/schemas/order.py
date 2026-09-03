@@ -52,6 +52,10 @@ class DailyOrderOut(BaseModel):
     expected_delivery_date: IstDate | None = None
     retailer_name: str | None = None
     shop_name: str | None = None
+    route_id: UUID | None = None
+    route_name: str | None = None
+    route_area: str | None = None
+    retailer_area: str | None = None
     items: list[DailyOrderItemOut] = []
 
 

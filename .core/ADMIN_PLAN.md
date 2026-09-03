@@ -115,6 +115,17 @@
   - [ ] Create sync queues for Delivery staff (can bill and weigh offline).
   - [ ] Background sync worker when device comes online.
 
+## Phase 10 — Delivery Routes (Area Groups)
+
+- **Status:** Done
+- **Flow & Options:**
+  - [x] `routes` tenant table + `retailers.route_id` FK; backfill from legacy `route_name`
+  - [x] Admin CRUD `/admin/routes` + retailer mapping + unassigned list
+  - [x] Delivery read APIs `/delivery/routes` + orders by route
+  - [x] Admin UI: Routes list/detail, Settings entry, retailer route picker
+  - [x] Delivery orders + admin run builder route filters
+  - [x] Tests: `backend/tests/test_admin_routes.py`
+
 ## Future (proposal — out of v1 scope)
 
 GPS tracking, route optimization, multi-branch, multi-farm management, Tamil/English i18n, SaaS plans, AI/forecasting.
