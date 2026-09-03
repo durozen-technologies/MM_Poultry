@@ -168,6 +168,7 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
         vehicle_number=vehicle_number,
         driver_name=driver_name,
         driver_user_id=payload.driver_user_id,
+        planned_kg=q_kg(payload.planned_kg or payload.loaded_weight_kg),
         loaded_weight_kg=q_kg(payload.loaded_weight_kg),
         bird_count=payload.bird_count,
         total_boxes=payload.total_boxes,

@@ -50,7 +50,7 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 ## Database Operations (current)
 
 - PostgreSQL; platform tables in `public`; operational tables in `tenant_<slug>`.
-- Business dates and “today” use IST.
+- Business dates and ?today? use IST.
 - Money: `Numeric(10, 2)` (or org policy). Weight: `Numeric` kg to 3 decimal places.
 - IDs: UUID (prefer uuid7 like Duro_POS).
 
@@ -76,19 +76,19 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 - Wholesaler admin, delivery staff, and retailer-linked logins.
 - Fields: `id`, `username`, `password_hash`, `role` (ADMIN | DELIVERY | RETAILER), `retailer_id` (nullable FK), `is_active`, `perm_version`, `last_login_at`.
 
-**Retailer (`retailers`)** — patterned on Duro_POS
+**Retailer (`retailers`)** ? patterned on Duro_POS
 - Chicken shop customers of the wholesaler.
 - Fields: `id`, `name`, `shop_name`, `phone`, `alternate_phone`, `address`, `notes`, `is_active`, `opening_balance`, `credit_balance` (outstanding; positive = retailer owes wholesaler), timestamps.
 
-**Retailer Daily Order (`retailer_daily_orders`)** — proposal core
+**Retailer Daily Order (`retailer_daily_orders`)** ? proposal core
 - Retailer places daily chicken requirement in kg.
 - Fields: `id`, `retailer_id`, `order_date` (IST date), `requested_kg`, `notes`, `status` (PLACED | ACKNOWLEDGED | PARTIAL | FULFILLED | CANCELLED), `created_by_user_id`, timestamps.
 - Unique: `(retailer_id, order_date)` (one primary order per day; amendments via status/notes or versioning later).
 
-**Farm (`farms`)** — light master; multi-farm is a future enhancement
+**Farm (`farms`)** ? light master; multi-farm is a future enhancement
 - Fields: `id`, `name`, `location`, `contact_phone`, `is_active`.
 
-**Farm Load (`farm_loads`)** — proposal step 4
+**Farm Load (`farm_loads`)** ? proposal step 4
 - Birds loaded from farm for a delivery day/trip.
 - Fields: `id`, `load_date`, `farm_id` (nullable), `vehicle_number`, `driver_name`, `driver_user_id` (nullable), `loaded_weight_kg`, `bird_count` (nullable), `remarks`, `status` (OPEN | IN_TRANSIT | CLOSED), timestamps.
 
@@ -110,27 +110,27 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 - Fields: `id`, `retailer_id`, `delivery_bill_id` (nullable), `date`, `cash_amount`, `upi_amount`, `total_amount`, `type` (RECEIVED | ADJUSTMENT), `notes`.
 - Logic: reduces retailer `credit_balance` on RECEIVED.
 
-**Trip Weight Loss (`trip_weight_losses`)** — proposal analytics
+**Trip Weight Loss (`trip_weight_losses`)** ? proposal analytics
 - Per farm load / delivery run: `loaded_weight_kg - sum(delivered_weight_kg)`.
 - Fields: `id`, `farm_load_id`, `delivery_run_id`, `loaded_kg`, `delivered_kg`, `loss_kg`, `loss_pct`, `computed_at`.
-- Note: Distinct from Duro_POS overnight inventory grams/day loss; this product’s primary loss is **trip shrink**. Optional later: inventory overnight loss as in Duro_POS `weight_loss.py`.
+- Note: Distinct from Duro_POS overnight inventory grams/day loss; this product?s primary loss is **trip shrink**. Optional later: inventory overnight loss as in Duro_POS `weight_loss.py`.
 
-**Rate Card (`retailer_item_rates`)** — optional v1 simplicity: single broiler kg rate
+**Rate Card (`retailer_item_rates`)** ? optional v1 simplicity: single broiler kg rate
 - Fields: `id`, `retailer_id` (nullable = default org rate), `rate_per_kg`, `effective_from`, `effective_to` (nullable).
 
 ### Core calculations
 
 1. **Stop amount:** `delivered_weight_kg * rate_per_kg`.
 2. **Bill balance:** `total_amount - cash_payment - upi_payment`.
-3. **Trip loss:** `farm_loads.loaded_weight_kg - Σ delivery_stops.delivered_weight_kg` (WEIGHED/BILLED only).
-4. **Retailer outstanding:** `opening_balance + Σ bill balances - Σ payments` (maintained as `credit_balance`).
+3. **Trip loss:** `farm_loads.loaded_weight_kg - ? delivery_stops.delivered_weight_kg` (WEIGHED/BILLED only).
+4. **Retailer outstanding:** `opening_balance + ? bill balances - ? payments` (maintained as `credit_balance`).
 
 ### [2026-08-09 01:00:00] IDEA MVP expand models
 
 **Vehicle (`vehicles`)**
 - `id`, `number` (unique), `capacity_kg`, `driver_name`, `is_active`.
 
-**OrgSettings (`org_settings`)** � single-row tenant defaults
+**OrgSettings (`org_settings`)** ? single-row tenant defaults
 - `weight_loss_warn_pct` (default 2), `weight_loss_alert_pct` (default 5), `enforce_credit_limit`.
 
 **Retailer extras**
@@ -143,7 +143,7 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 - `delivered_bird_count` (nullable).
 
 **DeliveryBill**
-- `checkout_id` (unique) � client-generated or server UUID; persist-first with `print_status=PENDING` allowed; update via PATCH.
+- `checkout_id` (unique) ? client-generated or server UUID; persist-first with `print_status=PENDING` allowed; update via PATCH.
 
 ### [2026-08-24 11:10:00] New ID Sequences
 - Added **OrderSequence** to generate ORD-YY-000000 sequence strings per year.
@@ -161,4 +161,34 @@ LedgerDesk party/purchase/sale models above are **historical**. Active product m
 - Legacy `retailers.route_name` kept; synced from linked route name on assign/unassign/rename (read-only via API writes through `route_id`).
 
 **Retailer `area`** remains independent optional locality within a route.
+
+### [2026-09-03 22:30:00] Dispatch reconciliation + allocation ledger
+
+**FarmLoad:** `planned_kg` (expected at farm); `loaded_weight_kg` = actual loaded.
+
+**DeliveryRunFarmLoad:** `(delivery_run_id, farm_load_id, allocated_kg)` composite PK.
+
+**DeliveryRun:** `route_id`, `planned_kg`, `actual_loaded_kg`, `returned_kg`, `wastage_kg`, `reconciled_at`, `reconciliation_notes`.
+
+**DeliveryStopItem:** `remaining_kg` for partial delivery (Option B: order stays ACKNOWLEDGED until remaining = 0).
+
+**DeliveryStop:** `failure_reason`; status adds `FAILED`.
+
+**StockQuantityEvent:** append-only audit for kg field changes.
+
+**Dispatch (Option B):** ACKNOWLEDGED-only dispatch; reconcile before run close; shared farm load across runs.
+
+### [2026-09-03 22:45:00] Dispatch board item-based display (API + UI)
+
+**RetailerDailyOrderItem (`retailer_daily_order_items`)** ? line items on daily orders (source for dispatch display):
+- Fields: `id`, `order_id`, `item_id`, `requested_kg`, `total_boxes`, `bird_size`, `bird_count`, `notes`, `locked_rate_per_kg`.
+- Order-level `requested_kg` in APIs = sum of line `requested_kg` (no single `requested_kg` column on `retailer_daily_orders`).
+
+**GET `/admin/dispatch/today`** (`DispatchTodayOut`) ? read model; no new tables. Aggregates ACKNOWLEDGED orders for today + inventory:
+- Kg rollups (retained): `available_stock_kg`, `total_confirmed_kg`, `total_remaining_unassigned_kg`.
+- Item rollups (`DispatchItemSummary`): `item_id`, `item_name`, `total_boxes`, `total_kg` on `confirmed_items`, `unassigned_items`, `available_items`.
+- Per route (`DispatchRouteBucket`): `route_id`, `route_name`, kg fields (`confirmed_kg`, `assigned_kg`, `delivered_kg`, `remaining_unassigned_kg`), `order_count`, `route_status`, `confirmed_items`, `unassigned_items`, `runs`, `orders`.
+- Per eligible order (`DispatchOrderLine`): `order_id`, `retailer_id`, `shop_name`, `requested_kg`, `dispatch_status` (`eligible` when not on an active run), `items[]` (`DispatchOrderItemLine`: `item_id`, `item_name`, `total_boxes`, `requested_kg`).
+
+**UI:** Route Dispatch board header and route rows show **boxes ? kg per item** (same pattern as Orders screen), not kg-only totals. Route assignment screen lists item lines per retailer plus selected-item summary.
 

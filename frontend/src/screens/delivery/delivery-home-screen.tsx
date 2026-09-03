@@ -31,6 +31,18 @@ export function DeliveryHomeScreen() {
     billing,
     onStartRun,
     onCompleteRun,
+    onReconcile,
+    reconcileVisible,
+    setReconcileVisible,
+    returnedKg,
+    setReturnedKg,
+    wastageKg,
+    setWastageKg,
+    onFailStop,
+    failReason,
+    setFailReason,
+    showFail,
+    setShowFail,
     simulateScale,
     weighAndBill,
     onSkipStop,
@@ -100,10 +112,16 @@ export function DeliveryHomeScreen() {
                 <Pressable accessibilityRole="button" className="bg-primary px-4 py-2 rounded-lg flex-1 items-center" onPress={onStartRun}>
                   <Text className="text-on-primary font-semibold">Start</Text>
                 </Pressable>
+                <Pressable accessibilityRole="button" className="bg-tertiary px-4 py-2 rounded-lg flex-1 items-center" onPress={() => setReconcileVisible(true)}>
+                  <Text className="text-on-tertiary font-semibold">Reconcile</Text>
+                </Pressable>
                 <Pressable accessibilityRole="button" className="bg-error px-4 py-2 rounded-lg flex-1 items-center" onPress={onCompleteRun}>
                   <Text className="text-on-error font-semibold">Complete</Text>
                 </Pressable>
               </View>
+              {run.reconciled_at ? (
+                <Text className="text-xs text-primary mt-2">Reconciled</Text>
+              ) : null}
             </View>
             <FlatList
               data={run.stops}
@@ -143,7 +161,13 @@ export function DeliveryHomeScreen() {
                 return (
                   <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
                     <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
-                    <Text className="text-sm text-on-surface-variant mb-2">Req: {item.ordered_kg} kg @ ₹{item.rate_per_kg}/kg</Text>
+                    <Text className="text-sm text-on-surface-variant mb-2">
+                      Req: {item.ordered_kg} kg
+                      {item.remaining_kg != null && item.remaining_kg !== item.ordered_kg
+                        ? ` · Remaining ${item.remaining_kg} kg`
+                        : ""}{" "}
+                      @ ₹{item.rate_per_kg}/kg
+                    </Text>
                     
                     <View className="flex-row items-center gap-2 mb-2">
                       {!skipScale && (
@@ -209,8 +233,32 @@ export function DeliveryHomeScreen() {
                 {billing ? "Billing..." : (!skipScale && !skipPrint ? "Weigh → Commit → Print" : (!skipScale ? "Weigh → Commit" : (!skipPrint ? "Commit → Print" : "Commit")))}
               </Text>
             </Pressable>
-            <Pressable accessibilityRole="button" className="border border-error rounded-lg py-3 items-center" onPress={onSkipStop}>
-              <Text className="text-error font-semibold">Skip Stop</Text>
+            <Pressable accessibilityRole="button" className="border border-error rounded-lg py-3 items-center mb-2" onPress={() => setShowFail(true)}>
+              <Text className="text-error font-semibold">Fail delivery</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" className="border border-outline-variant rounded-lg py-3 items-center" onPress={onSkipStop}>
+              <Text className="text-on-surface-variant font-semibold">Skip Stop</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {reconcileVisible ? (
+          <View className="bg-surface-container-lowest rounded-xl p-4 border border-primary/30 mt-2">
+            <Text className="font-bold text-on-surface mb-2">Trip reconciliation</Text>
+            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={returnedKg} onChangeText={setReturnedKg} placeholder="Returned kg" keyboardType="decimal-pad" />
+            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={wastageKg} onChangeText={setWastageKg} placeholder="Wastage kg" keyboardType="decimal-pad" />
+            <Pressable className="bg-primary rounded-lg py-3 items-center" onPress={onReconcile}>
+              <Text className="text-on-primary font-semibold">Save reconciliation</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {showFail && activeStop ? (
+          <View className="bg-surface-container-lowest rounded-xl p-4 border border-error/30 mt-2">
+            <Text className="font-bold text-on-surface mb-2">Failure reason (required)</Text>
+            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={failReason} onChangeText={setFailReason} placeholder="Reason" />
+            <Pressable className="bg-error rounded-lg py-3 items-center" onPress={onFailStop}>
+              <Text className="text-on-error font-semibold">Confirm failed delivery</Text>
             </Pressable>
           </View>
         ) : null}

@@ -181,6 +181,12 @@ def test_delivery_full_lifecycle(client: TestClient, mock_admin_auth: None) -> N
     order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "total_boxes": 2, "requested_kg": "50", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
 
+    confirm_resp = client.post(
+        f"/api/v1/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": order_resp.json().get("order_date", "03/09/2026")},
+    )
+    assert confirm_resp.status_code == 200
+
     if old_override:
         app.dependency_overrides[get_current_auth] = old_override
     else:
@@ -289,6 +295,12 @@ def test_delivery_weigh_and_bill(client: TestClient, mock_admin_auth: None) -> N
     app.dependency_overrides[get_current_auth] = _mock_retailer_with_db
     order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "total_boxes": 4, "requested_kg": "100", "bird_size": "LARGE"}]})
     order_id = order_resp.json()["id"]
+
+    confirm_resp = client.post(
+        f"/api/v1/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": order_resp.json().get("order_date", "03/09/2026")},
+    )
+    assert confirm_resp.status_code == 200
 
     if old_override:
         app.dependency_overrides[get_current_auth] = old_override

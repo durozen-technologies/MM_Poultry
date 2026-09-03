@@ -49,6 +49,7 @@ class FarmLoadCreate(BaseModel):
     vehicle_number: str | None = None
     driver_name: str | None = None
     driver_user_id: UUID | None = None
+    planned_kg: Decimal | None = Field(default=None, gt=0)
     loaded_weight_kg: Decimal = Field(gt=0)
     bird_count: int | None = None
     total_boxes: int | None = None
@@ -67,6 +68,7 @@ class FarmLoadUpdate(BaseModel):
     vehicle_number: str | None = None
     driver_name: str | None = None
     driver_user_id: UUID | None = None
+    planned_kg: Decimal | None = Field(default=None, gt=0)
     loaded_weight_kg: Decimal | None = Field(default=None, gt=0)
     bird_count: int | None = None
     total_boxes: int | None = None
@@ -88,6 +90,7 @@ class FarmLoadOut(BaseModel):
     vehicle_id: UUID | None = None
     vehicle_number: str | None
     driver_name: str | None
+    planned_kg: Decimal | None = None
     loaded_weight_kg: Decimal
     bird_count: int | None
     total_boxes: int | None = None

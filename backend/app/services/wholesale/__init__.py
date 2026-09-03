@@ -2,6 +2,7 @@
 from .billing import *
 from .common import *
 from .delivery_runs import *
+from .dispatch import *
 from .farms import *
 from .ledger import *
 from .orders import *

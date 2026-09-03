@@ -36,6 +36,7 @@ class DeliveryStopStatus(str, enum.Enum):
     WEIGHED = "WEIGHED"
     BILLED = "BILLED"
     SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
 
 
 class PaymentType(str, enum.Enum):

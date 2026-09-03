@@ -235,6 +235,7 @@ class FarmLoad(Base, BaseModelMixin):
     vehicle_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
     driver_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     driver_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    planned_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     loaded_weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -252,12 +253,27 @@ class FarmLoad(Base, BaseModelMixin):
     )
 
 
+class DeliveryRunFarmLoad(Base):
+    __tablename__ = "delivery_run_farm_loads"
+
+    delivery_run_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    farm_load_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), primary_key=True
+    )
+    allocated_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+
+
 class DeliveryRun(Base, BaseModelMixin):
     __tablename__ = "delivery_runs"
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     farm_load_id: Mapped[UUID | None] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("farm_loads.id"), nullable=True, index=True
+    )
+    route_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("routes.id"), nullable=True, index=True
     )
     run_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     status: Mapped[DeliveryRunStatus] = mapped_column(
@@ -271,8 +287,20 @@ class DeliveryRun(Base, BaseModelMixin):
         UUID_SQL_TYPE, ForeignKey("vehicles.id"), nullable=True
     )
     vehicle_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    planned_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    actual_loaded_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    returned_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    wastage_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reconciliation_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    farm_load_links: Mapped[list["DeliveryRunFarmLoad"]] = relationship(
+        "DeliveryRunFarmLoad",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class DeliveryStop(Base, BaseModelMixin):
@@ -299,6 +327,7 @@ class DeliveryStop(Base, BaseModelMixin):
     )
     weighed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     scale_device_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     items: Mapped[list["DeliveryStopItem"]] = relationship(
         "DeliveryStopItem",
@@ -321,6 +350,7 @@ class DeliveryStopItem(Base, BaseModelMixin):
         UUID_SQL_TYPE, ForeignKey("items.id"), nullable=False, index=True
     )
     ordered_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    remaining_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     delivered_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     delivered_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gross_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
@@ -441,6 +471,27 @@ class Payment(Base, BaseModelMixin):
         Boolean, default=True, server_default=text("true"), nullable=False
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class StockQuantityEvent(Base):
+    __tablename__ = "stock_quantity_events"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    entity_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    entity_id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, nullable=False, index=True)
+    field: Mapped[str] = mapped_column(String(60), nullable=False)
+    old_value: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    new_value: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    actor_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    ref_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    ref_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
+        server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
 
 
 class TripWeightLoss(Base, BaseModelMixin):

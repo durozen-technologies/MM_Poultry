@@ -94,6 +94,12 @@ def test_complete_delivery_run_coverage(client: TestClient, mock_admin_auth: Non
     order_resp = client.post("/api/v1/retailer/orders/today", json={"items": [{"item_id": "00000000-0000-0000-0000-000000000999", "requested_kg": "100", "bird_size": "LARGE", "total_boxes": 2}]})
     order_id = order_resp.json()["id"]
 
+    confirm_resp = client.post(
+        f"/api/v1/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": order_resp.json().get("order_date", "03/09/2026")},
+    )
+    assert confirm_resp.status_code == 200
+
     if old_override:
         app.dependency_overrides[get_current_auth] = old_override
     else:
@@ -102,7 +108,15 @@ def test_complete_delivery_run_coverage(client: TestClient, mock_admin_auth: Non
     # 3. Create Delivery Run
     run_resp = client.post("/api/v1/admin/delivery-runs", json={"farm_load_id": load_id, "order_ids": [order_id]})
     run_id = run_resp.json()["id"]
-    
+    stop_id = run_resp.json()["stops"][0]["id"]
+
+    client.post(f"/api/v1/delivery/runs/{run_id}/start")
+    client.post(f"/api/v1/delivery/stops/{stop_id}/skip")
+    client.post(
+        f"/api/v1/delivery/runs/{run_id}/reconcile",
+        json={"returned_kg": "100", "wastage_kg": "0"},
+    )
+
     # Complete run
     comp_resp = client.post(f"/api/v1/delivery/runs/{run_id}/complete")
     assert comp_resp.status_code == 200

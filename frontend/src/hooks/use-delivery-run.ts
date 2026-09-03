@@ -2,10 +2,12 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   completeRun,
+  failStop,
   getActiveRun,
   markWhatsAppShared,
   previewBill,
   commitBill,
+  reconcileRun,
   skipStop,
   startRun,
   updatePrintStatus,
@@ -58,8 +60,19 @@ export function useDeliveryRun() {
     }
   }
 
+  const [reconcileVisible, setReconcileVisible] = useState(false);
+  const [returnedKg, setReturnedKg] = useState("0");
+  const [wastageKg, setWastageKg] = useState("0");
+  const [failReason, setFailReason] = useState("");
+  const [showFail, setShowFail] = useState(false);
+
   async function onCompleteRun() {
     if (!run) return;
+    if (!run.reconciled_at) {
+      setReconcileVisible(true);
+      setMsg("Reconcile stock before completing the run");
+      return;
+    }
     try {
       await completeRun(run.id);
       const loss = await getTripWeightLoss(run.id);
@@ -70,6 +83,38 @@ export function useDeliveryRun() {
       }
       await refresh();
     } catch (e: unknown) {
+      setMsg(getApiErrorMessage(e));
+    }
+  }
+
+  async function onReconcile() {
+    if (!run) return;
+    try {
+      await reconcileRun(run.id, {
+        returned_kg: returnedKg,
+        wastage_kg: wastageKg,
+      });
+      setReconcileVisible(false);
+      setMsg("Reconciliation saved");
+      await refresh();
+    } catch (e) {
+      setMsg(getApiErrorMessage(e));
+    }
+  }
+
+  async function onFailStop() {
+    if (!activeStop || !failReason.trim()) {
+      setMsg("Failure reason required");
+      return;
+    }
+    try {
+      await failStop(activeStop.id, failReason.trim());
+      setMsg(`Failed stop for ${activeStop.retailer_name}`);
+      setActiveStop(null);
+      setShowFail(false);
+      setFailReason("");
+      await refresh();
+    } catch (e) {
       setMsg(getApiErrorMessage(e));
     }
   }
@@ -273,6 +318,18 @@ export function useDeliveryRun() {
     billing,
     onStartRun,
     onCompleteRun,
+    onReconcile,
+    reconcileVisible,
+    setReconcileVisible,
+    returnedKg,
+    setReturnedKg,
+    wastageKg,
+    setWastageKg,
+    onFailStop,
+    failReason,
+    setFailReason,
+    showFail,
+    setShowFail,
     simulateScale,
     weighAndBill,
     onSkipStop,

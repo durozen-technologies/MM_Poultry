@@ -1,12 +1,48 @@
 import { api } from "./client";
-import type { DeliveryBill, DeliveryRun, DeliveryStop } from "../types/api";
+import type { DeliveryBill, DeliveryRun, DeliveryStop, DispatchTodayOut } from "../types/api";
+
+export type FarmLoadAllocationPayload = {
+  farm_load_id: string;
+  allocated_kg: string | number;
+};
+
+export async function getDispatchToday() {
+  const { data } = await api.get<DispatchTodayOut>("/admin/dispatch/today");
+  return data;
+}
 
 export async function createDeliveryRun(payload: {
-  farm_load_id: string | null;
+  farm_load_id?: string | null;
+  farm_load_allocations?: FarmLoadAllocationPayload[];
   order_ids: string[];
   run_date?: string;
+  route_id?: string | null;
+  driver_user_id?: string;
+  driver_name?: string;
+  vehicle_id?: string;
+  vehicle_number?: string;
 }) {
   const { data } = await api.post<DeliveryRun>("/admin/delivery-runs", payload);
+  return data;
+}
+
+export async function cancelDeliveryRun(runId: string, reason?: string) {
+  const { data } = await api.post<DeliveryRun>(`/admin/delivery-runs/${runId}/cancel`, {
+    reason,
+  });
+  return data;
+}
+
+export async function reconcileRun(
+  runId: string,
+  payload: {
+    returned_kg: string | number;
+    wastage_kg: string | number;
+    actual_loaded_kg?: string | number;
+    notes?: string;
+  }
+) {
+  const { data } = await api.post<DeliveryRun>(`/delivery/runs/${runId}/reconcile`, payload);
   return data;
 }
 
@@ -38,6 +74,13 @@ export async function weighStop(stopId: string, payload: Record<string, unknown>
 export async function skipStop(stopId: string, reason?: string) {
   const payload = reason ? { reason } : {};
   const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/skip`, payload);
+  return data;
+}
+
+export async function failStop(stopId: string, failure_reason: string) {
+  const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/fail`, {
+    failure_reason,
+  });
   return data;
 }
 

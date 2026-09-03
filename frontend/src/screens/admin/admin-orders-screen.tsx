@@ -11,7 +11,6 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAdminTodayOrders, useConfirmOrder } from "../../hooks/use-queries";
 import type { OrderStatus, DailyOrderOut } from "../../types/api";
-import { AssignDeliveryModal } from "./components/assign-delivery-modal";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
 import { cancelOrder, listOrdersByDate } from "../../api/orders";
 import { DatePickerField } from "../../components/date-picker-field";
@@ -40,7 +39,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
-  const [assignOrder, setAssignOrder] = useState<DailyOrderOut | null>(null);
   const [confirmOrderModal, setConfirmOrderModal] = useState<DailyOrderOut | null>(null);
 
   const filteredOrders = useMemo(() => orders.filter((o) => {
@@ -214,24 +212,13 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           <OrderListItem 
             order={order}
             onConfirm={() => setConfirmOrderModal(order)}
-            onAssign={() => setAssignOrder(order)}
+            onDispatch={() => navigation.navigate("DeliveryRuns")}
             onPress={() => navigation.navigate("OrderDetail", { order })}
             getStatusColor={getStatusColor}
           />
         )}
       />
       
-      {assignOrder && (
-        <AssignDeliveryModal
-          order={assignOrder}
-          onClose={() => setAssignOrder(null)}
-          onAssigned={() => {
-            setAssignOrder(null);
-            refetch();
-          }}
-        />
-      )}
-
       {confirmOrderModal && (
         <ConfirmOrderModal
           order={confirmOrderModal}
@@ -249,13 +236,13 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 const OrderListItem = React.memo(({
   order,
   onConfirm,
-  onAssign,
+  onDispatch,
   onPress,
   getStatusColor,
 }: {
   order: DailyOrderOut;
   onConfirm: () => void;
-  onAssign: () => void;
+  onDispatch: () => void;
   onPress: () => void;
   getStatusColor: (status: OrderStatus) => any;
 }) => {
@@ -324,10 +311,10 @@ const OrderListItem = React.memo(({
         {order.status === "ACKNOWLEDGED" && (
           <Pressable
             className="bg-primary-container h-11 px-5 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80 border border-primary/10"
-            onPress={onAssign}
+            onPress={onDispatch}
           >
-            <MaterialIcons name="local-shipping" size={18} className="text-primary" />
-            <Text className="font-label-md text-primary font-bold">Assign</Text>
+            <MaterialIcons name="route" size={18} className="text-primary" />
+            <Text className="font-label-md text-primary font-bold">Dispatch</Text>
           </Pressable>
         )}
       </View>

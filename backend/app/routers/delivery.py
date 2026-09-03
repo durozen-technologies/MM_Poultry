@@ -13,11 +13,15 @@ from app.schemas import (
     BillPreviewOut,
     BillPreviewRequest,
     DeliveryBillOut,
+    DeliveryRunCancel,
     DeliveryRunCreate,
     DeliveryRunOut,
+    DeliveryRunReconcile,
     DeliveryStopOut,
+    FailStopRequest,
     PrintStatusUpdate,
     RouteOut,
+    StockAdjustmentCreate,
     TodayOrdersResponse,
     WeighRequest,
 )
@@ -63,7 +67,50 @@ async def admin_create_run(
     payload: DeliveryRunCreate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> DeliveryRunOut:
-    return await svc.create_delivery_run(auth.db, payload)
+    return await svc.create_delivery_run(auth.db, payload, actor_user_id=auth.user.id)
+
+
+@router.post("/admin/delivery-runs/{run_id}/cancel", response_model=DeliveryRunOut)
+async def admin_cancel_run(
+    run_id: UUID,
+    payload: DeliveryRunCancel | None = None,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))] = None,  # type: ignore[assignment]
+) -> DeliveryRunOut:
+    assert auth is not None
+    reason = payload.reason if payload else None
+    return await svc.cancel_delivery_run(
+        auth.db, run_id, reason=reason, actor_user_id=auth.user.id
+    )
+
+
+@router.post("/admin/delivery-runs/{run_id}/reconcile", response_model=DeliveryRunOut)
+async def admin_reconcile_run(
+    run_id: UUID,
+    payload: DeliveryRunReconcile,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> DeliveryRunOut:
+    return await svc.reconcile_delivery_run(
+        auth.db, run_id, payload, actor_user_id=auth.user.id
+    )
+
+
+@router.post("/admin/stock-adjustments", status_code=204)
+async def admin_stock_adjustment(
+    payload: StockAdjustmentCreate,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> None:
+    await svc.create_stock_adjustment(auth.db, payload, actor_user_id=auth.user.id)
+
+
+@router.post("/delivery/runs/{run_id}/reconcile", response_model=DeliveryRunOut)
+async def delivery_reconcile_run(
+    run_id: UUID,
+    payload: DeliveryRunReconcile,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> DeliveryRunOut:
+    return await svc.reconcile_delivery_run(
+        auth.db, run_id, payload, actor_user_id=auth.user.id
+    )
 
 
 @router.get("/delivery/runs/active", response_model=DeliveryRunOut | None)
@@ -97,6 +144,17 @@ async def delivery_weigh(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
 ) -> DeliveryStopOut:
     return await svc.weigh_stop(auth.db, stop_id, payload, actor_role=auth.user.role)
+
+
+@router.post("/delivery/stops/{stop_id}/fail", response_model=DeliveryStopOut)
+async def delivery_fail_stop(
+    stop_id: UUID,
+    payload: FailStopRequest,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> DeliveryStopOut:
+    return await svc.fail_stop(
+        auth.db, stop_id, payload.failure_reason, actor_user_id=auth.user.id
+    )
 
 
 @router.post("/delivery/stops/{stop_id}/skip", response_model=DeliveryStopOut)

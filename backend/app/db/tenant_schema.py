@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "f1a2b3c4d5e6"
+TENANT_MIGRATION_HEAD = "a2b3c4d5e6f7"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -70,6 +70,7 @@ def _tenant_table_names() -> set[str]:
         "org_settings",
         "farm_loads",
         "delivery_runs",
+        "delivery_run_farm_loads",
         "delivery_stops",
         "delivery_stop_items",
         "delivery_bills",
@@ -80,6 +81,7 @@ def _tenant_table_names() -> set[str]:
         "expense_categories",
         "expenses",
         "retailer_returns",
+        "stock_quantity_events",
         "order_sequences",
     }
 
@@ -325,6 +327,18 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_size DROP NOT NULL",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_count DROP NOT NULL",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN notes DROP NOT NULL",
+        "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS planned_kg NUMERIC(12,3)",
+        "UPDATE farm_loads SET planned_kg = loaded_weight_kg WHERE planned_kg IS NULL",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS route_id UUID",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS planned_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS actual_loaded_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS returned_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS wastage_kg NUMERIC(12,3)",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS reconciled_at TIMESTAMPTZ",
+        "ALTER TABLE delivery_runs ADD COLUMN IF NOT EXISTS reconciliation_notes VARCHAR(500)",
+        "ALTER TABLE delivery_stop_items ADD COLUMN IF NOT EXISTS remaining_kg NUMERIC(12,3)",
+        "UPDATE delivery_stop_items SET remaining_kg = ordered_kg WHERE remaining_kg IS NULL",
+        "ALTER TABLE delivery_stops ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(500)",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
@@ -342,6 +356,8 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                 "retailer_daily_order_items",
                 "delivery_stop_items",
                 "delivery_bill_items",
+                "delivery_run_farm_loads",
+                "stock_quantity_events",
             }:
                 await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:

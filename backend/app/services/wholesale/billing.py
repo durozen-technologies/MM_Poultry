@@ -59,8 +59,12 @@ async def weigh_stop(
     )
     if stop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
-    if stop.status in {DeliveryStopStatus.BILLED, DeliveryStopStatus.SKIPPED}:
+    if stop.status in {DeliveryStopStatus.SKIPPED, DeliveryStopStatus.FAILED}:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop not weighable")
+    if stop.status == DeliveryStopStatus.BILLED:
+        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
+        if not has_remaining:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
     if payload.weight_override_reason and actor_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -116,12 +120,20 @@ async def weigh_stop(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Net weight {net_weight}kg exceeds sanity limit for item {item.item_id}",
                 )
-            item.delivered_weight_kg = q_kg(net_weight)
+            prev_delivered = item.delivered_weight_kg or ZERO
+            total_delivered = q_kg(prev_delivered + q_kg(net_weight))
+            if total_delivered > item.ordered_kg:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Delivered {total_delivered}kg exceeds ordered {item.ordered_kg}kg for item {item.item_id}",
+                )
+            item.delivered_weight_kg = total_delivered
             item.gross_weight_kg = q_kg(pi.gross_weight_kg)
             item.delivered_boxes = pi.delivered_boxes
             item.empty_box_weight_kg = q_kg(pi.empty_box_weight_kg)
             item.delivered_bird_count = pi.delivered_bird_count
             item.gross_amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
+            item.remaining_kg = q_kg(max(item.ordered_kg - total_delivered, ZERO))
             if payload.weight_override_reason:
                 item.weight_override_reason = payload.weight_override_reason[:500]
             if payload.scale_device_id:
@@ -230,10 +242,12 @@ async def commit_bill(
         .options(selectinload(DeliveryBill.items))
         .where(DeliveryBill.delivery_stop_id == stop_id)
     )
-    if existing:
-        return DeliveryBillOut.model_validate(existing, from_attributes=True)
+    if existing and stop.status == DeliveryStopStatus.BILLED:
+        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
+        if not has_remaining:
+            return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
-    if stop.status != DeliveryStopStatus.WEIGHED:
+    if stop.status not in {DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Stop must be weighed before commit",
@@ -257,6 +271,36 @@ async def commit_bill(
                 f"would be {q_money(retailer.credit_balance + preview.balance_amount)}"
             ),
         )
+
+    if existing:
+        old_balance = existing.balance_amount
+        existing.total_amount = preview.total_amount
+        existing.cash_payment = preview.cash_payment
+        existing.upi_payment = preview.upi_payment
+        existing.balance_amount = preview.balance_amount
+        retailer.credit_balance = q_money(
+            retailer.credit_balance - old_balance + preview.balance_amount
+        )
+        for prev_item in preview.items:
+            bill_item = next(
+                (bi for bi in existing.items if bi.item_id == prev_item.item_id),
+                None,
+            )
+            if bill_item:
+                bill_item.weight_kg = prev_item.weight_kg
+                bill_item.amount = prev_item.amount
+        stop.status = DeliveryStopStatus.WEIGHED
+        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
+        if not has_remaining:
+            stop.status = DeliveryStopStatus.BILLED
+        if stop.daily_order_id:
+            order = await db.scalar(
+                select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
+            )
+            if order and not has_remaining:
+                order.status = OrderStatus.FULFILLED
+        await db.flush()
+        return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
     bill_date = today_ist()
     bill_number = await _next_bill_number(db, bill_date)
@@ -321,12 +365,19 @@ async def commit_bill(
         db.add(payment)
 
     stop.status = DeliveryStopStatus.BILLED
+    has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
+    if has_remaining:
+        stop.status = DeliveryStopStatus.WEIGHED
     if stop.daily_order_id:
         order = await db.scalar(
             select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
         )
         if order:
-            order.status = OrderStatus.FULFILLED
+            has_remaining = any(
+                (it.remaining_kg or ZERO) > ZERO for it in stop.items
+            )
+            if not has_remaining:
+                order.status = OrderStatus.FULFILLED
 
     try:
         await db.flush()

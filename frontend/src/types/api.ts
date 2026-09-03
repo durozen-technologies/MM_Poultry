@@ -177,6 +177,7 @@ export type DeliveryStopItem = {
   delivery_stop_id: string;
   item_id: string;
   ordered_kg: string;
+  remaining_kg?: string | null;
   delivered_weight_kg: string | null;
   delivered_boxes?: number | null;
   gross_weight_kg?: string | null;
@@ -193,20 +194,96 @@ export type DeliveryStop = {
   daily_order_id?: string | null;
   sequence: number;
   status: string;
+  failure_reason?: string | null;
   retailer_name?: string | null;
   shop_name?: string | null;
   route_name?: string | null;
   items: DeliveryStopItem[];
 };
 
+export type DeliveryRunFarmLoadLink = {
+  delivery_run_id: string;
+  farm_load_id: string;
+  allocated_kg: string;
+};
+
 export type DeliveryRun = {
   id: string;
   farm_load_id: string | null;
+  route_id?: string | null;
   run_date: string;
   status: string;
+  driver_user_id?: string | null;
+  driver_name?: string | null;
+  vehicle_id?: string | null;
+  vehicle_number?: string | null;
+  planned_kg?: string | null;
+  actual_loaded_kg?: string | null;
+  returned_kg?: string | null;
+  wastage_kg?: string | null;
+  reconciled_at?: string | null;
+  reconciliation_notes?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
+  farm_load_links?: DeliveryRunFarmLoadLink[];
   stops: DeliveryStop[];
+};
+
+export type DispatchOrderItemLine = {
+  item_id: string;
+  item_name: string | null;
+  total_boxes: number | null;
+  requested_kg: string | null;
+};
+
+export type DispatchItemSummary = {
+  item_id: string;
+  item_name: string | null;
+  total_boxes: number;
+  total_kg: string;
+};
+
+export type DispatchOrderLine = {
+  order_id: string;
+  retailer_id: string;
+  shop_name: string | null;
+  requested_kg: string;
+  dispatch_status: string;
+  items: DispatchOrderItemLine[];
+};
+
+export type DispatchRunSummary = {
+  id: string;
+  status: string;
+  driver_name: string | null;
+  vehicle_number: string | null;
+  planned_kg: string | null;
+  actual_loaded_kg: string | null;
+};
+
+export type DispatchRouteBucket = {
+  route_id: string | null;
+  route_name: string;
+  confirmed_kg: string;
+  assigned_kg: string;
+  delivered_kg: string;
+  remaining_unassigned_kg: string;
+  order_count: number;
+  route_status: string;
+  confirmed_items: DispatchItemSummary[];
+  unassigned_items: DispatchItemSummary[];
+  runs: DispatchRunSummary[];
+  orders: DispatchOrderLine[];
+};
+
+export type DispatchTodayOut = {
+  available_stock_kg: string;
+  total_confirmed_kg: string;
+  total_remaining_unassigned_kg: string;
+  confirmed_items: DispatchItemSummary[];
+  unassigned_items: DispatchItemSummary[];
+  available_items: DispatchItemSummary[];
+  routes: DispatchRouteBucket[];
 };
 
 export type DeliveryBillItem = {
