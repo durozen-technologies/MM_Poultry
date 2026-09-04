@@ -11,6 +11,8 @@ import { cancelOrder } from "../../api/orders";
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
 
+import { PrimaryButton } from "../../components/ui/primary-button";
+
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const [order, setOrder] = useState<DailyOrder>(route.params?.order as DailyOrder);
   const [cancelling, setCancelling] = useState(false);
@@ -43,6 +45,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
   }
 
   const totalWeight = order.items?.reduce((sum, it) => sum + Number(it.requested_kg || 0), 0) || 0;
+  const totalBoxes = order.items?.reduce((sum, it) => sum + Number(it.total_boxes || 0), 0) || 0;
 
   const handleCancel = async () => {
     Alert.alert(
@@ -130,12 +133,25 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
             
             <View className="h-[1px] bg-outline-variant/20 my-2 mx-3" />
             
+            <View className="flex-row justify-between items-center p-3 border-b border-outline-variant/10">
+              <View className="flex-row items-center gap-2">
+                <View className="w-8 items-center">
+                  <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
+                </View>
+                <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Total Boxes</Text>
+              </View>
+              <View className="flex-row items-end gap-1">
+                <Text className="font-title-md font-black text-on-surface">{totalBoxes}</Text>
+                <Text className="font-label-md font-bold text-on-surface mb-0.5">BOXES</Text>
+              </View>
+            </View>
+
             <View className="flex-row justify-between items-center p-3">
               <View className="flex-row items-center gap-2">
                 <View className="w-8 items-center">
                   <MaterialIcons name="scale" size={16} className="text-on-surface-variant" />
                 </View>
-                <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Total Weight</Text>
+                <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Est. Weight</Text>
               </View>
               <View className="flex-row items-end gap-1">
                 <Text className="font-title-md font-black text-primary">{totalWeight.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
@@ -171,12 +187,24 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
                     </Text>
                   </View>
                 </View>
-                <View className="items-end bg-primary/10 px-3 py-2 rounded-xl border border-primary/20">
-                  <Text className="font-label-sm font-bold text-primary uppercase tracking-wider mb-0.5">Weight</Text>
-                  <View className="flex-row items-end gap-0.5">
-                    <Text className="font-title-md font-black text-primary">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
-                    <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
+                <View className="flex-row gap-2">
+                  <View className="items-end bg-tertiary/10 px-3 py-2 rounded-xl border border-tertiary/20">
+                    <Text className="font-label-sm font-bold text-tertiary uppercase tracking-wider mb-0.5">Boxes</Text>
+                    <View className="flex-row items-end gap-0.5">
+                      <Text className="font-title-md font-black text-tertiary">{item.total_boxes || 0}</Text>
+                      <Text className="font-label-sm font-bold text-tertiary mb-0.5">BOX</Text>
+                    </View>
                   </View>
+                  
+                  {item.requested_kg && Number(item.requested_kg) > 0 ? (
+                    <View className="items-end bg-primary/10 px-3 py-2 rounded-xl border border-primary/20">
+                      <Text className="font-label-sm font-bold text-primary uppercase tracking-wider mb-0.5">Est. Wt</Text>
+                      <View className="flex-row items-end gap-0.5">
+                        <Text className="font-title-md font-black text-primary">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+                        <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
               </View>
               
@@ -199,32 +227,24 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
 
         {/* Action Buttons */}
         {(order.status === "PLACED" || order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
-          <Pressable 
-            accessibilityRole="button"
-            className="bg-error/10 h-14 rounded-full flex-row items-center justify-center gap-2 border border-error/30 active:scale-[0.98] transition-transform mb-4"
+          <PrimaryButton
+            title="Cancel Order"
+            icon="cancel"
+            variant="error"
             onPress={handleCancel}
-            disabled={cancelling}
-          >
-            {cancelling ? (
-              <ActivityIndicator color="#ba1a1a" />
-            ) : (
-              <>
-                <MaterialIcons name="cancel" size={20} className="text-error" />
-                <Text className="text-error font-bold text-label-lg uppercase tracking-wider">Cancel Order</Text>
-              </>
-            )}
-          </Pressable>
+            loading={cancelling}
+            className="mb-4"
+          />
         )}
 
         {user?.role !== "DELIVERY" && order.status !== "CANCELLED" && (
-          <Pressable 
-            accessibilityRole="button"
-            className="bg-primary h-14 rounded-full flex-row items-center justify-center gap-2 shadow-sm shadow-primary/30 active:scale-[0.98] transition-transform mb-8"
+          <PrimaryButton
+            title="Create Delivery Run"
+            icon="local-shipping"
+            variant="primary"
             onPress={() => navigation.navigate("DeliveryRuns")}
-          >
-            <MaterialIcons name="local-shipping" size={20} color="white" />
-            <Text className="text-white font-bold text-label-lg uppercase tracking-wider">Create Delivery Run</Text>
-          </Pressable>
+            className="mb-8"
+          />
         )}
       </ScrollView>
     </AdminScreenContainer>

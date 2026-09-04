@@ -26,7 +26,7 @@ export function AdminRouteDispatchScreen({
   route,
 }: {
   navigation: any;
-  route: { params: Params };
+  route: any;
 }) {
   const { routeId, routeName } = route.params;
   const queryClient = useQueryClient();

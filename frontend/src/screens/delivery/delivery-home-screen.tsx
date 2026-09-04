@@ -8,6 +8,7 @@ import { formatIstDate } from "../../utils/ist-date";
 import { apiItems } from "../../api/items";
 import { useDeliveryRun } from "../../hooks/use-delivery-run";
 import { PrinterSetupModal } from "../../components/printer-setup-modal";
+import { PrimaryButton } from "../../components/ui/primary-button";
 import { usePrinterStore } from "../../store/printer-store";
 
 export function DeliveryHomeScreen() {
@@ -228,17 +229,27 @@ export function DeliveryHomeScreen() {
               </View>
             </View>
 
-            <Pressable accessibilityRole="button" className={`rounded-lg py-3 items-center mb-2 ${billing ? "bg-primary/50" : "bg-primary"}`} onPress={() => weighAndBill({ skipPrint, skipScale })} disabled={billing}>
-              <Text className="text-on-primary font-semibold">
-                {billing ? "Billing..." : (!skipScale && !skipPrint ? "Weigh → Commit → Print" : (!skipScale ? "Weigh → Commit" : (!skipPrint ? "Commit → Print" : "Commit")))}
-              </Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" className="border border-error rounded-lg py-3 items-center mb-2" onPress={() => setShowFail(true)}>
-              <Text className="text-error font-semibold">Fail delivery</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" className="border border-outline-variant rounded-lg py-3 items-center" onPress={onSkipStop}>
-              <Text className="text-on-surface-variant font-semibold">Skip Stop</Text>
-            </Pressable>
+            <PrimaryButton
+              className="mb-3"
+              variant={billing ? "secondary" : "primary"}
+              onPress={() => weighAndBill({ skipPrint, skipScale })}
+              disabled={billing}
+              loading={billing}
+              title={billing ? "Billing..." : (!skipScale && !skipPrint ? "Weigh → Commit → Print" : (!skipScale ? "Weigh → Commit" : (!skipPrint ? "Commit → Print" : "Commit")))}
+            />
+            
+            <PrimaryButton
+              className="mb-3"
+              variant="error"
+              onPress={() => setShowFail(true)}
+              title="Fail Delivery"
+            />
+            
+            <PrimaryButton
+              variant="secondary"
+              onPress={onSkipStop}
+              title="Skip Stop"
+            />
           </View>
         ) : null}
 
@@ -247,9 +258,7 @@ export function DeliveryHomeScreen() {
             <Text className="font-bold text-on-surface mb-2">Trip reconciliation</Text>
             <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={returnedKg} onChangeText={setReturnedKg} placeholder="Returned kg" keyboardType="decimal-pad" />
             <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={wastageKg} onChangeText={setWastageKg} placeholder="Wastage kg" keyboardType="decimal-pad" />
-            <Pressable className="bg-primary rounded-lg py-3 items-center" onPress={onReconcile}>
-              <Text className="text-on-primary font-semibold">Save reconciliation</Text>
-            </Pressable>
+            <PrimaryButton className="mt-2" onPress={onReconcile} title="Save reconciliation" />
           </View>
         ) : null}
 
@@ -257,16 +266,12 @@ export function DeliveryHomeScreen() {
           <View className="bg-surface-container-lowest rounded-xl p-4 border border-error/30 mt-2">
             <Text className="font-bold text-on-surface mb-2">Failure reason (required)</Text>
             <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={failReason} onChangeText={setFailReason} placeholder="Reason" />
-            <Pressable className="bg-error rounded-lg py-3 items-center" onPress={onFailStop}>
-              <Text className="text-on-error font-semibold">Confirm failed delivery</Text>
-            </Pressable>
+            <PrimaryButton className="mt-2" variant="error" onPress={onFailStop} title="Confirm Failed Delivery" />
           </View>
         ) : null}
 
         {lastBill ? (
-          <Pressable accessibilityRole="button" className="mt-3 border border-primary rounded-lg py-3 items-center bg-surface-container-lowest" onPress={shareBill}>
-            <Text className="text-primary font-semibold">Share bill on WhatsApp</Text>
-          </Pressable>
+          <PrimaryButton className="mt-4" variant="secondary" onPress={shareBill} title="Share Bill on WhatsApp" />
         ) : null}
       </View>
 

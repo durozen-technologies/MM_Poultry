@@ -106,7 +106,7 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
       {/* Floating Action Button for total summary */}
       <View className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto">
         <Pressable accessibilityRole="button"
-          className="bg-[#0052CC] h-[60px] rounded-[20px] flex-row items-center justify-between px-6 shadow-md elevation-sm"
+          className="bg-primary h-14 rounded-full flex-row items-center justify-between px-6 shadow-sm shadow-primary/30 active:scale-[0.98] transition-transform"
           onPress={onSubmit}
           disabled={busy || totalBoxes === 0}
         >
