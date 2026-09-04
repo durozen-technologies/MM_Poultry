@@ -13,6 +13,7 @@ class UserRole(str, enum.Enum):
 class OrderStatus(str, enum.Enum):
     PLACED = "PLACED"
     ACKNOWLEDGED = "ACKNOWLEDGED"
+    DISPATCHED = "DISPATCHED"
     PARTIAL = "PARTIAL"
     FULFILLED = "FULFILLED"
     CANCELLED = "CANCELLED"

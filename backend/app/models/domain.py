@@ -193,9 +193,11 @@ class Vehicle(Base, BaseModelMixin):
     __tablename__ = "vehicles"
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     number: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
     capacity_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     driver_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    driver_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )

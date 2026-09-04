@@ -14,10 +14,17 @@ class FarmLoadAllocation(BaseModel):
     allocated_kg: Decimal = Field(gt=0)
 
 
+class OrderItemAdjustment(BaseModel):
+    order_id: UUID
+    item_id: UUID
+    requested_kg: Decimal = Field(gt=0)
+
+
 class DeliveryRunCreate(BaseModel):
     farm_load_id: UUID | None = None
     farm_load_allocations: list[FarmLoadAllocation] | None = None
     order_ids: list[UUID] = Field(..., min_length=1)
+    order_adjustments: list[OrderItemAdjustment] | None = None
     run_date: IstDateOptional = None
     route_id: UUID | None = None
     driver_user_id: UUID | None = None

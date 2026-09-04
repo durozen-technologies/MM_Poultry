@@ -80,9 +80,10 @@ async def deactivate_farm(db: AsyncSession, farm_id: UUID) -> None:
 
 async def create_vehicle(db: AsyncSession, payload: VehicleCreate) -> VehicleOut:
     vehicle = Vehicle(
+        name=payload.name,
         number=payload.number.strip().upper(),
-        capacity_kg=q_kg(payload.capacity_kg) if payload.capacity_kg is not None else None,
         driver_name=payload.driver_name,
+        driver_id=payload.driver_id,
     )
     db.add(vehicle)
     await db.flush()
@@ -103,8 +104,6 @@ async def update_vehicle(db: AsyncSession, vehicle_id: UUID, payload: VehicleUpd
     data: dict[str, Any] = payload.model_dump(exclude_unset=True)
     if "number" in data and data["number"]:
         data["number"] = data["number"].strip().upper()
-    if "capacity_kg" in data and data["capacity_kg"] is not None:
-        data["capacity_kg"] = q_kg(data["capacity_kg"])
     for key, value in data.items():
         setattr(vehicle, key, value)
     await db.flush()

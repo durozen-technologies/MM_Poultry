@@ -49,6 +49,7 @@ def build_tracking_stages(
     progress = {
         OrderStatus.PLACED: 0,
         OrderStatus.ACKNOWLEDGED: 1,
+        OrderStatus.DISPATCHED: 2,
         OrderStatus.PARTIAL: 3,
         OrderStatus.FULFILLED: 3,
     }.get(order_status, 0)

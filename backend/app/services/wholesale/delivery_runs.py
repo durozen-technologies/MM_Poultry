@@ -4,7 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -136,9 +136,16 @@ async def create_delivery_run(
             detail="One or more orders already on an active delivery run",
         )
 
-    total_ordered_kg = q_kg(
-        sum((itm.requested_kg or _ZERO) for ord in orders for itm in ord.items)
-    )
+    adj_map = {}
+    if payload.order_adjustments:
+        for adj in payload.order_adjustments:
+            adj_map[(adj.order_id, adj.item_id)] = adj.requested_kg
+
+    total_ordered_kg = _ZERO
+    for ord in orders:
+        for itm in ord.items:
+            req_kg = adj_map.get((ord.id, itm.item_id), itm.requested_kg or _ZERO)
+            total_ordered_kg += q_kg(req_kg)
     allocations = _resolve_allocations(payload, total_ordered_kg)
     total_allocated = q_kg(sum(a.allocated_kg for a in allocations))
 
@@ -220,6 +227,7 @@ async def create_delivery_run(
             )
 
         for idx, order in enumerate(orders, start=1):
+            order.status = OrderStatus.DISPATCHED
             stop = DeliveryStop(
                 delivery_run_id=run.id,
                 retailer_id=order.retailer_id,
@@ -232,7 +240,8 @@ async def create_delivery_run(
 
             for item in order.items:
                 rate = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
-                ordered = q_kg(item.requested_kg if item.requested_kg is not None else _ZERO)
+                req_kg = adj_map.get((order.id, item.item_id), item.requested_kg or _ZERO)
+                ordered = q_kg(req_kg)
                 stop_item = DeliveryStopItem(
                     delivery_stop_id=stop.id,
                     item_id=item.item_id,
@@ -424,6 +433,17 @@ async def cancel_delivery_run(
     await db.execute(
         delete(DeliveryRunFarmLoad).where(DeliveryRunFarmLoad.delivery_run_id == run.id)
     )
+    
+    # Revert all orders to ACKNOWLEDGED
+    stops = await db.scalars(select(DeliveryStop).where(DeliveryStop.delivery_run_id == run.id))
+    for stop in stops:
+        if stop.daily_order_id:
+            await db.execute(
+                update(RetailerDailyOrder)
+                .where(RetailerDailyOrder.id == stop.daily_order_id)
+                .values(status=OrderStatus.ACKNOWLEDGED)
+            )
+
     run.status = DeliveryRunStatus.CANCELLED
     run.completed_at = now_ist()
     await db.flush()

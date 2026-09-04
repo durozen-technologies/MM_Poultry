@@ -30,9 +30,6 @@ async def admin_orders_by_date(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
     date: IstDate | None = None,
 ) -> TodayOrdersResponse:
-    # If no date, default to today (backward compat)
-    if date is None:
-        return await svc.list_today_orders(auth.db)
     return await svc.list_orders_by_date(auth.db, date)
 
 
