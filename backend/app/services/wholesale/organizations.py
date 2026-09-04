@@ -91,14 +91,22 @@ async def update_organization(
     return OrganizationOut.model_validate(org, from_attributes=True)
 
 
+from sqlalchemy import delete, text
+
 async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     org = await db.scalar(select(Organization).where(Organization.id == org_id))
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # soft-delete: mark inactive instead of hard delete to preserve tenant data
-    org.is_active = False
-    await db.flush()
+    # Hard delete: permanently remove users and organization records
+    await db.execute(delete(UserAuthIndex).where(UserAuthIndex.organization_id == org_id))
+    await db.execute(delete(User).where(User.organization_id == org_id))
+    await db.execute(delete(Organization).where(Organization.id == org_id))
+    
+    # Drop the tenant schema to destroy all tenant data
+    await db.execute(text(f'DROP SCHEMA IF EXISTS "{org.schema_name}" CASCADE'))
+    
+    await db.commit()
 
 
 async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:

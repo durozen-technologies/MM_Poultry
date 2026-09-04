@@ -197,6 +197,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     }
   }, [portalUsername, portalPassword, retailerId]);
 
+  const bal = useMemo(() => Number(ledger?.retailer?.credit_balance || 0), [ledger?.retailer?.credit_balance]);
+  const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "BILL") || [], [ledger?.entries]);
+
   if (loading && !ledger) {
     return (
       <AdminScreenContainer
@@ -233,8 +236,6 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   }
 
   const { retailer, entries } = ledger;
-  const bal = useMemo(() => Number(retailer.credit_balance || 0), [retailer.credit_balance]);
-  const billEntries = useMemo(() => entries.filter((e) => e.entry_type === "BILL"), [entries]);
 
   return (
     <AdminScreenContainer
