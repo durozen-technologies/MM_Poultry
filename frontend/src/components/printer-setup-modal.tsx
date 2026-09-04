@@ -3,12 +3,13 @@ import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, SafeAreaView } from "react-native";
 import { usePrinterStore } from "../store/printer-store";
 import { PrinterDevice } from "../types/printer";
+import { DeliveryReceiptData } from "../utils/printer";
 import {
   getPrinterSupportState,
   loadBluetoothPrinters,
   connectPrinterDevice,
-  printTestReceipt,
 } from "../utils/printer";
+import { useReceiptImagePrintJob } from "../hooks/use-receipt-image-print-job";
 
 type PrinterSetupModalProps = {
   visible: boolean;
@@ -21,6 +22,7 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
   const [error, setError] = useState<string | null>(null);
 
   const { connectedPrinter, setPrinter, disconnectPrinter } = usePrinterStore();
+  const { receiptImagePrintBridge, startReceiptImagePrintJob } = useReceiptImagePrintJob();
 
   useEffect(() => {
     if (visible) {
@@ -44,7 +46,8 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
       const foundPrinters = await loadBluetoothPrinters();
       setPrinters(foundPrinters);
     } catch (e: any) {
-      setError(e.message || "Failed to scan for printers");
+      const errMsg = e?.message || (typeof e === 'string' ? e : JSON.stringify(e));
+      setError(errMsg || "Failed to scan for printers");
     } finally {
       setLoading(false);
     }
@@ -69,7 +72,25 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
     try {
       setLoading(true);
       setError(null);
-      await printTestReceipt(connectedPrinter);
+      
+      const dummyData: DeliveryReceiptData = {
+        receipt_number: "TEST",
+        receipt_type: "TEST",
+        date: new Date().toISOString(),
+        agency_name: "PRINTER CONNECTED",
+        agency_address: `Name: ${connectedPrinter.name || "Unknown"}`,
+        agency_mobile: connectedPrinter.address ? `Address: ${connectedPrinter.address}` : "",
+        buyer_name: "",
+        buyer_address: "",
+        items: [],
+        total_bill: 0,
+        cash_collected: 0,
+        upi_collected: 0,
+        opening_balance: 0,
+        closing_balance: 0,
+      };
+
+      await startReceiptImagePrintJob([dummyData], connectedPrinter);
       Alert.alert("Success", "Test receipt printed.");
     } catch (e: any) {
       setError(e.message || "Failed to print test receipt");
@@ -89,6 +110,7 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
+      {receiptImagePrintBridge}
       <View className="flex-1 justify-end bg-black/50">
         <SafeAreaView className="bg-white rounded-t-3xl min-h-[60%] p-6">
           <View className="flex-row items-center justify-between mb-6">
@@ -129,10 +151,16 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
               <TouchableOpacity
                 onPress={handleTestPrint}
                 disabled={loading}
-                className="mt-4 bg-blue-100 py-3 rounded-xl flex-row items-center justify-center active:bg-blue-200"
+                className={`mt-4 ${loading ? "bg-blue-50" : "bg-blue-100"} py-3 rounded-xl flex-row items-center justify-center active:bg-blue-200`}
               >
-                <MaterialIcons name="print" size={20} color="#0052CC" className="mr-2" />
-                <Text className="text-[#0052CC] font-bold text-sm ml-2">Print Test Receipt</Text>
+                {loading ? (
+                  <ActivityIndicator size="small" color="#0052CC" />
+                ) : (
+                  <>
+                    <MaterialIcons name="print" size={20} color="#0052CC" className="mr-2" />
+                    <Text className="text-[#0052CC] font-bold text-sm ml-2">Print Test Receipt</Text>
+                  </>
+                )}
               </TouchableOpacity>
             )}
           </View>

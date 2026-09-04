@@ -12,10 +12,16 @@ import { cssInterop } from "nativewind";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { Platform, LogBox } from "react-native";
+import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
 
 LogBox.ignoreLogs([
   "viewIsDescendantOf() noop: Cannot find view with reactTag",
 ]);
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 cssInterop(MaterialIcons, {
   className: { target: "style", nativeStyleToProp: { color: true } }

@@ -1,5 +1,6 @@
 import { AppState, NativeModules, PermissionsAndroid, Platform } from "react-native";
 import {
+  BLEPrinter,
   type IBLEPrinter,
   type PrinterImageOptions as NativePrinterImageOptions,
   type PrinterOptions as NativePrinterOptions,
@@ -19,29 +20,63 @@ type PrinterOptions = {
   onError?: (error: Error) => void;
 };
 
-type PrinterRuntime = {
+export type PrinterRuntime = {
   init: () => Promise<void>;
   getDeviceList: () => Promise<PrinterDevice[]>;
   connect: (device: PrinterDevice) => Promise<void>;
   closeConn: () => Promise<void>;
   printBill: (text: string, options?: PrinterOptions) => Promise<void>;
-  printImageBase64: (
-    base64: string,
-    options?: NativePrinterImageOptions & { isLastSlice?: boolean }
-  ) => Promise<void>;
+  printImageBase64: (base64: string, options?: NativePrinterImageOptions & { isLastSlice?: boolean }) => Promise<void>;
 };
 
+export type DeliveryReceiptItem = {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+};
+
+
+
+export type DeliveryReceiptData = {
+  receipt_number: string;
+  date: string;
+
+  agency_name?: string;
+  agency_address?: string;
+  agency_mobile?: string;
+
+  buyer_name: string;
+  buyer_address: string;
+  buyer_phone?: string;
+
+  receipt_type?: 'DELIVERY' | 'PAYMENT' | 'TEST';
+  opening_balance: number;
+
+  items: DeliveryReceiptItem[];
+
+  total_bill: number;
+  cash_collected: number;
+  upi_collected: number;
+
+  closing_balance: number;
+  cylinder_balances?: { name: string; count: number; given?: number; taken?: number }[];
+};
+
+export function formatCurrency(amount: number) {
+  return `Rs. ${amount.toFixed(2)}`;
+}
+
 function hasBluetoothModule() {
-  return !!NativeModules.BLEPrinter;
+  return !!NativeModules.RNBLEPrinter;
 }
 
 function hasUsbModule() {
-  return !!NativeModules.USBPrinter;
+  return !!NativeModules.RNUSBPrinter;
 }
 
 function getThermalPrinterModule() {
-  const ThermalPrinter = require("@haroldtran/react-native-thermal-printer");
-  return { BLEPrinter: ThermalPrinter.BLEPrinter };
+  return { BLEPrinter };
 }
 
 async function requestBluetoothPermissions() {
@@ -95,9 +130,81 @@ function isNoDeviceFound(error: unknown) {
   return String(error).includes("No Bluetooth Device Found");
 }
 
-function createBluetoothRuntime(): PrinterRuntime {
-  const { BLEPrinter } = getThermalPrinterModule();
+function getPrintOptions(onError?: (error: Error) => void): NativePrinterOptions {
+  return {
+    beep: true,
+    cut: true,
+    tailingLine: false, // Prevents excessive paper rolling
+    encoding: "UTF8",
+    onError,
+  };
+}
 
+function waitForPrintDispatch(
+  dispatch: (options: NativePrinterOptions) => void,
+  options: PrinterOptions = {},
+  settleDelayMs = 400,
+) {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+
+    dispatch(
+      getPrintOptions((error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        options.onError?.(error);
+        reject(toError(error));
+      }),
+    );
+
+    setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve();
+    }, settleDelayMs);
+  });
+}
+
+function getPrintImageOptions(onError?: (error: Error) => void): NativePrinterImageOptions {
+  return {
+    beep: true,
+    cut: true,
+    tailingLine: false,
+    encoding: "UTF8",
+    imageWidth: 380,
+    align: "center",
+    onError,
+  };
+}
+
+function getPrintImageSliceOptions(
+  index: number,
+  total: number,
+  onError?: (error: Error) => void,
+): NativePrinterImageOptions {
+  const isLastSlice = index === total - 1;
+
+  return {
+    ...getPrintImageOptions(onError),
+    beep: isLastSlice,
+    cut: isLastSlice,
+    tailingLine: isLastSlice,
+  };
+}
+
+function waitForImagePrintDispatch(
+  dispatch: (options: NativePrinterOptions) => void,
+  options: PrinterOptions = {},
+  isLastSlice = false,
+) {
+  return waitForPrintDispatch(dispatch, options, isLastSlice ? 2000 : 1800);
+}
+
+function createBluetoothRuntime(): PrinterRuntime {
   return {
     init: () => BLEPrinter.init(),
     getDeviceList: async () => {
@@ -118,12 +225,21 @@ function createBluetoothRuntime(): PrinterRuntime {
       await BLEPrinter.connectPrinter(device.address);
     },
     closeConn: () => BLEPrinter.closeConn(),
-    printBill: async (text, options = {}) => {
-      await BLEPrinter.printBill(text, options);
-    },
-    printImageBase64: async (base64, options = {}) => {
-      await BLEPrinter.printImageBase64(base64, options);
-    },
+    printBill: (text, options = {}) =>
+      waitForPrintDispatch(
+        (nativeOptions) => BLEPrinter.printBill(text, nativeOptions),
+        options,
+      ),
+    printImageBase64: (base64, options = {}) =>
+      waitForImagePrintDispatch(
+        (nativeOptions) =>
+          BLEPrinter.printImageBase64(base64, {
+            ...getPrintImageOptions(nativeOptions.onError),
+            ...options,
+          }),
+        options,
+        options.isLastSlice
+      ),
   };
 }
 
@@ -141,7 +257,11 @@ async function ensureBluetoothPrinterReady() {
   }
 
   const runtime = createBluetoothRuntime();
-  await runtime.init();
+  try {
+    await runtime.init();
+  } catch (error) {
+    throw toError(error);
+  }
   return runtime;
 }
 
@@ -293,12 +413,43 @@ export async function connectPrinterDevice(device: PrinterDevice) {
   });
 }
 
+function getCommandText() {
+  return {
+    LEFT: "\x1B\x61\x00",
+    CENTER: "\x1B\x61\x01",
+    RIGHT: "\x1B\x61\x02",
+    NORMAL: "\x1D\x21\x00",
+    DOUBLE_SIZE: "\x1D\x21\x11",
+    BOLD_ON: "\x1B\x45\x01",
+    BOLD_OFF: "\x1B\x45\x00",
+    DIVIDER: "--------------------------------",
+  };
+}
+
 export async function printTestReceipt(device: PrinterDevice) {
   return enqueuePrinterJob(async () => {
     const printer = await getOrCreatePrinterSession(device);
-    const payload = "[C]<font size='big'>MM Broilers</font>\n[C]Printer Test Successful\n[L]\n[L]Connected device:\n[L]" + device.name + "\n[L]\n[C]================================\n\n\n";
+    const COMMAND = getCommandText();
+
+    const payload = [
+      `${COMMAND.CENTER}${COMMAND.BOLD_ON}PRINTER CONNECTED${COMMAND.BOLD_OFF}`,
+      `${COMMAND.LEFT}Name: ${device.name || "Unknown Printer"}`,
+      device.address ? `Address: ${device.address}` : "",
+      `Date & Time: ${new Date().toLocaleString()}`,
+      COMMAND.DIVIDER,
+      `${COMMAND.CENTER}${COMMAND.BOLD_ON}MM Broilers${COMMAND.BOLD_OFF}`,
+      `${COMMAND.CENTER}Printer Test Successful`,
+      COMMAND.DIVIDER,
+      `${COMMAND.LEFT}                    ${COMMAND.BOLD_ON}Thank You${COMMAND.BOLD_OFF}`,
+      "            Software Provided By",
+      "       Durozen Technologies Pvt. Ltd.",
+      "",
+      "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     await printer.printBill(payload);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
   });
 }
 
@@ -306,7 +457,17 @@ export async function printText(device: PrinterDevice, text: string) {
   return enqueuePrinterJob(async () => {
     const printer = await getOrCreatePrinterSession(device);
     await printer.printBill(text);
-    const drainDelay = Math.max(1200, Math.min(6000, Math.floor((text.length / 2500) * 1000)));
-    await new Promise((resolve) => setTimeout(resolve, drainDelay));
+  });
+}
+
+export async function printReceiptImageBase64WithPrinter(base64Chunks: string[], device: PrinterDevice) {
+  if (base64Chunks.length === 0) return;
+  return enqueuePrinterJob(async () => {
+    const printer = await getOrCreatePrinterSession(device);
+    for (let index = 0; index < base64Chunks.length; index += 1) {
+      const base64Chunk = base64Chunks[index];
+      const isLastSlice = index === base64Chunks.length - 1;
+      await printer.printImageBase64(base64Chunk, { ...getPrintImageSliceOptions(index, base64Chunks.length), isLastSlice });
+    }
   });
 }
