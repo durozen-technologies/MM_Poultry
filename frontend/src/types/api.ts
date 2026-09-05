@@ -55,6 +55,7 @@ export type Item = {
 export type OrderStatus =
   | "PLACED"
   | "ACKNOWLEDGED"
+  | "DISPATCHED"
   | "PARTIAL"
   | "FULFILLED"
   | "CANCELLED";
@@ -157,6 +158,31 @@ export type TenantAdminUpdate = {
   password?: string | null;
 };
 
+export type VehicleCreate = {
+  name?: string;
+  number: string;
+  driver_name?: string;
+  driver_id?: string;
+};
+
+export type VehicleUpdate = {
+  name?: string;
+  number?: string;
+  driver_name?: string;
+  driver_id?: string;
+  is_active?: boolean;
+};
+
+export type VehicleOut = {
+  id: string;
+  name?: string;
+  number: string;
+  driver_name?: string;
+  driver_id?: string;
+  is_active: boolean;
+  created_at: string;
+};
+
 export type DeliveryUserCreate = {
   username: string;
   password: string;
@@ -166,9 +192,10 @@ export type DeliveryUserCreate = {
 
 export type Vehicle = {
   id: string;
+  name: string | null;
   number: string;
-  capacity_kg: string | null;
   driver_name: string | null;
+  driver_id: string | null;
   is_active: boolean;
 };
 
@@ -185,6 +212,8 @@ export type DeliveryStopItem = {
   rate_per_kg: string;
   gross_amount: string | null;
   delivered_bird_count?: number | null;
+  original_requested_kg?: string | null;
+  original_total_boxes?: number | null;
 };
 
 export type DeliveryStop = {

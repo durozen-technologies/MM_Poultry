@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useAdminTodayOrders, useConfirmOrder } from "../../hooks/use-queries";
 import type { OrderStatus, DailyOrderOut } from "../../types/api";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
+import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 import { cancelOrder, listOrdersByDate } from "../../api/orders";
 import { DatePickerField } from "../../components/date-picker-field";
 import { todayIstDate, toApiDate } from "../../utils/ist-date";
@@ -21,18 +22,11 @@ import { AdminScreenContainer } from "../../components/admin/admin-screen-contai
 import { AdminHeader } from "../../components/admin/admin-header";
 
 export function AdminOrdersScreen({ navigation }: { navigation: any }) {
-  const [selectedDate, setSelectedDate] = useState(todayIstDate());
-  const isToday = toApiDate(selectedDate) === toApiDate(todayIstDate());
-  const { data: todayData, isLoading: isLoadingToday, isRefetching: isRefetchingToday, refetch: refetchToday } = useAdminTodayOrders();
-  const { data: dateData, isLoading: isLoadingDate, isRefetching: isRefetchingDate, refetch: refetchDate } = useQuery({
-    queryKey: ["admin", "orders", "by-date", toApiDate(selectedDate)],
-    queryFn: () => listOrdersByDate(toApiDate(selectedDate) as string),
-    enabled: !isToday,
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const { data, isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ["admin", "orders", selectedDate ? toApiDate(selectedDate) : "all"],
+    queryFn: () => listOrdersByDate((selectedDate ? toApiDate(selectedDate) : undefined) ?? undefined),
   });
-  const data = isToday ? todayData : dateData;
-  const isLoading = isToday ? isLoadingToday : isLoadingDate;
-  const isRefetching = isToday ? isRefetchingToday : isRefetchingDate;
-  const refetch = isToday ? refetchToday : refetchDate;
   
   const orders = data?.items || [];
   const totalBoxes = data?.total_boxes || 0;
@@ -40,6 +34,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
   const [confirmOrderModal, setConfirmOrderModal] = useState<DailyOrderOut | null>(null);
+  const [dispatchOrderModal, setDispatchOrderModal] = useState<DailyOrderOut | null>(null);
 
   const filteredOrders = useMemo(() => orders.filter((o) => {
     if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
@@ -54,6 +49,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
     switch (status) {
       case "PLACED": return { bg: "bg-error-container/80", text: "text-error", icon: "pending-actions" };
       case "ACKNOWLEDGED": return { bg: "bg-primary-container/80", text: "text-primary", icon: "check-circle" };
+      case "DISPATCHED": return { bg: "bg-[#fef3c7]", text: "text-[#f59e0b]", icon: "local-shipping" };
       case "PARTIAL": return { bg: "bg-tertiary-container/80", text: "text-tertiary", icon: "local-shipping" };
       case "FULFILLED": return { bg: "bg-secondary-container/80", text: "text-secondary", icon: "done-all" };
       case "CANCELLED": return { bg: "bg-error/10", text: "text-error", icon: "cancel" };
@@ -109,12 +105,24 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
         ListHeaderComponent={
           <>
             <View className="pt-2 mb-4">
-              <DatePickerField 
-                label="Filter by Date" 
-                value={selectedDate} 
-                onChange={setSelectedDate} 
-                maximumDate={todayIstDate()} 
-              />
+              <View className="flex-row items-center gap-2">
+                <View className="flex-1">
+                  <DatePickerField 
+                    label="Filter by Date (Default: All)" 
+                    value={selectedDate} 
+                    onChange={setSelectedDate} 
+                    maximumDate={todayIstDate()} 
+                  />
+                </View>
+                {selectedDate && (
+                  <Pressable 
+                    onPress={() => setSelectedDate(null)}
+                    className="w-12 h-12 mt-6 rounded-xl bg-error/10 items-center justify-center border border-error/20 active:opacity-70"
+                  >
+                    <MaterialIcons name="close" size={24} className="text-error" />
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {/* Search */}
@@ -169,7 +177,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 
             {/* Filter Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-6 overflow-visible">
-              {(["All", "PLACED", "ACKNOWLEDGED", "FULFILLED", "CANCELLED"] as const).map((f) => (
+              {(["All", "PLACED", "ACKNOWLEDGED", "DISPATCHED", "FULFILLED", "CANCELLED"] as const).map((f) => (
                 <Pressable
                   key={f}
                   accessibilityRole="button"
@@ -212,7 +220,7 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           <OrderListItem 
             order={order}
             onConfirm={() => setConfirmOrderModal(order)}
-            onDispatch={() => navigation.navigate("DeliveryRuns")}
+            onDispatch={() => setDispatchOrderModal(order)}
             onPress={() => navigation.navigate("OrderDetail", { order })}
             getStatusColor={getStatusColor}
           />
@@ -225,6 +233,17 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           onClose={() => setConfirmOrderModal(null)}
           onConfirmed={() => {
             setConfirmOrderModal(null);
+            refetch();
+          }}
+        />
+      )}
+      
+      {dispatchOrderModal && (
+        <SingleOrderDispatchModal
+          order={dispatchOrderModal}
+          onClose={() => setDispatchOrderModal(null)}
+          onAssigned={() => {
+            setDispatchOrderModal(null);
             refetch();
           }}
         />

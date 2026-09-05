@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
 import { apiItems } from "../../api/items";
@@ -295,7 +294,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
 
       {/* Tabs */}
       <View className="bg-surface-container-lowest border-b border-outline-variant/30 shadow-sm z-10">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16 }}>
           {["OVERVIEW", "ORDERS", "BILLS", "RATES", "LEDGER"].map((tab) => (
             <Pressable 
               key={tab}
@@ -314,9 +313,8 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         </ScrollView>
       </View>
 
-      <KeyboardAwareScrollView 
-        enableOnAndroid={true} 
-        keyboardShouldPersistTaps="always" 
+      <ScrollView 
+        keyboardShouldPersistTaps="handled" 
         className="flex-1 px-4 pt-4" 
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -496,10 +494,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               </View>
               <InfoRow label="Full Address" value={retailer.address || "—"} />
               <InfoRow label="Area" value={retailer.area || "—"} />
-              <InfoRow label="Route" value={retailer.route_name || "—"} />
-              {retailer.route_area ? (
-                <InfoRow label="Route area" value={retailer.route_area} />
-              ) : null}
+
               <InfoRow label="Locality" value={retailer.area || "—"} />
               <InfoRow label="Preferred Time" value={retailer.preferred_delivery_time || "—"} isLast />
             </View>
@@ -698,7 +693,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   <ActivityIndicator color="#115E29" />
                 </View>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+                <View className="flex-row flex-wrap px-4 gap-2 mb-2">
                   {items.map((item) => {
                     const isSelected = selectedItemId === item.id;
                     return (
@@ -709,7 +704,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                           const existingRate = rates.find((r) => r.item_id === item.id && r.retailer_id === retailerId);
                           setCustomRateInput(existingRate ? String(existingRate.rate_per_kg) : "");
                         }}
-                        className={`px-4 py-2.5 rounded-full border flex-row items-center transition-colors ${
+                        className={`px-4 py-2.5 rounded-full border flex-row items-center transition-colors active:scale-95 ${
                           isSelected 
                             ? "bg-primary border-primary shadow-sm shadow-primary/30" 
                             : "bg-surface-container-highest border-outline-variant/50"
@@ -726,13 +721,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       </Pressable>
                     );
                   })}
-                </ScrollView>
+                </View>
               )}
             </View>
 
             {selectedItemId && (
               <View className="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-sm relative overflow-hidden">
-                <View className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-8 translate-x-8" />
+                <View className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-8 translate-x-8" pointerEvents="none" />
                 
                 <View className="flex-row items-center gap-2 mb-4">
                   <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
@@ -747,12 +742,10 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2 ml-1">
                     Special Rate (₹ / KG)
                   </Text>
-                  <View className="relative flex-row items-center">
-                    <View className="absolute left-4 z-10">
-                      <Text className="font-title-lg text-on-surface-variant font-bold">₹</Text>
-                    </View>
+                  <View className="flex-row items-center bg-surface-container-highest/50 h-14 rounded-2xl border border-outline-variant/50 px-4">
+                    <Text className="font-title-lg text-on-surface-variant font-bold mr-2">₹</Text>
                     <TextInput
-                      className="w-full bg-surface-container-highest/50 h-14 rounded-2xl border border-outline-variant/50 pl-10 pr-4 font-title-lg font-black text-primary focus:border-primary"
+                      className="flex-1 font-title-lg font-black text-primary h-full py-0"
                       value={customRateInput}
                       onChangeText={setCustomRateInput}
                       placeholder="0.00"
@@ -789,7 +782,16 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                 if (!customRate && !globalRate) return null;
 
                 return (
-                  <View key={item.id} className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 shadow-sm flex-row justify-between items-center relative overflow-hidden">
+                  <Pressable 
+                    key={item.id} 
+                    onPress={() => {
+                      setSelectedItemId(item.id);
+                      setCustomRateInput(customRate ? String(customRate.rate_per_kg) : "");
+                    }}
+                    className={`bg-surface-container-lowest rounded-2xl p-4 border shadow-sm flex-row justify-between items-center relative overflow-hidden active:scale-[0.98] transition-colors ${
+                      selectedItemId === item.id ? 'border-primary' : 'border-outline-variant/20'
+                    }`}
+                  >
                     <View className={`absolute top-0 left-0 w-1.5 h-full ${customRate ? 'bg-primary' : 'bg-surface-variant'}`} />
                     <View className="ml-2 flex-1">
                       <Text className="font-title-sm text-on-surface font-bold mb-1">{item.name}</Text>
@@ -805,13 +807,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         ₹{customRate ? customRate.rate_per_kg : globalRate?.rate_per_kg}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
           </View>
         )}
-      </KeyboardAwareScrollView>
+      </ScrollView>
     </AdminScreenContainer>
   );
 }

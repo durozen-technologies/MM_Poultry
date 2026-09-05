@@ -10,12 +10,14 @@ import { cancelOrder } from "../../api/orders";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
+import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 
 import { PrimaryButton } from "../../components/ui/primary-button";
 
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const [order, setOrder] = useState<DailyOrder>(route.params?.order as DailyOrder);
   const [cancelling, setCancelling] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const user = useAuthStore((s) => s.user);
 
   const { data: itemsPage } = useQuery({
@@ -91,6 +93,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           <View className={`absolute top-0 left-0 w-1.5 h-full ${
             order.status === 'PLACED' ? 'bg-error' : 
             order.status === 'ACKNOWLEDGED' ? 'bg-tertiary' :
+            order.status === 'DISPATCHED' ? 'bg-[#f59e0b]' :
             order.status === 'FULFILLED' ? 'bg-primary' : 
             order.status === 'CANCELLED' ? 'bg-error' : 'bg-surface-variant'
           }`} />
@@ -103,12 +106,14 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
             <View className={`px-3 py-1.5 rounded-full border ${
               order.status === 'PLACED' ? 'bg-error-container/50 border-error/20' : 
               order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20' :
+              order.status === 'DISPATCHED' ? 'bg-[#fef3c7] border-[#f59e0b]/20' :
               order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20' : 
               order.status === 'CANCELLED' ? 'bg-error/10 border-error/20' : 'bg-surface-variant/30 border-outline-variant/20'
             }`}>
               <Text className={`font-label-sm uppercase tracking-widest font-bold ${
                 order.status === 'PLACED' ? 'text-error' : 
                 order.status === 'ACKNOWLEDGED' ? 'text-tertiary' :
+                order.status === 'DISPATCHED' ? 'text-[#f59e0b]' :
                 order.status === 'FULFILLED' ? 'text-primary' : 
                 order.status === 'CANCELLED' ? 'text-error' : 'text-on-surface-variant'
               }`}>
@@ -237,16 +242,27 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           />
         )}
 
-        {user?.role !== "DELIVERY" && order.status !== "CANCELLED" && (
+        {user?.role !== "DELIVERY" && (order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
           <PrimaryButton
-            title="Create Delivery Run"
+            title="Dispatch Order"
             icon="local-shipping"
             variant="primary"
-            onPress={() => navigation.navigate("DeliveryRuns")}
+            onPress={() => setShowDispatchModal(true)}
             className="mb-8"
           />
         )}
       </ScrollView>
+      
+      {showDispatchModal && (
+        <SingleOrderDispatchModal
+          order={order}
+          onClose={() => setShowDispatchModal(false)}
+          onAssigned={() => {
+            setShowDispatchModal(false);
+            setOrder({ ...order, status: "FULFILLED" }); // optimistic UI update
+          }}
+        />
+      )}
     </AdminScreenContainer>
   );
 }

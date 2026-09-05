@@ -104,11 +104,7 @@ export function DeliveryHomeScreen() {
               <Text className="font-headline-sm text-on-surface font-semibold">
                 Run {run.status} · {formatIstDate(run.run_date)}
               </Text>
-              {(() => {
-                const names = [...new Set((run.stops || []).map((s) => s.route_name).filter(Boolean))];
-                const label = names.length === 1 ? `Route: ${names[0]}` : names.length > 1 ? "Mixed routes" : null;
-                return label ? <Text className="text-sm text-on-surface-variant mt-1">{label}</Text> : null;
-              })()}
+
               <View className="flex-row gap-2 mt-3">
                 <Pressable accessibilityRole="button" className="bg-primary px-4 py-2 rounded-lg flex-1 items-center" onPress={onStartRun}>
                   <Text className="text-on-primary font-semibold">Start</Text>
@@ -160,46 +156,61 @@ export function DeliveryHomeScreen() {
                 const net = gross - (boxes * emptyWt);
 
                 return (
-                  <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
-                    <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
-                    <Text className="text-sm text-on-surface-variant mb-2">
-                      Req: {item.ordered_kg} kg
-                      {item.remaining_kg != null && item.remaining_kg !== item.ordered_kg
-                        ? ` · Remaining ${item.remaining_kg} kg`
-                        : ""}{" "}
-                      @ ₹{item.rate_per_kg}/kg
-                    </Text>
+                    <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
+                      <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
+                      <View className="mb-3 bg-surface-variant/30 p-2 rounded-lg">
+                        <Text className="text-sm font-semibold text-on-surface">Admin Assigned: <Text className="font-bold">{item.ordered_kg} kg</Text></Text>
+                        <Text className="text-sm text-on-surface-variant">
+                          Retailer Requested: {item.original_requested_kg ? `${item.original_requested_kg} kg` : "N/A"} 
+                          {item.original_total_boxes ? ` / ${item.original_total_boxes} boxes` : ""}
+                        </Text>
+                        {item.remaining_kg != null && item.remaining_kg !== item.ordered_kg ? (
+                          <Text className="text-sm text-on-surface-variant mt-1">Remaining to deliver: {item.remaining_kg} kg</Text>
+                        ) : null}
+                      </View>
                     
-                    <View className="flex-row items-center gap-2 mb-2">
-                      {!skipScale && (
-                        <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.5]" onPress={() => simulateScale(item.item_id)}>
-                          <MaterialIcons name="bluetooth" size={20} className="text-primary" />
-                        </Pressable>
-                      )}
-                      <TextInput
-                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
-                        value={weights[item.item_id] || ""}
-                        onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
-                        placeholder="Gross Wt (kg)"
-                        keyboardType="decimal-pad"
-                      />
+                    <View className="mb-3">
+                      <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Gross Wt (kg) / Scale Value</Text>
+                      <View className="flex-row items-center gap-2">
+                        {!skipScale && (
+                          <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.2]" onPress={() => simulateScale(item.item_id)}>
+                            <MaterialIcons name="bluetooth" size={20} className="text-primary" />
+                          </Pressable>
+                        )}
+                        <TextInput
+                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
+                          value={weights[item.item_id] || ""}
+                          onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
+                          placeholder="e.g. 55.5"
+                          placeholderTextColor="#9ca3af"
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
                     </View>
 
                     <View className="flex-row items-center gap-2 mb-2">
-                      <TextInput
-                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
-                        value={deliveredBoxes[item.item_id] || ""}
-                        onChangeText={(v) => setDeliveredBoxes(prev => ({ ...prev, [item.item_id]: v }))}
-                        placeholder="Delivered Boxes"
-                        keyboardType="number-pad"
-                      />
-                      <TextInput
-                        className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
-                        value={emptyBoxWeights[item.item_id] || ""}
-                        onChangeText={(v) => setEmptyBoxWeights(prev => ({ ...prev, [item.item_id]: v }))}
-                        placeholder="Empty Box Wt (kg)"
-                        keyboardType="decimal-pad"
-                      />
+                      <View className="flex-1">
+                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Total Boxes</Text>
+                        <TextInput
+                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+                          value={deliveredBoxes[item.item_id] || ""}
+                          onChangeText={(v) => setDeliveredBoxes(prev => ({ ...prev, [item.item_id]: v }))}
+                          placeholder="e.g. 5"
+                          placeholderTextColor="#9ca3af"
+                          keyboardType="number-pad"
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Box Wt (kg)</Text>
+                        <TextInput
+                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+                          value={emptyBoxWeights[item.item_id] || ""}
+                          onChangeText={(v) => setEmptyBoxWeights(prev => ({ ...prev, [item.item_id]: v }))}
+                          placeholder="e.g. 1.2"
+                          placeholderTextColor="#9ca3af"
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
                     </View>
 
                     {gross > 0 && (
@@ -214,8 +225,14 @@ export function DeliveryHomeScreen() {
             />
 
             <View className="flex-row gap-2 mb-2 pt-2 border-t border-outline-variant/20">
-              <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={cash} onChangeText={setCash} placeholder="Cash" keyboardType="decimal-pad" />
-              <TextInput className="flex-1 border border-outline-variant rounded-lg px-3 py-2 bg-surface" value={upi} onChangeText={setUpi} placeholder="UPI" keyboardType="decimal-pad" />
+              <View className="flex-1">
+                <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Cash (₹)</Text>
+                <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={cash} onChangeText={setCash} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">UPI (₹)</Text>
+                <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={upi} onChangeText={setUpi} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
+              </View>
             </View>
 
             <View className="flex-row justify-between items-center mb-4 mt-2 px-1">
@@ -256,8 +273,14 @@ export function DeliveryHomeScreen() {
         {reconcileVisible ? (
           <View className="bg-surface-container-lowest rounded-xl p-4 border border-primary/30 mt-2">
             <Text className="font-bold text-on-surface mb-2">Trip reconciliation</Text>
-            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={returnedKg} onChangeText={setReturnedKg} placeholder="Returned kg" keyboardType="decimal-pad" />
-            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={wastageKg} onChangeText={setWastageKg} placeholder="Wastage kg" keyboardType="decimal-pad" />
+            <View className="mb-2">
+              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Returned (kg)</Text>
+              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={returnedKg} onChangeText={setReturnedKg} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
+            </View>
+            <View className="mb-2">
+              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Wastage (kg)</Text>
+              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={wastageKg} onChangeText={setWastageKg} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
+            </View>
             <PrimaryButton className="mt-2" onPress={onReconcile} title="Save reconciliation" />
           </View>
         ) : null}
@@ -265,7 +288,9 @@ export function DeliveryHomeScreen() {
         {showFail && activeStop ? (
           <View className="bg-surface-container-lowest rounded-xl p-4 border border-error/30 mt-2">
             <Text className="font-bold text-on-surface mb-2">Failure reason (required)</Text>
-            <TextInput className="border border-outline-variant rounded-lg px-3 py-2 mb-2" value={failReason} onChangeText={setFailReason} placeholder="Reason" />
+            <View className="mb-2">
+              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={failReason} onChangeText={setFailReason} placeholder="e.g. Shop closed" placeholderTextColor="#9ca3af" />
+            </View>
             <PrimaryButton className="mt-2" variant="error" onPress={onFailStop} title="Confirm Failed Delivery" />
           </View>
         ) : null}
@@ -295,13 +320,20 @@ const StopListItem = React.memo(({ item, isActive, onPress }: { item: any, isAct
       <View className={`absolute top-0 left-0 w-1 h-full ${isActive ? 'bg-primary' : 'bg-transparent'}`} />
 
       <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-2 flex-1 mr-2">
           <View className={`w-8 h-8 rounded-full items-center justify-center ${isActive ? 'bg-primary' : 'bg-surface-variant'}`}>
             <Text className={`font-bold ${isActive ? 'text-on-primary' : 'text-on-surface-variant'}`}>{item.sequence}</Text>
           </View>
-          <Text className="font-headline-sm text-on-surface font-bold">
-            {item.retailer_name}
-          </Text>
+          <View className="flex-1">
+            <Text className="font-headline-sm text-on-surface font-bold" numberOfLines={1}>
+              {item.shop_name || item.retailer_name}
+            </Text>
+            {item.shop_name ? (
+              <Text className="font-body-sm text-on-surface-variant" numberOfLines={1}>
+                {item.retailer_name}
+              </Text>
+            ) : null}
+          </View>
         </View>
         <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-error-container' : 'bg-primary-container'}`}>
           <Text className={`font-label-md font-semibold ${item.status === 'PENDING' ? 'text-error' : 'text-on-primary-container'}`}>

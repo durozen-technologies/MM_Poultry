@@ -12,14 +12,15 @@ export async function listTodayOrders() {
   return data;
 }
 
-export async function listOrdersByDate(date: string) {
+export async function listOrdersByDate(date?: string) {
+  const params = date ? { date } : {};
   const { data } = await api.get<{
     items: DailyOrder[];
     total_requested_kg: string;
     total_boxes: number;
     has_more: boolean;
     next_cursor: string | null;
-  }>("/admin/orders", { params: { date } });
+  }>("/admin/orders", { params });
   return data;
 }
 

@@ -15,6 +15,7 @@ export async function createDeliveryRun(payload: {
   farm_load_id?: string | null;
   farm_load_allocations?: FarmLoadAllocationPayload[];
   order_ids: string[];
+  order_adjustments?: { order_id: string; item_id: string; requested_kg: string | number }[];
   run_date?: string;
   route_id?: string | null;
   driver_user_id?: string;

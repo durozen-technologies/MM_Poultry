@@ -17,6 +17,7 @@ from app.models.domain import (
     FarmLoad,
     Retailer,
     RetailerDailyOrder,
+    RetailerDailyOrderItem,
     Vehicle,
 )
 from app.models.enums import (
@@ -46,6 +47,19 @@ async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
     out.retailer_name = retailer.name
     out.shop_name = retailer.shop_name
     out.route_name = retailer.route_name
+    
+    if stop.daily_order_id:
+        order_items = await db.scalars(
+            select(RetailerDailyOrderItem)
+            .where(RetailerDailyOrderItem.order_id == stop.daily_order_id)
+        )
+        oi_map = {oi.item_id: oi for oi in order_items}
+        for item_out in out.items:
+            oi = oi_map.get(item_out.item_id)
+            if oi:
+                item_out.original_requested_kg = oi.requested_kg
+                item_out.original_total_boxes = oi.total_boxes
+
     return out
 
 

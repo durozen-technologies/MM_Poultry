@@ -129,4 +129,4 @@ tasks/
 
 tmp/
 .marscode/
-
+erase_db.py

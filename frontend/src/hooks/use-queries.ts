@@ -2,12 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
-import {
-  getRoute,
-  listRoutes,
-  fetchAllUnassignedRetailers,
-  listDeliveryRoutes,
-} from "../api/routes";
+
 import type {
   DailyOrderOut,
   FarmOut,
@@ -57,34 +52,7 @@ export function useAdminTodayOrders(options?: { routeId?: string | null; unassig
   });
 }
 
-export function useAdminRoutes() {
-  return useQuery({
-    queryKey: ["admin", "routes"],
-    queryFn: listRoutes,
-  });
-}
 
-export function useRouteDetail(routeId: string | null) {
-  return useQuery({
-    queryKey: ["admin", "routes", routeId],
-    queryFn: () => getRoute(routeId!),
-    enabled: !!routeId,
-  });
-}
-
-export function useUnassignedRetailers() {
-  return useQuery({
-    queryKey: ["admin", "routes", "unassigned"],
-    queryFn: fetchAllUnassignedRetailers,
-  });
-}
-
-export function useDeliveryRoutes() {
-  return useQuery({
-    queryKey: ["delivery", "routes"],
-    queryFn: listDeliveryRoutes,
-  });
-}
 
 export function useAdminFarms() {
   return useQuery({

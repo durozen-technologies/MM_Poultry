@@ -50,6 +50,7 @@ export function AdminRouteDispatchScreen({
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [selectedLoadIds, setSelectedLoadIds] = useState<Set<string>>(new Set());
   const [allocations, setAllocations] = useState<Record<string, string>>({});
+  const [itemAdjustments, setItemAdjustments] = useState<Record<string, string>>({});
   const [driverId, setDriverId] = useState<string | null>(null);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -59,8 +60,14 @@ export function AdminRouteDispatchScreen({
     if (!bucket) return 0;
     return bucket.orders
       .filter((o) => selectedOrders.has(o.order_id))
-      .reduce((sum, o) => sum + Number(o.requested_kg), 0);
-  }, [bucket, selectedOrders]);
+      .reduce((sum, o) => {
+        const orderKg = o.items.reduce((s, it) => {
+           const adj = itemAdjustments[`${o.order_id}_${it.item_id}`];
+           return s + Number(adj !== undefined ? adj : (it.requested_kg ?? 0));
+        }, 0);
+        return sum + orderKg;
+      }, 0);
+  }, [bucket, selectedOrders, itemAdjustments]);
 
   const selectedItems = useMemo((): DispatchItemSummary[] => {
     if (!bucket) return [];
@@ -69,23 +76,26 @@ export function AdminRouteDispatchScreen({
       if (!selectedOrders.has(order.order_id)) continue;
       for (const line of order.items) {
         const existing = totals[line.item_id];
+        const adj = itemAdjustments[`${order.order_id}_${line.item_id}`];
+        const qty = Number(adj !== undefined ? adj : (line.requested_kg ?? 0));
+        
         if (!existing) {
           totals[line.item_id] = {
             item_id: line.item_id,
             item_name: line.item_name,
             total_boxes: line.total_boxes ?? 0,
-            total_kg: String(line.requested_kg ?? 0),
+            total_kg: String(qty),
           };
         } else {
           existing.total_boxes += line.total_boxes ?? 0;
           existing.total_kg = String(
-            Number(existing.total_kg) + Number(line.requested_kg ?? 0)
+            Number(existing.total_kg) + qty
           );
         }
       }
     }
     return Object.values(totals);
-  }, [bucket, selectedOrders]);
+  }, [bucket, selectedOrders, itemAdjustments]);
 
   const toggleOrder = (id: string) => {
     setSelectedOrders((prev) => {
@@ -114,10 +124,6 @@ export function AdminRouteDispatchScreen({
       setMsg({ text: "Select driver and vehicle", ok: false });
       return;
     }
-    if (selectedLoadIds.size === 0) {
-      setMsg({ text: "Select at least one farm load", ok: false });
-      return;
-    }
 
     const driver = users.find((u) => u.id === driverId);
     const vehicle = vehicles.find((v) => v.id === vehicleId);
@@ -130,11 +136,17 @@ export function AdminRouteDispatchScreen({
       allocated_kg: allocations[farm_load_id] || String(perLoad.toFixed(3)),
     }));
 
+    const order_adjustments = Object.entries(itemAdjustments).map(([k, v]) => {
+      const [order_id, item_id] = k.split("_");
+      return { order_id, item_id, requested_kg: v };
+    });
+
     setSubmitting(true);
     setMsg(null);
     try {
       await createDeliveryRun({
         order_ids: Array.from(selectedOrders),
+        order_adjustments,
         route_id: routeId ?? undefined,
         driver_user_id: driver.id,
         driver_name: driver.full_name || driver.username,
@@ -183,7 +195,13 @@ export function AdminRouteDispatchScreen({
           {vehicles.map((v) => (
             <Pressable
               key={v.id}
-              onPress={() => setVehicleId(v.id)}
+              onPress={() => {
+                setVehicleId(v.id);
+                if (!driverId && v.driver_name) {
+                  const u = users.find(x => x.full_name === v.driver_name || x.username === v.driver_name);
+                  if (u) setDriverId(u.id);
+                }
+              }}
               className={`p-3 rounded-xl border ${vehicleId === v.id ? "border-primary bg-primary-container/20" : "border-outline-variant"}`}
             >
               <Text className={vehicleId === v.id ? "text-primary font-semibold" : "text-on-surface"}>
@@ -208,7 +226,7 @@ export function AdminRouteDispatchScreen({
           ))}
         </View>
 
-        <Text className="font-label-lg font-semibold text-on-surface mb-2">Farm loads</Text>
+        <Text className="font-label-lg font-semibold text-on-surface mb-2 mt-4">Farm loads (Optional)</Text>
         <View className="gap-2 mb-4">
           {loads.map((l) => (
             <View key={l.id} className="border border-outline-variant rounded-xl p-3">
@@ -275,13 +293,16 @@ export function AdminRouteDispatchScreen({
                     <Text className="font-label-md text-on-surface font-semibold flex-1 pr-2">
                       {it.item_name ?? "Item"}
                     </Text>
-                    <Text className="font-label-md text-on-surface-variant">
-                      <Text className="font-bold text-on-surface">{it.total_boxes ?? 0}</Text> Box •{" "}
-                      <Text className="font-bold text-on-surface">
-                        {Number(it.requested_kg ?? 0).toFixed(1)}
-                      </Text>{" "}
-                      KG
-                    </Text>
+                    <View className="flex-row items-center gap-1">
+                      <Text className="font-bold text-on-surface">{it.total_boxes ?? 0} Box • </Text>
+                      <TextInput 
+                        className="border border-outline-variant rounded px-2 py-0 text-on-surface min-w-[50px] text-center font-bold"
+                        value={itemAdjustments[`${o.order_id}_${it.item_id}`] ?? String(Number(it.requested_kg ?? 0).toFixed(1))}
+                        onChangeText={(val) => setItemAdjustments(prev => ({...prev, [`${o.order_id}_${it.item_id}`]: val}))}
+                        keyboardType="decimal-pad"
+                      />
+                      <Text className="font-bold text-on-surface"> KG</Text>
+                    </View>
                   </View>
                 ))}
                 {o.items.length === 0 ? (

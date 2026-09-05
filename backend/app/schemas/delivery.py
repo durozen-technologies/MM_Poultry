@@ -66,6 +66,8 @@ class DeliveryStopItemOut(BaseModel):
     rate_per_kg: Decimal
     gross_amount: Decimal | None = None
     delivered_bird_count: int | None = None
+    original_requested_kg: Decimal | None = None
+    original_total_boxes: int | None = None
 
 
 class DeliveryStopOut(BaseModel):

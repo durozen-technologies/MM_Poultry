@@ -11,6 +11,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { createVehicle, deleteVehicle, listVehicles } from "../../api/vehicles";
+import { createDeliveryUser } from "../../api/users";
 import type { Vehicle } from "../../types/api";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
@@ -19,8 +20,10 @@ import { AdminCard } from "../../components/admin/admin-card";
 
 export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [name, setName] = useState("");
   const [number, setNumber] = useState("");
-  const [capacity, setCapacity] = useState("");
+  const [driverUsername, setDriverUsername] = useState("");
+  const [driverPassword, setDriverPassword] = useState("");
   const [driverName, setDriverName] = useState("");
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -45,20 +48,29 @@ export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
   );
 
   async function onAdd() {
-    if (!number.trim()) {
-      setMsg({ text: "Vehicle number is required", type: 'error' });
+    if (!number.trim() || !driverUsername.trim() || !driverPassword.trim()) {
+      setMsg({ text: "Vehicle number, username, and password are required", type: 'error' });
       return;
     }
     
     setActionLoading(true);
     try {
-      await createVehicle({
-        number: number.trim(),
-        capacity_kg: capacity || null,
-        driver_name: driverName.trim() || null,
+      const user = await createDeliveryUser({
+        username: driverUsername.trim(),
+        password: driverPassword.trim(),
+        full_name: driverName.trim() || null,
       });
+
+      await createVehicle({
+        name: name.trim() || undefined,
+        number: number.trim(),
+        driver_name: driverName.trim() || undefined,
+        driver_id: user.id,
+      });
+      setName("");
       setNumber("");
-      setCapacity("");
+      setDriverUsername("");
+      setDriverPassword("");
       setDriverName("");
       setIsAdding(false);
       setMsg({ text: "Vehicle added successfully", type: 'success' });
@@ -193,6 +205,22 @@ export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
                   
                   <View className="flex-col gap-4">
                     <View>
+                      <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Vehicle Name</Text>
+                      <View className="relative flex-row items-center">
+                        <View className="absolute left-4 z-10">
+                          <MaterialIcons name="directions-car" size={20} className="text-on-surface-variant" />
+                        </View>
+                        <TextInput 
+                          className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-title-md text-on-surface focus:border-primary" 
+                          placeholder="e.g. Tata Ace 1" 
+                          value={name} 
+                          onChangeText={setName} 
+                          placeholderTextColor="#9ca3af" 
+                        />
+                      </View>
+                    </View>
+
+                    <View>
                       <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Vehicle Number <Text className="text-error">*</Text></Text>
                       <View className="relative flex-row items-center">
                         <View className="absolute left-4 z-10">
@@ -211,7 +239,7 @@ export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
                     
                     <View className="flex-row gap-4">
                       <View className="flex-[1.5]">
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Driver Name</Text>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Default Driver Name</Text>
                         <View className="relative flex-row items-center">
                           <View className="absolute left-4 z-10">
                             <MaterialIcons name="person" size={20} className="text-on-surface-variant" />
@@ -225,24 +253,39 @@ export function AdminVehiclesScreen({ navigation }: { navigation: any }) {
                           />
                         </View>
                       </View>
-                      
+                    </View>
+
+                    <View className="flex-row gap-4 mt-2">
                       <View className="flex-1">
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Capacity</Text>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Login Username <Text className="text-error">*</Text></Text>
                         <View className="relative flex-row items-center">
                           <View className="absolute left-4 z-10">
-                            <MaterialIcons name="scale" size={20} className="text-on-surface-variant" />
+                            <MaterialIcons name="account-circle" size={20} className="text-on-surface-variant" />
                           </View>
                           <TextInput 
-                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-10 pr-10 font-title-md text-on-surface focus:border-primary" 
-                            placeholder="0" 
-                            value={capacity} 
-                            onChangeText={setCapacity} 
-                            placeholderTextColor="#9ca3af" 
-                            keyboardType="decimal-pad"
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="username" 
+                            value={driverUsername} 
+                            onChangeText={setDriverUsername} 
+                            placeholderTextColor="#9ca3af"
+                            autoCapitalize="none"
                           />
-                          <View className="absolute right-4 z-10">
-                            <Text className="font-label-sm font-bold text-on-surface-variant">KG</Text>
+                        </View>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1 uppercase tracking-wider">Login Password <Text className="text-error">*</Text></Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="lock" size={20} className="text-on-surface-variant" />
                           </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="password" 
+                            value={driverPassword} 
+                            onChangeText={setDriverPassword} 
+                            placeholderTextColor="#9ca3af"
+                            secureTextEntry
+                          />
                         </View>
                       </View>
                     </View>
@@ -344,7 +387,7 @@ const VehicleListItem = React.memo(({ v, confirmDeactivate }: { v: Vehicle; conf
         <View className="flex-1 pr-2">
           <View className="flex-row items-center gap-2 mb-1">
             <Text className={`font-title-md font-bold uppercase tracking-wide ${v.is_active ? 'text-on-surface' : 'text-on-surface-variant'}`}>
-              {v.number}
+              {v.name ? `${v.name} (${v.number})` : v.number}
             </Text>
             {!v.is_active && (
               <View className="bg-surface-variant/50 px-2 py-0.5 rounded-full">
@@ -361,11 +404,11 @@ const VehicleListItem = React.memo(({ v, confirmDeactivate }: { v: Vehicle; conf
               </Text>
             </View>
             
-            {v.capacity_kg && (
+            {v.driver_id && (
               <View className="flex-row items-center gap-1 bg-surface-container-highest px-2 py-0.5 rounded-md">
-                <MaterialIcons name="scale" size={12} className="text-on-surface-variant" />
+                <MaterialIcons name="lock" size={12} className="text-on-surface-variant" />
                 <Text className="font-label-sm font-bold text-on-surface-variant">
-                  {v.capacity_kg} KG
+                  Linked Account
                 </Text>
               </View>
             )}

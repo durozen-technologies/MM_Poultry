@@ -243,9 +243,7 @@ async def commit_bill(
         .where(DeliveryBill.delivery_stop_id == stop_id)
     )
     if existing and stop.status == DeliveryStopStatus.BILLED:
-        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
-        if not has_remaining:
-            return DeliveryBillOut.model_validate(existing, from_attributes=True)
+        return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
     if stop.status not in {DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED}:
         raise HTTPException(
@@ -289,15 +287,12 @@ async def commit_bill(
             if bill_item:
                 bill_item.weight_kg = prev_item.weight_kg
                 bill_item.amount = prev_item.amount
-        stop.status = DeliveryStopStatus.WEIGHED
-        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
-        if not has_remaining:
-            stop.status = DeliveryStopStatus.BILLED
+        stop.status = DeliveryStopStatus.BILLED
         if stop.daily_order_id:
             order = await db.scalar(
                 select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
             )
-            if order and not has_remaining:
+            if order:
                 order.status = OrderStatus.FULFILLED
         await db.flush()
         return DeliveryBillOut.model_validate(existing, from_attributes=True)
@@ -365,19 +360,12 @@ async def commit_bill(
         db.add(payment)
 
     stop.status = DeliveryStopStatus.BILLED
-    has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
-    if has_remaining:
-        stop.status = DeliveryStopStatus.WEIGHED
     if stop.daily_order_id:
         order = await db.scalar(
             select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
         )
         if order:
-            has_remaining = any(
-                (it.remaining_kg or ZERO) > ZERO for it in stop.items
-            )
-            if not has_remaining:
-                order.status = OrderStatus.FULFILLED
+            order.status = OrderStatus.FULFILLED
 
     try:
         await db.flush()

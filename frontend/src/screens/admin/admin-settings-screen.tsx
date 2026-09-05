@@ -18,7 +18,6 @@ type SettingsItem = {
 
 const ITEMS: SettingsItem[] = [
   { title: "Items", subtitle: "Manage products", icon: "category", screen: "Items" },
-  { title: "Routes", subtitle: "Group retailers for delivery", icon: "alt-route", screen: "AdminRoutes" },
   { title: "Vehicles", subtitle: "Fleet & driver details", icon: "local-shipping", screen: "Vehicles" },
   { title: "Delivery Users", subtitle: "Driver app logins", icon: "badge", screen: "DeliveryUsers" },
   { title: "Delivery Runs", subtitle: "Build runs from farm loads", icon: "route", screen: "DeliveryRuns" },

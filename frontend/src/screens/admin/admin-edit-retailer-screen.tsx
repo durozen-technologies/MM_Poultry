@@ -13,7 +13,6 @@ import { AdminScreenContainer } from "../../components/admin/admin-screen-contai
 import { AdminHeader } from "../../components/admin/admin-header";
 import { AdminCard } from "../../components/admin/admin-card";
 import { AdminActionFooter } from "../../components/admin/admin-action-footer";
-import { RoutePicker } from "../../components/admin/route-picker";
 
 export function AdminEditRetailerScreen({ navigation, route }: { navigation: any; route: any }) {
   const { retailerId } = route.params;
@@ -27,7 +26,6 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
   const [whatsapp, setWhatsapp] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("");
-  const [routeId, setRouteId] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
@@ -54,7 +52,6 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
       setWhatsapp(retailer.whatsapp || "");
       setAddress(retailer.address || "");
       setArea(retailer.area || "");
-      setRouteId(retailer.route_id || null);
       setCategory(retailer.category || "");
       setEmail(retailer.email || "");
       setNotes(retailer.notes || "");
@@ -83,7 +80,6 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
         whatsapp: whatsapp.trim() || null,
         address: address.trim() || null,
         area: area.trim() || null,
-        route_id: routeId,
         category: category.trim() || null,
         email: email.trim() || null,
         notes: notes.trim() || null,
@@ -296,12 +292,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               />
             </View>
           </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Delivery Route
-            </Text>
-            <RoutePicker value={routeId} onChange={setRouteId} />
-          </View>
+
           <View>
             <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Preferred Delivery Time
