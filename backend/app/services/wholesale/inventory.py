@@ -10,6 +10,7 @@ from app.models.domain import (
     DeliveryRunFarmLoad,
     DeliveryStop,
     DeliveryStopItem,
+    Farm,
     FarmLoad,
     Item,
 )
@@ -111,6 +112,12 @@ async def get_inventory_item_loads(db: AsyncSession, item_id: UUID) -> Inventory
         )
     )
 
+    farm_ids = {load.farm_id for load in loads if load.farm_id}
+    farm_names: dict[UUID, str] = {}
+    if farm_ids:
+        farms = list(await db.scalars(select(Farm).where(Farm.id.in_(farm_ids))))
+        farm_names = {f.id: f.name for f in farms}
+
     out_loads: list[InventoryFarmLoadOut] = []
     for load in loads:
         allocated = await db.scalar(
@@ -133,6 +140,7 @@ async def get_inventory_item_loads(db: AsyncSession, item_id: UUID) -> Inventory
         deliv = Decimal(str(delivered or 0))
         available = loaded - alloc - deliv
         row = InventoryFarmLoadOut.model_validate(load, from_attributes=True)
+        row.farm_name = farm_names.get(load.farm_id) if load.farm_id else None
         row.delivered_weight_kg = deliv
         row.available_weight_kg = available if available > 0 else Decimal(0)
         out_loads.append(row)

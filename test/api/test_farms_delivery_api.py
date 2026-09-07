@@ -38,6 +38,12 @@ async def test_farm_vehicle_and_delivery_run(client: AsyncClient) -> None:
         headers=r_headers,
     )
     assert order.status_code == 200
+    order_id = order.json()["id"]
+    await client.post(
+        f"/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": "10/10/2026"},
+        headers=headers,
+    )
     load = await client.post(
         "/admin/farm-loads",
         json={"loaded_weight_kg": "120.000", "vehicle_number": "TN01AB1234"},

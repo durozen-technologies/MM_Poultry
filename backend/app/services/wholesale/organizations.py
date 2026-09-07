@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,7 +91,7 @@ async def update_organization(
     return OrganizationOut.model_validate(org, from_attributes=True)
 
 
-from sqlalchemy import delete, text
+
 
 async def delete_organization(db: AsyncSession, org_id: UUID) -> None:
     org = await db.scalar(select(Organization).where(Organization.id == org_id))

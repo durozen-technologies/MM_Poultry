@@ -93,7 +93,7 @@ def _platform_table_names() -> set[str]:
 async def reset_test_database_async() -> None:
     """Drop tenant schemas and truncate public control-plane tables (test isolation).
 
-    Uses advisory xact lock + retry to avoid deadlock when parallel pytest workers
+    Uses advisory lock + retry to avoid deadlock when parallel pytest workers
     (backend/tests + test/) reset the same DB concurrently.
     """
     import asyncio as _asyncio
@@ -101,28 +101,43 @@ async def reset_test_database_async() -> None:
     for attempt in range(3):
         try:
             engine = get_engine()
-            async with engine.begin() as conn:
+            async with engine.connect() as conn:
+                # Use session-level lock instead of xact lock, so it persists across commits
                 try:
-                    await conn.execute(text("SELECT pg_advisory_xact_lock(87654321)"))
+                    await conn.execute(text("SELECT pg_advisory_lock(87654321)"))
+                    await conn.commit()
                 except Exception:
                     pass
-                rows = await conn.execute(
-                    text(
-                        "SELECT schema_name FROM information_schema.schemata "
-                        "WHERE schema_name LIKE 'tenant\\_%' ESCAPE '\\'"
-                    )
-                )
-                for (schema_name,) in rows:
-                    if _SCHEMA_SAFE.match(schema_name):
-                        await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
-                await conn.execute(text("SET search_path TO public"))
+
                 try:
-                    await conn.execute(
-                        text("TRUNCATE TABLE user_auth_index, users, organizations RESTART IDENTITY CASCADE")
+                    rows = await conn.execute(
+                        text(
+                            "SELECT schema_name FROM information_schema.schemata "
+                            "WHERE schema_name LIKE 'tenant\\_%' ESCAPE '\\'"
+                        )
                     )
-                except Exception as e:
-                    if "does not exist" not in str(e).lower():
-                        raise
+                    schemas = [r[0] for r in rows]
+                    
+                    for schema_name in schemas:
+                        if _SCHEMA_SAFE.match(schema_name):
+                            await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE'))
+                            await conn.commit()
+                            
+                    await conn.execute(text("SET search_path TO public"))
+                    try:
+                        await conn.execute(
+                            text("TRUNCATE TABLE user_auth_index, users, organizations RESTART IDENTITY CASCADE")
+                        )
+                        await conn.commit()
+                    except Exception as e:
+                        if "does not exist" not in str(e).lower():
+                            raise
+                finally:
+                    try:
+                        await conn.execute(text("SELECT pg_advisory_unlock(87654321)"))
+                        await conn.commit()
+                    except Exception:
+                        pass
             return
         except Exception as e:
             if "deadlock" in str(e).lower() and attempt < 2:

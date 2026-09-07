@@ -92,6 +92,16 @@ async def test_retailer_order_detail_tracking(client: AsyncClient) -> None:
     stages = detail.json()["tracking_stages"]
     assert any(s["key"] == "pending" and s["active"] for s in stages)
 
+    await client.post(
+        f"/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": "10/10/2026"},
+        headers=admin_headers,
+    )
+
+    detail2 = await client.get(f"/retailer/orders/{order_id}", headers=r_headers)
+    stages2 = detail2.json()["tracking_stages"]
+    assert any(s["key"] == "confirmed" and s["active"] for s in stages2)
+
     load = await client.post(
         "/admin/farm-loads",
         json={"loaded_weight_kg": "80.000", "vehicle_number": "TN99ZZ1111"},
@@ -105,9 +115,9 @@ async def test_retailer_order_detail_tracking(client: AsyncClient) -> None:
     )
     assert run.status_code == 200
 
-    detail2 = await client.get(f"/retailer/orders/{order_id}", headers=r_headers)
-    stages2 = detail2.json()["tracking_stages"]
-    assert any(s["key"] == "confirmed" and s["active"] for s in stages2)
+    detail3 = await client.get(f"/retailer/orders/{order_id}", headers=r_headers)
+    stages3 = detail3.json()["tracking_stages"]
+    assert any(s["key"] == "out_for_delivery" and s["active"] for s in stages3)
 
 
 @pytest.mark.asyncio
@@ -136,6 +146,10 @@ async def test_retailer_bills_scoped(client: AsyncClient) -> None:
         json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2}]},
         headers=headers_b,
     )
+
+    await client.post(f"/admin/orders/{order_a.json()['id']}/confirm", json={"expected_delivery_date": "10/10/2026"}, headers=admin_headers)
+    await client.post(f"/admin/orders/{order_b.json()['id']}/confirm", json={"expected_delivery_date": "10/10/2026"}, headers=admin_headers)
+
     load = await client.post(
         "/admin/farm-loads",
         json={"loaded_weight_kg": "120.000", "vehicle_number": "TN01AB1234"},

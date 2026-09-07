@@ -38,7 +38,7 @@ dist/
 wheels/
 *.egg-info/
 .eggs/
-.venv/
+.venv
 venv/
 ENV/
 .pytest_cache/

@@ -82,6 +82,7 @@ async def create_vehicle(db: AsyncSession, payload: VehicleCreate) -> VehicleOut
     vehicle = Vehicle(
         name=payload.name,
         number=payload.number.strip().upper(),
+        capacity_kg=payload.capacity_kg,
         driver_name=payload.driver_name,
         driver_id=payload.driver_id,
     )

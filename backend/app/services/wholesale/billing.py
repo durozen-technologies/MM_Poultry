@@ -62,9 +62,7 @@ async def weigh_stop(
     if stop.status in {DeliveryStopStatus.SKIPPED, DeliveryStopStatus.FAILED}:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop not weighable")
     if stop.status == DeliveryStopStatus.BILLED:
-        has_remaining = any((it.remaining_kg or ZERO) > ZERO for it in stop.items)
-        if not has_remaining:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
     if payload.weight_override_reason and actor_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

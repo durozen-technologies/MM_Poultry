@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
-from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -106,6 +106,7 @@ class FarmLoadOut(BaseModel):
 class VehicleCreate(BaseModel):
     name: str | None = Field(default=None, max_length=120)
     number: str = Field(..., min_length=2, max_length=40)
+    capacity_kg: Decimal | None = None
     driver_name: str | None = Field(default=None, max_length=120)
     driver_id: UUID | None = None
 
@@ -124,6 +125,7 @@ class VehicleOut(BaseModel):
     id: UUID
     name: str | None
     number: str
+    capacity_kg: Decimal | None = None
     driver_name: str | None
     driver_id: UUID | None
     is_active: bool

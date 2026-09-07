@@ -29,6 +29,12 @@ async def test_weigh_preview_commit_flow(client: AsyncClient) -> None:
         json={"items": [{"item_id": item["id"], "requested_kg": "40.000", "total_boxes": 2}]},
         headers=r_headers,
     )
+    order_id = order.json()["id"]
+    await client.post(
+        f"/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": "10/10/2026"},
+        headers=headers,
+    )
     load = await client.post(
         "/admin/farm-loads",
         json={"loaded_weight_kg": "100.000", "vehicle_number": "TN99ZZ9999"},

@@ -21,7 +21,6 @@ os.environ["POSTGRES_PORT"] = "5432"
 os.environ["SECRET_KEY"] = "test-secret-key-with-32-chars-minimum"
 
 from app.auth.dependencies import AuthContext, get_current_auth
-from app.core.config import get_settings
 from app.db.database import get_engine
 from app.db.tenant_schema import create_platform_tables, provision_tenant_schema_async, reset_test_database_async
 from app.main import app
@@ -45,19 +44,21 @@ async def setup_test_db() -> AsyncGenerator[None, None]:
         await create_platform_tables()
         await provision_tenant_schema_async("tenant_test")
 
-        # Insert mock organization
+        # Insert mock organization (upsert)
         from app.db.database import get_session_factory
         from app.models.organization import Organization
 
         async with get_session_factory()() as session:
-            org = Organization(
-                id=UUID("00000000-0000-0000-0000-000000000002"),
-                name="Test Org",
-                slug="test_org",
-                schema_name="tenant_test",
-                is_active=True,
-            )
-            session.add(org)
+            existing = await session.get(Organization, UUID("00000000-0000-0000-0000-000000000002"))
+            if not existing:
+                org = Organization(
+                    id=UUID("00000000-0000-0000-0000-000000000002"),
+                    name="Test Org",
+                    slug="test_org",
+                    schema_name="tenant_test",
+                    is_active=True,
+                )
+                session.add(org)
             await session.commit()
 
     async def teardown_db():

@@ -99,7 +99,7 @@ async def reconcile_delivery_run(
     actual = payload.actual_loaded_kg
     if actual is None:
         if run.farm_load_links:
-            actual = q_kg(sum(link.allocated_kg for link in run.farm_load_links))
+            actual = q_kg(sum((link.allocated_kg for link in run.farm_load_links), start=_ZERO))
         else:
             actual = run.actual_loaded_kg or run.planned_kg or _ZERO
 

@@ -68,7 +68,7 @@ def _order_item_lines(order: RetailerDailyOrder) -> list[DispatchOrderItemLine]:
 
 
 def _aggregate_order_items(orders: list[RetailerDailyOrder]) -> list[DispatchItemSummary]:
-    totals: dict[UUID, dict[str, object]] = {}
+    totals: dict[UUID, dict[str, int | Decimal | str | None]] = {}
     for order in orders:
         for line in order.items:
             entry = totals.get(line.item_id)
@@ -80,14 +80,14 @@ def _aggregate_order_items(orders: list[RetailerDailyOrder]) -> list[DispatchIte
                 }
                 totals[line.item_id] = entry
             if line.total_boxes:
-                entry["total_boxes"] = int(entry["total_boxes"]) + line.total_boxes
+                entry["total_boxes"] = int(entry["total_boxes"] or 0) + line.total_boxes
             entry["total_kg"] = q_kg(Decimal(str(entry["total_kg"])) + q_kg(line.requested_kg or _ZERO))
 
     return [
         DispatchItemSummary(
             item_id=item_id,
             item_name=str(entry["item_name"]) if entry["item_name"] else None,
-            total_boxes=int(entry["total_boxes"]),
+            total_boxes=int(entry["total_boxes"] or 0),
             total_kg=q_kg(Decimal(str(entry["total_kg"]))),
         )
         for item_id, entry in sorted(
@@ -98,7 +98,7 @@ def _aggregate_order_items(orders: list[RetailerDailyOrder]) -> list[DispatchIte
 
 
 def order_kg(order: RetailerDailyOrder) -> Decimal:
-    return q_kg(sum((i.requested_kg or _ZERO) for i in order.items))
+    return q_kg(sum(((i.requested_kg or _ZERO) for i in order.items), start=_ZERO))
 
 
 async def get_dispatch_today(db: AsyncSession) -> DispatchTodayOut:
@@ -160,7 +160,7 @@ async def get_dispatch_today(db: AsyncSession) -> DispatchTodayOut:
     route_ids_ordered: list[UUID | None] = [r.id for r in routes]
     route_ids_ordered.append(None)  # Unassigned last
 
-    route_name_map = {r.id: r.name for r in routes}
+    route_name_map: dict[UUID | None, str] = {r.id: r.name for r in routes}
     route_name_map[None] = "Unassigned"
 
     for route_id in route_ids_ordered:
@@ -172,12 +172,12 @@ async def get_dispatch_today(db: AsyncSession) -> DispatchTodayOut:
         route_orders = [o for o in orders if o.retailer_id in route_retailer_ids]
         route_runs = [r for r in runs_today if r.route_id == route_id]
 
-        confirmed_kg = q_kg(sum(order_kg(o) for o in route_orders))
+        confirmed_kg = q_kg(sum((order_kg(o) for o in route_orders), start=_ZERO))
         total_confirmed += confirmed_kg
         all_route_orders.extend(route_orders)
 
         eligible = [o for o in route_orders if o.id not in active_order_ids]
-        remaining_unassigned = q_kg(sum(order_kg(o) for o in eligible))
+        remaining_unassigned = q_kg(sum((order_kg(o) for o in eligible), start=_ZERO))
         total_remaining += remaining_unassigned
         all_eligible_orders.extend(eligible)
 
@@ -253,7 +253,7 @@ async def get_dispatch_today(db: AsyncSession) -> DispatchTodayOut:
         )
 
     inventory = await get_inventory_summary(db)
-    available = q_kg(sum(i.total_available_kg for i in inventory.items))
+    available = q_kg(sum((i.total_available_kg for i in inventory.items), start=_ZERO))
     available_items = [
         DispatchItemSummary(
             item_id=row.item_id,

@@ -161,7 +161,7 @@ async def create_delivery_run(
             req_kg = adj_map.get((ord.id, itm.item_id), itm.requested_kg or _ZERO)
             total_ordered_kg += q_kg(req_kg)
     allocations = _resolve_allocations(payload, total_ordered_kg)
-    total_allocated = q_kg(sum(a.allocated_kg for a in allocations))
+    total_allocated = q_kg(sum((a.allocated_kg for a in allocations), start=_ZERO))
 
     if allocations and total_allocated < total_ordered_kg:
         raise HTTPException(
