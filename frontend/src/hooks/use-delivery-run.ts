@@ -267,9 +267,26 @@ export function useDeliveryRun() {
     if (!lastBill) return;
     try {
       const totalWeight = lastBill.items?.reduce((sum: number, it: { weight_kg: string }) => sum + Number(it.weight_kg), 0) || 0;
-      await shareWhatsAppBill(
-        `Bill ${lastBill.bill_number}\nWeight ${totalWeight} kg\nTotal ₹${lastBill.total_amount}\nBalance ₹${lastBill.balance_amount}`
-      );
+      
+      const payload = {
+        shopName: "MM Broilers", // fallback if not available
+        billNumber: lastBill.bill_number || "Draft",
+        retailerName: "Retailer", // fallback
+        weightKg: String(totalWeight),
+        rate: lastBill.items?.[0]?.rate_per_kg || "0",
+        total: String(lastBill.total_amount),
+        cash: String(lastBill.cash_payment || 0),
+        upi: String(lastBill.upi_payment || 0),
+        balance: String(lastBill.balance_amount || 0),
+        items: (lastBill.items || []).map((it: any) => ({
+          name: String(it.item_id).slice(0, 8),
+          weightKg: String(it.weight_kg),
+          rate: String(it.rate_per_kg),
+          amount: String(it.amount),
+        }))
+      };
+
+      await shareWhatsAppBill(payload);
       await markWhatsAppShared(lastBill.id);
       setMsg("WhatsApp share marked");
     } catch (e) {

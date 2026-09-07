@@ -643,6 +643,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                     <View>
                       <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">{formatIstDate(item.entry_date)}</Text>
                       <Text className="font-title-sm text-on-surface font-bold">{item.reference || "Bill"}</Text>
+                      {item.notes ? (
+                        <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
+                      ) : null}
                     </View>
                   </View>
                   <Text className="font-title-lg text-error font-black">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
@@ -665,6 +668,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   <View className="flex-col justify-center">
                     <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(item.entry_date)}</Text>
                     <Text className="font-title-sm text-on-surface font-bold">{item.entry_type}</Text>
+                    {item.notes ? (
+                      <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
+                    ) : null}
                   </View>
                   <View className="flex-col items-end justify-center">
                     {Number(item.debit) > 0 && (

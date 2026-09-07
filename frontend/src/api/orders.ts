@@ -33,3 +33,8 @@ export async function confirmOrder(orderId: string, expected_delivery_date: stri
   const { data } = await api.post<DailyOrder>(`/admin/orders/${orderId}/confirm`, { expected_delivery_date });
   return data;
 }
+
+export async function getOrderBill(orderId: string) {
+  const { data } = await api.get<any>(`/admin/orders/${orderId}/bill`);
+  return data;
+}

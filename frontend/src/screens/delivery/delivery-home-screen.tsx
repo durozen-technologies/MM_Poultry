@@ -10,6 +10,10 @@ import { useDeliveryRun } from "../../hooks/use-delivery-run";
 import { PrinterSetupModal } from "../../components/printer-setup-modal";
 import { PrimaryButton } from "../../components/ui/primary-button";
 import { usePrinterStore } from "../../store/printer-store";
+import { useNavigation } from "@react-navigation/native";
+import { shareWhatsAppBill } from "../../services/printer";
+import { markWhatsAppShared } from "../../api/delivery";
+import { getApiErrorMessage } from "../../api/client";
 
 export function DeliveryHomeScreen() {
   const logout = useAuthStore((s) => s.logout);
@@ -44,6 +48,7 @@ export function DeliveryHomeScreen() {
   const [skipPrint, setSkipPrint] = useState(false);
   const [skipScale, setSkipScale] = useState(false);
   const connectedPrinter = usePrinterStore((s) => s.connectedPrinter);
+  const navigation = useNavigation<any>();
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -56,7 +61,39 @@ export function DeliveryHomeScreen() {
     queryFn: () => apiItems.list(true),
   });
   const allItems = itemsPage?.items || [];
-  const getItemName = useCallback((id: string) => allItems.find((i: { id: string; name: string }) => i.id === id)?.name || "Unknown Item", [allItems]);
+  const getItemName = useCallback((id: string) => allItems.find((i: any) => i.id === id)?.name || id.slice(0, 8), [allItems]);
+
+  const handleShareBill = async () => {
+    if (!lastBill || !run) return;
+    try {
+      const stop = run.stops?.find((s: any) => s.id === lastBill.delivery_stop_id);
+      const totalWeight = lastBill.items?.reduce((sum: number, it: any) => sum + Number(it.weight_kg), 0) || 0;
+      
+      const payload = {
+        shopName: stop?.shop_name || stop?.retailer_name || "MM Broilers",
+        billNumber: lastBill.bill_number || "Draft",
+        retailerName: stop?.retailer_name || "Retailer",
+        weightKg: String(totalWeight),
+        rate: lastBill.items?.[0]?.rate_per_kg || "0",
+        total: String(lastBill.total_amount),
+        cash: String(lastBill.cash_payment || 0),
+        upi: String(lastBill.upi_payment || 0),
+        balance: String(lastBill.balance_amount || 0),
+        items: (lastBill.items || []).map((it: any) => ({
+          name: getItemName(it.item_id),
+          weightKg: String(it.weight_kg),
+          rate: String(it.rate_per_kg),
+          amount: String(it.amount),
+        }))
+      };
+
+      await shareWhatsAppBill(payload);
+      await markWhatsAppShared(lastBill.id);
+      alert("WhatsApp share marked");
+    } catch (e) {
+      alert(getApiErrorMessage(e));
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
@@ -89,23 +126,6 @@ export function DeliveryHomeScreen() {
           </ScrollView>
         ) : (
           <>
-            <View className="bg-surface-container-lowest rounded-2xl p-4 mb-3 border border-outline-variant/20">
-              <Text className="font-headline-sm text-on-surface font-semibold">
-                Run {run.status} · {formatIstDate(run.run_date)}
-              </Text>
-
-              <View className="flex-row gap-2 mt-3">
-                {run.status === "PLANNED" && (
-                  <PrimaryButton className="flex-1" onPress={onStartRun} title="Start" disabled={startingRun} loading={startingRun} />
-                )}
-                {run.status === "IN_PROGRESS" && (
-                  <PrimaryButton className="flex-1" variant="error" onPress={onCompleteRun} title="Complete" />
-                )}
-              </View>
-              {run.reconciled_at ? (
-                <Text className="text-xs text-primary mt-2">Reconciled</Text>
-              ) : null}
-            </View>
             <FlatList
               data={run.stops}
               keyExtractor={(s) => s.id}
@@ -118,108 +138,21 @@ export function DeliveryHomeScreen() {
               renderItem={({ item }) => (
                 <StopListItem 
                   item={item} 
-                  isActive={activeStop?.id === item.id} 
-                  onPress={() => { setActiveStop(item); setWeights({}); }}
+                  isActive={false} 
+                  getItemName={getItemName}
+                  onPress={() => {
+                    if (item.status === "PENDING" || item.status === "PRINT_PENDING") {
+                      navigation.navigate("DeliveryWeighing", { stop: item });
+                    }
+                  }}
                 />
               )}
             />
           </>
         )}
 
-        {activeStop ? (
-          <View className="bg-surface-container-lowest rounded-xl p-4 border border-primary/40 mt-2 max-h-[60%]">
-            <Text className="font-bold mb-2 text-on-surface">Stop · {activeStop.retailer_name}</Text>
-            
-            <FlatList
-              data={activeStop.items || []}
-              keyExtractor={(i) => `${activeStop.id}-${i.item_id}`}
-              className="mb-2"
-              ListEmptyComponent={<Text className="text-on-surface-variant text-center py-2">No items for this stop</Text>}
-              renderItem={({ item }) => {
-                const displayWeight = weights[item.item_id] !== undefined ? weights[item.item_id] : (Number(item.ordered_kg) > 0 ? String(item.ordered_kg) : "");
-                
-                return (
-                    <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
-                      <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
-                      <View className="mb-3 bg-surface-variant/30 p-2 rounded-lg flex-row justify-between items-center">
-                        <View>
-                          <Text className="text-sm font-semibold text-on-surface">Ordered: <Text className="font-bold">{item.ordered_kg || 0} kg</Text></Text>
-                          <Text className="text-sm text-on-surface-variant">
-                            Requested: {item.original_requested_kg ? `${item.original_requested_kg} kg` : "N/A"} 
-                            {item.original_total_boxes ? ` / ${item.original_total_boxes} boxes` : ""}
-                          </Text>
-                        </View>
-                      </View>
-                      <View>
-                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Weight (kg)</Text>
-                        <TextInput
-                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
-                          value={displayWeight}
-                          onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
-                          placeholder="e.g. 55.5"
-                          placeholderTextColor="#9ca3af"
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
-                    </View>
-                );
-              }}
-            />
-
-            <View className="flex-row gap-2 mb-2 pt-2 border-t border-outline-variant/20">
-              <View className="flex-1">
-                <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Cash (₹)</Text>
-                <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={cash} onChangeText={setCash} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">UPI (₹)</Text>
-                <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={upi} onChangeText={setUpi} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
-              </View>
-            </View>
-
-            <View className="flex-row justify-between items-center mb-4 mt-2 px-1">
-              <View className="flex-row items-center gap-2">
-                <Switch value={!skipPrint} onValueChange={(v) => setSkipPrint(!v)} />
-                <Text className="text-on-surface text-sm">Print Receipt</Text>
-              </View>
-            </View>
-
-            <PrimaryButton
-              className="mb-3"
-              variant={billing ? "secondary" : "primary"}
-              onPress={() => weighAndBill({ skipScale: true, skipPrint })}
-              disabled={billing}
-              loading={billing}
-              title={billing ? "Processing..." : (!skipPrint ? "Complete Order & Print" : "Complete Order")}
-            />
-            
-            <PrimaryButton
-              className="mb-3"
-              variant="error"
-              onPress={() => setShowFail(true)}
-              title="Fail Delivery"
-            />
-            
-            <PrimaryButton
-              variant="secondary"
-              onPress={onSkipStop}
-              title="Skip Stop"
-            />
-          </View>
-        ) : null}
-
-        {showFail && activeStop ? (
-          <View className="bg-surface-container-lowest rounded-xl p-4 border border-error/30 mt-2">
-            <Text className="font-bold text-on-surface mb-2">Failure reason (required)</Text>
-            <View className="mb-2">
-              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={failReason} onChangeText={setFailReason} placeholder="e.g. Shop closed" placeholderTextColor="#9ca3af" />
-            </View>
-            <PrimaryButton className="mt-2" variant="error" onPress={onFailStop} title="Confirm Failed Delivery" />
-          </View>
-        ) : null}
-
         {lastBill ? (
-          <PrimaryButton className="mt-4" variant="secondary" onPress={shareBill} title="Share Bill on WhatsApp" />
+          <PrimaryButton className="mt-4" variant="secondary" onPress={handleShareBill} title="Share Bill on WhatsApp" />
         ) : null}
       </View>
 
@@ -231,7 +164,7 @@ export function DeliveryHomeScreen() {
   );
 }
 
-const StopListItem = React.memo(({ item, isActive, onPress }: { item: any, isActive: boolean, onPress: () => void }) => {
+const StopListItem = React.memo(({ item, isActive, getItemName, onPress }: { item: any, isActive: boolean, getItemName: (id: string) => string, onPress: () => void }) => {
   const totalReq = item.items?.reduce((sum: number, it: any) => sum + Number(it.ordered_kg || 0), 0) || 0;
   return (
     <Pressable accessibilityRole="button"
@@ -268,9 +201,29 @@ const StopListItem = React.memo(({ item, isActive, onPress }: { item: any, isAct
       <View className="flex-row items-center gap-2 mt-1 pl-10">
         <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
         <Text className="font-body-md text-on-surface-variant">
-          Ordered <Text className="font-bold text-on-surface">{totalReq} kg</Text>
+          Total: <Text className="font-bold text-on-surface">{totalReq} kg</Text>
         </Text>
       </View>
+
+      {item.items && item.items.length > 0 && (
+        <View className="mt-3 pl-10 border-t border-outline-variant/10 pt-2">
+          {item.items.map((it: any) => (
+            <View key={it.item_id} className="flex-row justify-between items-center py-1">
+              <Text className="font-body-sm text-on-surface font-semibold flex-1" numberOfLines={1}>
+                {getItemName(it.item_id)}
+              </Text>
+              <View className="flex-row gap-3">
+                <Text className="font-body-sm text-on-surface-variant">
+                  {it.original_total_boxes || 0} boxes
+                </Text>
+                <Text className="font-body-sm text-on-surface font-semibold">
+                  {it.ordered_kg || 0} kg
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 });

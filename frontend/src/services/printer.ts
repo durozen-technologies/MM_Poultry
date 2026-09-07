@@ -1,4 +1,6 @@
 import { Alert, Linking, Platform, Share } from "react-native";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { formatReceipt, sanitizeForThermal } from "./ble-scale";
 import { printText } from "../utils/printer";
 import { usePrinterStore } from "../store/printer-store";
@@ -117,34 +119,70 @@ export async function printThermalReceipt(payload: PrintPayload): Promise<"PRINT
 }
 
 /**
- * Open WhatsApp with prefilled bill message.
- * Uses whatsapp:// deep link when available, falls back to Share.
- * Validates phone (optional) and handles dismiss vs success.
+ * Generate a PDF receipt and share it via the native share sheet.
+ * This replaces the text-based whatsapp:// intent which doesn't support file attachments easily.
  */
-export async function shareWhatsAppBill(message: string, phone?: string | null): Promise<void> {
-  const sanitized = sanitizeForThermal(message);
-  // Prefer native WhatsApp deep link when phone is known or app is installed
-  const phoneDigits = phone ? phone.replace(/\D/g, "") : "";
-  const encoded = encodeURIComponent(sanitized);
-
-  const waUrl = phoneDigits
-    ? `whatsapp://send?phone=${phoneDigits}&text=${encoded}`
-    : `whatsapp://send?text=${encoded}`;
+export async function shareWhatsAppBill(payload: PrintPayload, phone?: string | null): Promise<void> {
+  const html = `
+    <html>
+      <body style="font-family: sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; border: 1px solid #ccc; border-radius: 8px;">
+        <h2 style="text-align: center; margin-bottom: 5px;">BROILER WHOLESALE</h2>
+        <h3 style="text-align: center; margin-top: 0; color: #555;">${payload.shopName}</h3>
+        <hr />
+        <p><strong>Bill No:</strong> ${payload.billNumber}<br/>
+        <strong>Date:</strong> ${new Date().toLocaleDateString()}<br/>
+        <strong>Retailer:</strong> ${payload.retailerName}</p>
+        <hr />
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #ccc;">
+            <th style="text-align: left; padding-bottom: 5px;">Item</th>
+            <th style="text-align: right; padding-bottom: 5px;">Wt</th>
+            <th style="text-align: right; padding-bottom: 5px;">Rate</th>
+            <th style="text-align: right; padding-bottom: 5px;">Amt</th>
+          </tr>
+          ${payload.items?.map(it => `
+            <tr>
+              <td style="padding: 5px 0;">${it.name}</td>
+              <td style="text-align: right; padding: 5px 0;">${it.weightKg}</td>
+              <td style="text-align: right; padding: 5px 0;">₹${it.rate}</td>
+              <td style="text-align: right; padding: 5px 0;">₹${it.amount}</td>
+            </tr>
+          `).join('') || `<tr><td colspan="4" style="text-align:center; padding: 5px 0;">Weight: ${payload.weightKg} kg | Rate: ₹${payload.rate}</td></tr>`}
+        </table>
+        <hr />
+        <p style="text-align: right; font-size: 1.2em; margin: 5px 0;"><strong>Total: ₹${payload.total}</strong></p>
+        <p style="text-align: right; margin: 2px 0;">Cash: ₹${payload.cash} | UPI: ₹${payload.upi}</p>
+        <p style="text-align: right; margin: 2px 0;"><strong>Balance: ₹${payload.balance}</strong></p>
+        <hr />
+        <p style="text-align: center; color: #777; font-size: 0.9em;">Thank you! Visit again</p>
+      </body>
+    </html>
+  `;
 
   try {
-    const canOpen = await Linking.canOpenURL(waUrl);
-    if (canOpen) {
-      await Linking.openURL(waUrl);
+    const { uri } = await Print.printToFileAsync({ 
+      html, 
+      margins: { left: 20, right: 20, top: 20, bottom: 20 } 
+    });
+
+    if (Platform.OS === "web") {
+      // On web, just open the PDF in a new tab or trigger download
+      window.open(uri, "_blank");
       return;
     }
-  } catch {
-    // fall through to Share
-  }
 
-  // Fallback: generic share picker (user can choose WhatsApp)
-  const result = await Share.share({ message: sanitized });
-  if ((result as { action?: string })?.action === Share.dismissedAction) {
-    throw new Error("Share dismissed");
+    const isAvailable = await Sharing.isAvailableAsync();
+    if (isAvailable) {
+      await Sharing.shareAsync(uri, {
+        UTI: 'com.adobe.pdf',
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Bill'
+      });
+    } else {
+      throw new Error("Sharing not available on this device");
+    }
+  } catch (e) {
+    throw e;
   }
 }
 

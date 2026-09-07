@@ -37,6 +37,7 @@ import { AdminRetailerPortalAccessScreen } from "../screens/admin/admin-retailer
 import { AdminItemsScreen } from "../screens/admin/admin-items-screen";
 
 import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
+import { DeliveryWeighingScreen } from "../screens/delivery/delivery-weighing-screen";
 import { DeliveryOrdersScreen } from "../screens/delivery/delivery-orders-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
 import { RetailerOrdersScreen } from "../screens/retailer/retailer-orders-screen";
@@ -244,6 +245,7 @@ export function AppNavigator() {
           ) : user.role === "DELIVERY" ? (
             <>
               <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} />
+              <Stack.Screen name="DeliveryWeighing" component={DeliveryWeighingScreen} />
               <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
             </>
           ) : (

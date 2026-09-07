@@ -6,7 +6,7 @@ import { apiItems } from "../../api/items";
 import type { DailyOrder } from "../../types/api";
 import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
-import { cancelOrder } from "../../api/orders";
+import { cancelOrder, getOrderBill } from "../../api/orders";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
@@ -25,6 +25,12 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
   const { data: itemsPage } = useQuery({
     queryKey: ["admin_items"],
     queryFn: () => apiItems.list(),
+  });
+
+  const { data: bill } = useQuery({
+    queryKey: ["order_bill", order?.id],
+    queryFn: () => getOrderBill(order!.id),
+    enabled: !!order && (order.status === "FULFILLED" || order.status === "DELIVERED"),
   });
   
   const allItems = itemsPage?.items || [];
@@ -203,15 +209,41 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
                     </View>
                   </View>
                   
-                  {item.requested_kg && Number(item.requested_kg) > 0 ? (
-                    <View className="items-end bg-primary/10 px-3 py-2 rounded-xl border border-primary/20">
-                      <Text className="font-label-sm font-bold text-primary uppercase tracking-wider mb-0.5">Est. Wt</Text>
-                      <View className="flex-row items-end gap-0.5">
-                        <Text className="font-title-md font-black text-primary">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
-                        <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
-                      </View>
-                    </View>
-                  ) : null}
+                  {(() => {
+                    const billItem = bill?.items?.find((bi: any) => bi.item_id === item.item_id);
+                    if (billItem) {
+                      return (
+                        <>
+                          <View className="items-end bg-[#115E29]/10 px-3 py-2 rounded-xl border border-[#115E29]/20">
+                            <Text className="font-label-sm font-bold text-[#115E29] uppercase tracking-wider mb-0.5">Net Wt</Text>
+                            <View className="flex-row items-end gap-0.5">
+                              <Text className="font-title-md font-black text-[#115E29]">{Number(billItem.weight_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+                              <Text className="font-label-sm font-bold text-[#115E29] mb-0.5">KG</Text>
+                            </View>
+                          </View>
+                          <View className="items-end bg-error/10 px-3 py-2 rounded-xl border border-error/20">
+                            <Text className="font-label-sm font-bold text-error uppercase tracking-wider mb-0.5">Price</Text>
+                            <View className="flex-row items-end gap-0.5">
+                              <Text className="font-label-sm font-bold text-error mb-0.5">₹</Text>
+                              <Text className="font-title-md font-black text-error">{Number(billItem.amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                            </View>
+                          </View>
+                        </>
+                      );
+                    }
+                    if (item.requested_kg && Number(item.requested_kg) > 0) {
+                      return (
+                        <View className="items-end bg-primary/10 px-3 py-2 rounded-xl border border-primary/20">
+                          <Text className="font-label-sm font-bold text-primary uppercase tracking-wider mb-0.5">Est. Wt</Text>
+                          <View className="flex-row items-end gap-0.5">
+                            <Text className="font-title-md font-black text-primary">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+                            <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
+                          </View>
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
                 </View>
               </View>
               
