@@ -82,3 +82,6 @@ Expanded blueprint beyond short proposal. Implementing IDEA MVP-1 slice: ops das
 - Confirmed end-to-end model: Farm Load -> Items -> Stock -> Retailer Order -> Admin Confirms -> Allocation -> Delivery Run -> Retailer Shop -> Weighing -> Bill -> Ledger.
 - Documented missing rules (box vs items, weight loss, party-wise rates, partial payments, ledgers).
 - Formulated 8 open questions for user on Farm Load boxes, Expected KG variance, Allocation weights, Physical box IDs, Driver visibility, Billing splits, Excess payments, and Daily Closing.
+
+### [2026-09-07 12:40:08] Idea: Phase 1 Simplified Flow
+- The user established a simplified Phase 1 flow: bypassing complex farm load allocation and strict Bluetooth scale weighing in favor of a 1-to-1 order dispatch and automatic weight inheritance (ordered_kg becomes gross weight). We will add back the scale logic later.

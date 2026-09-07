@@ -19,10 +19,6 @@ export function DeliveryHomeScreen() {
     setActiveStop,
     weights,
     setWeights,
-    deliveredBoxes,
-    setDeliveredBoxes,
-    emptyBoxWeights,
-    setEmptyBoxWeights,
     cash,
     setCash,
     upi,
@@ -30,21 +26,14 @@ export function DeliveryHomeScreen() {
     msg,
     lastBill,
     billing,
+    startingRun,
     onStartRun,
     onCompleteRun,
-    onReconcile,
-    reconcileVisible,
-    setReconcileVisible,
-    returnedKg,
-    setReturnedKg,
-    wastageKg,
-    setWastageKg,
     onFailStop,
     failReason,
     setFailReason,
     showFail,
     setShowFail,
-    simulateScale,
     weighAndBill,
     onSkipStop,
     shareBill,
@@ -106,15 +95,12 @@ export function DeliveryHomeScreen() {
               </Text>
 
               <View className="flex-row gap-2 mt-3">
-                <Pressable accessibilityRole="button" className="bg-primary px-4 py-2 rounded-lg flex-1 items-center" onPress={onStartRun}>
-                  <Text className="text-on-primary font-semibold">Start</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" className="bg-tertiary px-4 py-2 rounded-lg flex-1 items-center" onPress={() => setReconcileVisible(true)}>
-                  <Text className="text-on-tertiary font-semibold">Reconcile</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" className="bg-error px-4 py-2 rounded-lg flex-1 items-center" onPress={onCompleteRun}>
-                  <Text className="text-on-error font-semibold">Complete</Text>
-                </Pressable>
+                {run.status === "PLANNED" && (
+                  <PrimaryButton className="flex-1" onPress={onStartRun} title="Start" disabled={startingRun} loading={startingRun} />
+                )}
+                {run.status === "IN_PROGRESS" && (
+                  <PrimaryButton className="flex-1" variant="error" onPress={onCompleteRun} title="Complete" />
+                )}
               </View>
               {run.reconciled_at ? (
                 <Text className="text-xs text-primary mt-2">Reconciled</Text>
@@ -133,7 +119,7 @@ export function DeliveryHomeScreen() {
                 <StopListItem 
                   item={item} 
                   isActive={activeStop?.id === item.id} 
-                  onPress={() => { setActiveStop(item); setWeights({}); }} 
+                  onPress={() => { setActiveStop(item); setWeights({}); }}
                 />
               )}
             />
@@ -150,36 +136,25 @@ export function DeliveryHomeScreen() {
               className="mb-2"
               ListEmptyComponent={<Text className="text-on-surface-variant text-center py-2">No items for this stop</Text>}
               renderItem={({ item }) => {
-                const gross = Number(weights[item.item_id] || 0);
-                const boxes = Number(deliveredBoxes[item.item_id] || 0);
-                const emptyWt = Number(emptyBoxWeights[item.item_id] || 0);
-                const net = gross - (boxes * emptyWt);
-
+                const displayWeight = weights[item.item_id] !== undefined ? weights[item.item_id] : (Number(item.ordered_kg) > 0 ? String(item.ordered_kg) : "");
+                
                 return (
                     <View className="mb-3 p-3 bg-surface border border-outline-variant/30 rounded-xl">
                       <Text className="font-semibold text-on-surface mb-2">{getItemName(item.item_id)}</Text>
-                      <View className="mb-3 bg-surface-variant/30 p-2 rounded-lg">
-                        <Text className="text-sm font-semibold text-on-surface">Admin Assigned: <Text className="font-bold">{item.ordered_kg} kg</Text></Text>
-                        <Text className="text-sm text-on-surface-variant">
-                          Retailer Requested: {item.original_requested_kg ? `${item.original_requested_kg} kg` : "N/A"} 
-                          {item.original_total_boxes ? ` / ${item.original_total_boxes} boxes` : ""}
-                        </Text>
-                        {item.remaining_kg != null && item.remaining_kg !== item.ordered_kg ? (
-                          <Text className="text-sm text-on-surface-variant mt-1">Remaining to deliver: {item.remaining_kg} kg</Text>
-                        ) : null}
+                      <View className="mb-3 bg-surface-variant/30 p-2 rounded-lg flex-row justify-between items-center">
+                        <View>
+                          <Text className="text-sm font-semibold text-on-surface">Ordered: <Text className="font-bold">{item.ordered_kg || 0} kg</Text></Text>
+                          <Text className="text-sm text-on-surface-variant">
+                            Requested: {item.original_requested_kg ? `${item.original_requested_kg} kg` : "N/A"} 
+                            {item.original_total_boxes ? ` / ${item.original_total_boxes} boxes` : ""}
+                          </Text>
+                        </View>
                       </View>
-                    
-                    <View className="mb-3">
-                      <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Gross Wt (kg) / Scale Value</Text>
-                      <View className="flex-row items-center gap-2">
-                        {!skipScale && (
-                          <Pressable accessibilityRole="button" className="bg-primary/10 rounded-lg p-2 items-center justify-center flex-[0.2]" onPress={() => simulateScale(item.item_id)}>
-                            <MaterialIcons name="bluetooth" size={20} className="text-primary" />
-                          </Pressable>
-                        )}
+                      <View>
+                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Weight (kg)</Text>
                         <TextInput
-                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface flex-1"
-                          value={weights[item.item_id] || ""}
+                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+                          value={displayWeight}
                           onChangeText={(v) => setWeights(prev => ({ ...prev, [item.item_id]: v }))}
                           placeholder="e.g. 55.5"
                           placeholderTextColor="#9ca3af"
@@ -187,39 +162,6 @@ export function DeliveryHomeScreen() {
                         />
                       </View>
                     </View>
-
-                    <View className="flex-row items-center gap-2 mb-2">
-                      <View className="flex-1">
-                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Total Boxes</Text>
-                        <TextInput
-                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
-                          value={deliveredBoxes[item.item_id] || ""}
-                          onChangeText={(v) => setDeliveredBoxes(prev => ({ ...prev, [item.item_id]: v }))}
-                          placeholder="e.g. 5"
-                          placeholderTextColor="#9ca3af"
-                          keyboardType="number-pad"
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Box Wt (kg)</Text>
-                        <TextInput
-                          className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
-                          value={emptyBoxWeights[item.item_id] || ""}
-                          onChangeText={(v) => setEmptyBoxWeights(prev => ({ ...prev, [item.item_id]: v }))}
-                          placeholder="e.g. 1.2"
-                          placeholderTextColor="#9ca3af"
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
-                    </View>
-
-                    {gross > 0 && (
-                      <View className="bg-primary-container/30 px-3 py-2 rounded-lg flex-row justify-between items-center mt-1">
-                        <Text className="text-sm font-semibold text-on-surface">Calculated Net Weight:</Text>
-                        <Text className={`text-sm font-bold ${net > 0 ? "text-primary" : "text-error"}`}>{net > 0 ? net.toFixed(2) : "Invalid"} kg</Text>
-                      </View>
-                    )}
-                  </View>
                 );
               }}
             />
@@ -237,10 +179,6 @@ export function DeliveryHomeScreen() {
 
             <View className="flex-row justify-between items-center mb-4 mt-2 px-1">
               <View className="flex-row items-center gap-2">
-                <Switch value={!skipScale} onValueChange={(v) => setSkipScale(!v)} />
-                <Text className="text-on-surface text-sm">Bluetooth Scale</Text>
-              </View>
-              <View className="flex-row items-center gap-2">
                 <Switch value={!skipPrint} onValueChange={(v) => setSkipPrint(!v)} />
                 <Text className="text-on-surface text-sm">Print Receipt</Text>
               </View>
@@ -249,10 +187,10 @@ export function DeliveryHomeScreen() {
             <PrimaryButton
               className="mb-3"
               variant={billing ? "secondary" : "primary"}
-              onPress={() => weighAndBill({ skipPrint, skipScale })}
+              onPress={() => weighAndBill({ skipScale: true, skipPrint })}
               disabled={billing}
               loading={billing}
-              title={billing ? "Billing..." : (!skipScale && !skipPrint ? "Weigh → Commit → Print" : (!skipScale ? "Weigh → Commit" : (!skipPrint ? "Commit → Print" : "Commit")))}
+              title={billing ? "Processing..." : (!skipPrint ? "Complete Order & Print" : "Complete Order")}
             />
             
             <PrimaryButton
@@ -267,21 +205,6 @@ export function DeliveryHomeScreen() {
               onPress={onSkipStop}
               title="Skip Stop"
             />
-          </View>
-        ) : null}
-
-        {reconcileVisible ? (
-          <View className="bg-surface-container-lowest rounded-xl p-4 border border-primary/30 mt-2">
-            <Text className="font-bold text-on-surface mb-2">Trip reconciliation</Text>
-            <View className="mb-2">
-              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Returned (kg)</Text>
-              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={returnedKg} onChangeText={setReturnedKg} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
-            </View>
-            <View className="mb-2">
-              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase tracking-wider">Wastage (kg)</Text>
-              <TextInput className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface" value={wastageKg} onChangeText={setWastageKg} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="decimal-pad" />
-            </View>
-            <PrimaryButton className="mt-2" onPress={onReconcile} title="Save reconciliation" />
           </View>
         ) : null}
 

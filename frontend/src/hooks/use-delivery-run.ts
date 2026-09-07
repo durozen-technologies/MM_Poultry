@@ -26,14 +26,12 @@ function genCheckoutId(stopId: string): string {
 export function useDeliveryRun() {
   const [run, setRun] = useState<DeliveryRun | null>(null);
   const [activeStop, setActiveStop] = useState<DeliveryStop | null>(null);
-  const [weights, setWeights] = useState<Record<string, string>>({});
-  const [deliveredBoxes, setDeliveredBoxes] = useState<Record<string, string>>({});
-  const [emptyBoxWeights, setEmptyBoxWeights] = useState<Record<string, string>>({});
   const [cash, setCash] = useState("0");
   const [upi, setUpi] = useState("0");
   const [msg, setMsg] = useState<string | null>(null);
   const [lastBill, setLastBill] = useState<DeliveryBill | null>(null);
   const [billing, setBilling] = useState(false);
+  const [startingRun, setStartingRun] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -51,29 +49,41 @@ export function useDeliveryRun() {
   );
 
   async function onStartRun() {
-    if (!run) return;
+    if (!run || startingRun) return;
+    setStartingRun(true);
     try {
       await startRun(run.id);
       await refresh();
     } catch (e) {
       setMsg(getApiErrorMessage(e));
+    } finally {
+      setStartingRun(false);
     }
   }
 
-  const [reconcileVisible, setReconcileVisible] = useState(false);
-  const [returnedKg, setReturnedKg] = useState("0");
-  const [wastageKg, setWastageKg] = useState("0");
+  const [weights, setWeights] = useState<Record<string, string>>({});
   const [failReason, setFailReason] = useState("");
   const [showFail, setShowFail] = useState(false);
 
   async function onCompleteRun() {
     if (!run) return;
-    if (!run.reconciled_at) {
-      setReconcileVisible(true);
-      setMsg("Reconcile stock before completing the run");
-      return;
-    }
     try {
+      if (!run.reconciled_at) {
+        // Phase 1: Auto-reconcile to bypass manual reconciliation step
+        let totalDelivered = 0;
+        for (const stop of run.stops) {
+          if (stop.status === "BILLED" || stop.status === "PRINT_PENDING") {
+            for (const item of stop.items || []) {
+              totalDelivered += Number(item.ordered_kg || 0);
+            }
+          }
+        }
+        await reconcileRun(run.id, {
+          returned_kg: 0,
+          wastage_kg: 0,
+          actual_loaded_kg: totalDelivered,
+        });
+      }
       await completeRun(run.id);
       const loss = await getTripWeightLoss(run.id);
       if (loss) {
@@ -83,21 +93,6 @@ export function useDeliveryRun() {
       }
       await refresh();
     } catch (e: unknown) {
-      setMsg(getApiErrorMessage(e));
-    }
-  }
-
-  async function onReconcile() {
-    if (!run) return;
-    try {
-      await reconcileRun(run.id, {
-        returned_kg: returnedKg,
-        wastage_kg: wastageKg,
-      });
-      setReconcileVisible(false);
-      setMsg("Reconciliation saved");
-      await refresh();
-    } catch (e) {
       setMsg(getApiErrorMessage(e));
     }
   }
@@ -119,16 +114,6 @@ export function useDeliveryRun() {
     }
   }
 
-  async function simulateScale(itemId: string) {
-    try {
-      const reading = await readScaleWeight();
-      setWeights((prev) => ({ ...prev, [itemId]: String(reading.kg) }));
-      setMsg(`Scale ${reading.source}: ${reading.kg} kg`);
-    } catch (e) {
-      setMsg(getApiErrorMessage(e));
-    }
-  }
-
   const weighAndBill = async (options?: { skipScale?: boolean; skipPrint?: boolean }) => {
     if (!activeStop || !run) return;
     setBilling(true);
@@ -137,16 +122,13 @@ export function useDeliveryRun() {
     const checkoutId = genCheckoutId(activeStop.id);
     try {
       const itemsPayload = (activeStop.items || []).map((item) => {
-        const gross = Number(weights[item.item_id] || "0");
-        const boxes = Number(deliveredBoxes[item.item_id] || "0");
-        const empty = Number(emptyBoxWeights[item.item_id] || "0");
-        if (!Number.isFinite(gross) || !Number.isFinite(boxes) || !Number.isFinite(empty)) {
-          throw new Error("Invalid weight or box input: check gross/boxes/empty");
-        }
+        const inputWeight = weights[item.item_id];
+        const gross = Number(inputWeight || item.ordered_kg || "0");
+        const boxes = Number(item.original_total_boxes || "1");
+        const empty = 0;
+        
         if (gross <= 0) throw new Error(`Gross weight must be > 0 for ${item.item_id.slice(0, 8)}`);
-        if (boxes <= 0) throw new Error(`Boxes must be > 0 for ${item.item_id.slice(0, 8)}`);
-        const net = gross - boxes * empty;
-        if (net <= 0) throw new Error(`Net weight must be > 0 (gross ${gross} - ${boxes}*${empty})`);
+        
         return {
           item_id: item.item_id,
           gross_weight_kg: gross,
@@ -258,8 +240,6 @@ export function useDeliveryRun() {
       setMsg(`Billed ${updated.bill_number} → print ${updated.print_status}`);
       setActiveStop(null);
       setWeights({});
-      setDeliveredBoxes({});
-      setEmptyBoxWeights({});
       setCash("0");
       setUpi("0");
       await refresh();
@@ -277,8 +257,6 @@ export function useDeliveryRun() {
       setMsg(`Skipped stop for ${activeStop.retailer_name}`);
       setActiveStop(null);
       setWeights({});
-      setDeliveredBoxes({});
-      setEmptyBoxWeights({});
       await refresh();
     } catch (e) {
       setMsg(getApiErrorMessage(e));
@@ -305,10 +283,6 @@ export function useDeliveryRun() {
     setActiveStop,
     weights,
     setWeights,
-    deliveredBoxes,
-    setDeliveredBoxes,
-    emptyBoxWeights,
-    setEmptyBoxWeights,
     cash,
     setCash,
     upi,
@@ -316,21 +290,15 @@ export function useDeliveryRun() {
     msg,
     lastBill,
     billing,
+    startingRun,
     onStartRun,
     onCompleteRun,
-    onReconcile,
-    reconcileVisible,
-    setReconcileVisible,
-    returnedKg,
-    setReturnedKg,
-    wastageKg,
-    setWastageKg,
+
     onFailStop,
     failReason,
     setFailReason,
     showFail,
     setShowFail,
-    simulateScale,
     weighAndBill,
     onSkipStop,
     shareBill,

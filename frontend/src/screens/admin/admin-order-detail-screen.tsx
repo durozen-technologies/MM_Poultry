@@ -11,6 +11,7 @@ import { cancelOrder } from "../../api/orders";
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
 import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
+import { ConfirmOrderModal } from "./components/confirm-order-modal";
 
 import { PrimaryButton } from "../../components/ui/primary-button";
 
@@ -18,6 +19,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
   const [order, setOrder] = useState<DailyOrder>(route.params?.order as DailyOrder);
   const [cancelling, setCancelling] = useState(false);
   const [showDispatchModal, setShowDispatchModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const user = useAuthStore((s) => s.user);
 
   const { data: itemsPage } = useQuery({
@@ -231,6 +233,15 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
         </View>
 
         {/* Action Buttons */}
+        {order.status === "PLACED" && (
+          <PrimaryButton
+            title="Confirm Order"
+            icon="check-circle"
+            variant="primary"
+            onPress={() => setShowConfirmModal(true)}
+            className="mb-4"
+          />
+        )}
         {(order.status === "PLACED" || order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
           <PrimaryButton
             title="Cancel Order"
@@ -259,7 +270,18 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           onClose={() => setShowDispatchModal(false)}
           onAssigned={() => {
             setShowDispatchModal(false);
-            setOrder({ ...order, status: "FULFILLED" }); // optimistic UI update
+            setOrder({ ...order, status: "DISPATCHED" });
+          }}
+        />
+      )}
+
+      {showConfirmModal && (
+        <ConfirmOrderModal
+          order={order}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirmed={() => {
+            setShowConfirmModal(false);
+            setOrder({ ...order, status: "ACKNOWLEDGED" });
           }}
         />
       )}
