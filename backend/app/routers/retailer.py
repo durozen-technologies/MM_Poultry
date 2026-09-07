@@ -48,12 +48,15 @@ async def retailer_upsert_today_order(
     payload: DailyOrderCreate,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.RETAILER))],
 ) -> DailyOrderOut:
-    return await svc.upsert_today_order(
-        auth.db,
-        retailer_id=_require_retailer_id(auth),
-        payload=payload,
-        user_id=auth.user.id,
-    )
+    try:
+        return await svc.upsert_today_order(
+            auth.db,
+            retailer_id=_require_retailer_id(auth),
+            payload=payload,
+            user_id=auth.user.id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/retailer/orders", response_model=RetailerOrdersPage)

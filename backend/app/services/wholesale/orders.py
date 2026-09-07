@@ -10,6 +10,8 @@ from sqlalchemy.orm import selectinload
 
 from app.core.timezone import today_ist
 from app.models.domain import (
+    DeliveryBill,
+    DeliveryStop,
     OrderSequence,
     Retailer,
     RetailerDailyOrder,
@@ -19,6 +21,7 @@ from app.models.domain import (
 from app.models.enums import (
     OrderStatus,
 )
+from app.schemas.billing import DeliveryBillOut
 from app.schemas.order import (
     DailyOrderCreate,
     DailyOrderOut,
@@ -349,3 +352,16 @@ async def list_orders_by_date(db: AsyncSession, target_date: date | None = None)
     except Exception as e:
         from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to list orders by date: {str(e)}")
+
+async def get_bill_by_order_id(db: AsyncSession, order_id: UUID) -> DeliveryBillOut | None:
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .join(DeliveryStop, DeliveryStop.id == DeliveryBill.delivery_stop_id)
+        .where(DeliveryStop.daily_order_id == order_id)
+    )
+    res = await db.scalar(stmt)
+    if not res:
+        return None
+    return DeliveryBillOut.model_validate(res, from_attributes=True)

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
 from app.schemas import ConfirmOrderRequest, DailyOrderOut, TodayOrdersResponse
+from app.schemas.billing import DeliveryBillOut
 from app.schemas.dates import IstDate
 from app.services import wholesale as svc
 
@@ -48,3 +49,14 @@ async def admin_cancel_order(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> DailyOrderOut:
     return await svc.cancel_order(auth.db, order_id)
+
+@router.get("/admin/orders/{order_id}/bill", response_model=DeliveryBillOut)
+async def admin_get_order_bill(
+    order_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> DeliveryBillOut:
+    from fastapi import HTTPException, status
+    bill = await svc.get_bill_by_order_id(auth.db, order_id)
+    if not bill:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found for this order")
+    return bill

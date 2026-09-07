@@ -120,11 +120,6 @@ async def weigh_stop(
                 )
             prev_delivered = item.delivered_weight_kg or ZERO
             total_delivered = q_kg(prev_delivered + q_kg(net_weight))
-            if total_delivered > item.ordered_kg:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Delivered {total_delivered}kg exceeds ordered {item.ordered_kg}kg for item {item.item_id}",
-                )
             item.delivered_weight_kg = total_delivered
             item.gross_weight_kg = q_kg(pi.gross_weight_kg)
             item.delivered_boxes = pi.delivered_boxes

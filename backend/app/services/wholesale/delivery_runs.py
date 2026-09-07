@@ -287,14 +287,33 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
         .where(DeliveryStop.delivery_run_id == run.id)
         .order_by(DeliveryStop.sequence.asc())
     )
+    stops_data = list(stops_res)
+
+    order_ids = [stop.daily_order_id for stop, _, _, _ in stops_data if stop.daily_order_id]
+    oi_map = {}
+    if order_ids:
+        order_items = await db.scalars(
+            select(RetailerDailyOrderItem)
+            .where(RetailerDailyOrderItem.order_id.in_(order_ids))
+        )
+        for oi in order_items:
+            oi_map[(oi.order_id, oi.item_id)] = oi
 
     out = DeliveryRunOut.model_validate(run, from_attributes=True)
     stops_out = []
-    for stop, r_name, r_shop, r_route in stops_res:
+    for stop, r_name, r_shop, r_route in stops_data:
         s_out = DeliveryStopOut.model_validate(stop, from_attributes=True)
         s_out.retailer_name = r_name
         s_out.shop_name = r_shop
         s_out.route_name = r_route
+
+        if stop.daily_order_id:
+            for item_out in s_out.items:
+                oi = oi_map.get((stop.daily_order_id, item_out.item_id))
+                if oi:
+                    item_out.original_requested_kg = oi.requested_kg
+                    item_out.original_total_boxes = oi.total_boxes
+
         stops_out.append(s_out)
 
     out.stops = stops_out

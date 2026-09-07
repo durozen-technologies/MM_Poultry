@@ -5,6 +5,7 @@ import traceback
 import uuid
 
 from fastapi import HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -122,7 +123,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             details=details,  # type: ignore[arg-type]
         )
     )
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=body.model_dump(exclude_none=True))
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content=jsonable_encoder(body.model_dump(exclude_none=True))
+    )
 
 
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
