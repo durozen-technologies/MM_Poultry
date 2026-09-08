@@ -41,7 +41,6 @@ from app.schemas.billing import (
 from app.schemas.delivery import DeliveryStopOut, WeighRequest
 from app.schemas.report import OpsDashboard
 from app.services.wholesale.common import ZERO, _get_org_settings, q_kg, q_money
-
 from app.services.wholesale.retailers import get_retailer
 
 

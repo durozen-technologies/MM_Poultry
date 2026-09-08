@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from decimal import Decimal
 from uuid import UUID
@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import FarmLoadStatus
 from app.schemas.dates import IstDate
-
 
 # ---------------------------------------------------------------------------
 # Farm schemas
@@ -54,8 +53,8 @@ class FarmOut(BaseModel):
 
 class FarmLoadCreate(BaseModel):
     farm_id: UUID | None = None
-    item_id: UUID
-    load_date: IstDate
+    item_id: UUID | None = None
+    load_date: IstDate | None = None
     driver_name: str | None = Field(default=None, max_length=120)
     driver_user_id: UUID | None = None
     planned_kg: Decimal | None = Field(default=None, gt=0)
