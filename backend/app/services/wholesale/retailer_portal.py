@@ -241,15 +241,24 @@ async def list_retailer_bills(
 
 
 async def get_retailer_bill(db: AsyncSession, retailer_id: UUID, bill_id: UUID) -> DeliveryBillOut:
-    bill = await db.scalar(
-        select(DeliveryBill).where(
+    stmt = (
+        select(DeliveryBill, RetailerDailyOrder.order_number)
+        .join(DeliveryStop, DeliveryBill.delivery_stop_id == DeliveryStop.id)
+        .outerjoin(RetailerDailyOrder, DeliveryStop.daily_order_id == RetailerDailyOrder.id)
+        .where(
             DeliveryBill.id == bill_id,
             DeliveryBill.retailer_id == retailer_id,
         )
     )
-    if bill is None:
+    row = await db.execute(stmt)
+    result = row.first()
+    if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bill not found")
-    return DeliveryBillOut.model_validate(bill, from_attributes=True)
+    
+    bill, order_number = result
+    out = DeliveryBillOut.model_validate(bill, from_attributes=True)
+    out.order_number = order_number
+    return out
 
 
 async def get_retailer_profile(

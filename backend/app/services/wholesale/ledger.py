@@ -10,6 +10,8 @@ from sqlalchemy.orm import selectinload
 from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
+    DeliveryStopItem,
+    Item,
     Payment,
     RetailerReturn,
 )
@@ -17,6 +19,7 @@ from app.models.enums import (
     PaymentType,
 )
 from app.schemas import (
+    LedgerBillItem,
     LedgerEntry,
     LedgerOut,
     PaymentCreate,
@@ -120,6 +123,18 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
             .order_by(RetailerReturn.return_date.asc(), RetailerReturn.created_at.asc())
         )
     )
+    stop_ids = [b.delivery_stop_id for b in bills]
+    stop_map = {}
+    if stop_ids:
+        stop_stmt = (
+            select(DeliveryStopItem.delivery_stop_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_boxes, Item.name)
+            .join(Item, Item.id == DeliveryStopItem.item_id)
+            .where(DeliveryStopItem.delivery_stop_id.in_(stop_ids))
+        )
+        stop_res = await db.execute(stop_stmt)
+        for stop_id, it_id, boxes, item_name in stop_res:
+            stop_map[(stop_id, it_id)] = (boxes or 0, item_name)
+
     entries: list[LedgerEntry] = []
     for bill in bills:
         total_wt = sum((i.weight_kg for i in bill.items), ZERO)
@@ -128,6 +143,11 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
             if len(bill.items) == 1
             else ("(Mixed Rates)" if len(bill.items) > 1 else "")
         )
+        bill_items = []
+        for i in bill.items:
+            boxes, item_name = stop_map.get((bill.delivery_stop_id, i.item_id), (0, "Unknown Item"))
+            bill_items.append(LedgerBillItem(item_name=item_name, boxes=boxes, net_kg=i.weight_kg, amount=i.amount))
+
         entries.append(
             LedgerEntry(
                 entry_type="BILL",
@@ -136,6 +156,7 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
                 debit=bill.total_amount,
                 credit=ZERO,
                 notes=f"Wt {total_wt} kg {rate_str}".strip(),
+                bill_items=bill_items,
             )
         )
         collected = bill.cash_payment + bill.upi_payment

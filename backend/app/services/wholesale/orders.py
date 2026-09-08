@@ -12,6 +12,7 @@ from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
     DeliveryStop,
+    DeliveryStopItem,
     OrderSequence,
     Retailer,
     RetailerDailyOrder,
@@ -226,11 +227,24 @@ async def list_today_orders(
         stmt = stmt.where(Retailer.route_id.is_(None))
 
     res = await db.execute(stmt)
+    raw_results = res.all()
+
+    fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
+    delivered_weights = {}
+    if fulfilled_ids:
+        stop_stmt = (
+            select(DeliveryStop.daily_order_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
+            .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
+            .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
+        )
+        stop_res = await db.execute(stop_stmt)
+        for ord_id, it_id, del_kg in stop_res:
+            delivered_weights[(ord_id, it_id)] = del_kg
 
     items: list[DailyOrderOut] = []
     total_kg = Decimal("0.000")
     total_bx = 0
-    for order, retailer, route in res:
+    for order, retailer, route in raw_results:
         out = DailyOrderOut.model_validate(order, from_attributes=True)
         out.retailer_name = retailer.name
         out.shop_name = retailer.shop_name
@@ -241,6 +255,7 @@ async def list_today_orders(
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name
+            out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
         items.append(out)
         if order.status != OrderStatus.CANCELLED:
             for i in order.items:
@@ -331,16 +346,31 @@ async def list_orders_by_date(db: AsyncSession, target_date: date | None = None)
             query = query.where(RetailerDailyOrder.order_date == target_date)
             
         res = await db.execute(query.order_by(RetailerDailyOrder.created_at.desc()))
+        raw_results = res.all()
+
+        fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
+        delivered_weights = {}
+        if fulfilled_ids:
+            stop_stmt = (
+                select(DeliveryStop.daily_order_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
+                .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
+                .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
+            )
+            stop_res = await db.execute(stop_stmt)
+            for ord_id, it_id, del_kg in stop_res:
+                delivered_weights[(ord_id, it_id)] = del_kg
+
         items: list[DailyOrderOut] = []
         total_kg = Decimal("0.000")
         total_bx = 0
-        for order, r_name, r_shop in res:
+        for order, r_name, r_shop in raw_results:
             out = DailyOrderOut.model_validate(order, from_attributes=True)
             out.retailer_name = r_name
             out.shop_name = r_shop
             for i, model_item in enumerate(order.items):
                 if model_item.item:
                     out.items[i].item_name = model_item.item.name
+                out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
             items.append(out)
             if order.status != OrderStatus.CANCELLED:
                 for i in order.items:

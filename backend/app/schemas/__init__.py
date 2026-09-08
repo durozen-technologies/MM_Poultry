@@ -41,6 +41,7 @@ from app.schemas.item import (
     ItemUpdate,
 )
 from app.schemas.ledger import (
+    LedgerBillItem,
     LedgerEntry,
     LedgerOut,
     PaymentCreate,
@@ -136,6 +137,7 @@ __all__ = [
     "DeliveryUserUpdate",
     "OrganizationOut",
     "LedgerEntry",
+    "LedgerBillItem",
     "LedgerOut",
     "PaymentOut",
     "RetailerReturnCreate",

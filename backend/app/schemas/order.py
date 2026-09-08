@@ -31,6 +31,7 @@ class DailyOrderItemOut(BaseModel):
     item_name: str | None = None
     total_boxes: int | None = None
     requested_kg: Decimal | None = None
+    delivered_kg: Decimal | None = None
     bird_size: str | None = None
     notes: str | None = None
 

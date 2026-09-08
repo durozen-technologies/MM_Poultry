@@ -67,6 +67,7 @@ export type OrderItem = {
   item_name?: string | null;
   total_boxes?: number;
   requested_kg?: string | null;
+  delivered_kg?: string | null;
   bird_size?: string | null;
   notes?: string | null;
 };
@@ -328,6 +329,7 @@ export type DeliveryBill = {
   id: string;
   bill_number: string;
   checkout_id: string;
+  order_number?: string | null;
   delivery_stop_id?: string;
   retailer_id?: string;
   bill_date?: string;
@@ -373,6 +375,12 @@ export type LedgerOut = {
     credit: string;
     balance_after?: string | null;
     notes?: string | null;
+    bill_items?: Array<{
+      item_name: string;
+      boxes: number;
+      net_kg: string;
+      amount: string;
+    }> | null;
   }>;
 };
 

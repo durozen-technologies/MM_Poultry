@@ -15,6 +15,7 @@ import { useAuthStore } from "../../store/auth-store";
 import type { RetailerProfile } from "../../types/api";
 
 export function RetailerProfileScreen() {
+  const insets = useSafeAreaInsets();
   const logout = useAuthStore((s) => s.logout);
   const [profile, setProfile] = useState<RetailerProfile | null>(null);
   const [busy, setBusy] = useState(false);

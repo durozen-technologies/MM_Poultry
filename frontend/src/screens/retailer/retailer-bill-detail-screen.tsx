@@ -10,6 +10,7 @@ import type { DeliveryBill } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
 
 export function RetailerBillDetailScreen({ route, navigation }: { route: any; navigation: any }) {
+  const insets = useSafeAreaInsets();
   const billId = route.params?.billId as string;
   const [bill, setBill] = useState<DeliveryBill | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,7 +59,7 @@ export function RetailerBillDetailScreen({ route, navigation }: { route: any; na
           <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 flex-col gap-3">
             <Text className="font-headline-md text-on-surface font-semibold">{bill.bill_number}</Text>
             <Row label="Date" value={bill.bill_date ? formatIstDate(bill.bill_date) : "?"} />
-            <Row label="Checkout ID" value={bill.checkout_id} />
+            <Row label="Order ID" value={bill.order_number || "?"} />
             
             <View className="my-2 border-t border-surface-variant/40 pt-2">
               <Text className="font-label-md text-on-surface-variant mb-2">Line Items</Text>

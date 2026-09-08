@@ -59,6 +59,13 @@ class RetailerReturnOut(BaseModel):
     created_at: IstDate
 
 
+class LedgerBillItem(BaseModel):
+    item_name: str
+    boxes: int
+    net_kg: Decimal
+    amount: Decimal
+
+
 class LedgerEntry(BaseModel):
     entry_type: str
     entry_date: IstDate
@@ -67,6 +74,7 @@ class LedgerEntry(BaseModel):
     credit: Decimal = Decimal("0.00")
     balance_after: Decimal | None = None
     notes: str | None = None
+    bill_items: list[LedgerBillItem] | None = None
 
 
 class LedgerOut(BaseModel):

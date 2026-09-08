@@ -602,14 +602,21 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         </Text>
                       </View>
                     </View>
-                    <View className="bg-surface-container-highest/30 rounded-xl p-3 border border-outline-variant/10 flex-row justify-between items-center">
-                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider">Total Weight</Text>
-                      <View className="flex-row items-end gap-1">
-                        <Text className="font-title-lg font-black text-primary">
-                          {order.items?.reduce((s, it) => s + Number(it.requested_kg || 0), 0) || 0}
-                        </Text>
-                        <Text className="font-label-sm font-bold text-primary mb-0.5">KG</Text>
-                      </View>
+                    <View className="mt-2 border-t border-surface-variant/40 pt-2">
+                      {order.items?.map((it) => (
+                        <View key={it.id} className="flex-row justify-between items-center mb-2 last:mb-0">
+                          <View>
+                            <Text className="font-body-md text-on-surface font-bold">{it.item_name || 'Unknown Item'}</Text>
+                            <Text className="font-label-sm text-on-surface-variant mt-0.5">{it.total_boxes || 0} boxes</Text>
+                          </View>
+                          <View className="items-end">
+                            <Text className="font-body-sm text-on-surface-variant">Est: {it.requested_kg || 0} kg</Text>
+                            {it.delivered_kg ? (
+                              <Text className="font-label-md text-primary font-bold mt-0.5">Net: {it.delivered_kg} kg</Text>
+                            ) : null}
+                          </View>
+                        </View>
+                      ))}
                     </View>
                   </View>
                 </Pressable>
@@ -632,21 +639,42 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               </View>
             }
             renderItem={({ item }) => (
-                <View className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm flex-row justify-between items-center relative overflow-hidden mb-3">
+                <View className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative overflow-hidden mb-3">
                   <View className="absolute top-0 left-0 w-1.5 h-full bg-error" />
-                  <View className="ml-2 flex-row items-center gap-3">
-                    <View className="w-10 h-10 rounded-full bg-error/10 items-center justify-center border border-error/20">
-                      <MaterialIcons name="receipt" size={18} className="text-error" />
+                  
+                  <View className="ml-2 flex-row justify-between items-start mb-1">
+                    <View className="flex-row items-center gap-3">
+                      <View className="w-10 h-10 rounded-full bg-error/10 items-center justify-center border border-error/20">
+                        <MaterialIcons name="receipt" size={18} className="text-error" />
+                      </View>
+                      <View>
+                        <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">{formatIstDate(item.entry_date)}</Text>
+                        <Text className="font-title-sm text-on-surface font-bold">{item.reference || "Bill"}</Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">{formatIstDate(item.entry_date)}</Text>
-                      <Text className="font-title-sm text-on-surface font-bold">{item.reference || "Bill"}</Text>
-                      {item.notes ? (
-                        <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
-                      ) : null}
-                    </View>
+                    <Text className="font-title-lg text-error font-black mt-1">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                   </View>
-                  <Text className="font-title-lg text-error font-black">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+
+                  {item.bill_items && item.bill_items.length > 0 ? (
+                    <View className="ml-2 mt-2 border-t border-surface-variant/40 pt-3">
+                      {item.bill_items.map((bItem, idx) => (
+                        <View key={idx} className="flex-row justify-between items-center mb-2 last:mb-0">
+                          <View>
+                            <Text className="font-body-md text-on-surface font-bold">{bItem.item_name}</Text>
+                            <Text className="font-label-sm text-on-surface-variant mt-0.5">{bItem.boxes} boxes</Text>
+                          </View>
+                          <View className="items-end">
+                            <Text className="font-body-sm text-on-surface">Net: {bItem.net_kg} kg</Text>
+                            <Text className="font-label-sm text-on-surface-variant mt-0.5">₹{Number(bItem.amount).toLocaleString("en-IN")}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : item.notes ? (
+                    <View className="ml-2 mt-2 border-t border-surface-variant/40 pt-3">
+                      <Text className="font-body-sm text-on-surface-variant">{item.notes}</Text>
+                    </View>
+                  ) : null}
                 </View>
             )}
           />
