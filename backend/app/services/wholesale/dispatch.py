@@ -228,7 +228,6 @@ async def get_dispatch_today(db: AsyncSession) -> DispatchTodayOut:
                 id=r.id,
                 status=r.status.value,
                 driver_name=r.driver_name,
-                vehicle_number=r.vehicle_number,
                 planned_kg=r.planned_kg,
                 actual_loaded_kg=r.actual_loaded_kg,
             )

@@ -1,31 +1,36 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import FarmLoadStatus
-from app.schemas.dates import IstDate, IstDateOptional
+from app.schemas.dates import IstDate
+
+
+# ---------------------------------------------------------------------------
+# Farm schemas
+# ---------------------------------------------------------------------------
 
 
 class FarmCreate(BaseModel):
-    name: str = Field(..., min_length=2, max_length=120)
+    name: str = Field(..., min_length=1, max_length=120)
     owner_name: str | None = Field(default=None, max_length=120)
     location: str | None = Field(default=None, max_length=250)
     address: str | None = Field(default=None, max_length=500)
     contact_phone: str | None = Field(default=None, max_length=30)
-    capacity: int | None = Field(default=None, ge=0)
+    capacity: int | None = None
+    is_active: bool = True
 
 
 class FarmUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=2, max_length=120)
+    name: str | None = Field(default=None, min_length=1, max_length=120)
     owner_name: str | None = Field(default=None, max_length=120)
     location: str | None = Field(default=None, max_length=250)
     address: str | None = Field(default=None, max_length=500)
     contact_phone: str | None = Field(default=None, max_length=30)
-    capacity: int | None = Field(default=None, ge=0)
+    capacity: int | None = None
     is_active: bool | None = None
 
 
@@ -35,49 +40,46 @@ class FarmOut(BaseModel):
     id: UUID
     name: str
     owner_name: str | None = None
-    location: str | None
+    location: str | None = None
     address: str | None = None
-    contact_phone: str | None
+    contact_phone: str | None = None
     capacity: int | None = None
     is_active: bool
 
 
+# ---------------------------------------------------------------------------
+# FarmLoad schemas
+# ---------------------------------------------------------------------------
+
+
 class FarmLoadCreate(BaseModel):
-    load_date: IstDateOptional = None
     farm_id: UUID | None = None
-    item_id: UUID | None = None
-    vehicle_id: UUID | None = None
-    vehicle_number: str | None = None
-    driver_name: str | None = None
+    item_id: UUID
+    load_date: IstDate
+    driver_name: str | None = Field(default=None, max_length=120)
     driver_user_id: UUID | None = None
     planned_kg: Decimal | None = Field(default=None, gt=0)
-    loaded_weight_kg: Decimal = Field(gt=0)
+    loaded_weight_kg: Decimal = Field(..., gt=0)
     bird_count: int | None = None
     total_boxes: int | None = None
-    rate_per_kg: Decimal | None = None
-    total_amount: Decimal | None = None
-    paid_amount: Decimal | None = None
-    payment_method: str | None = None
-    remarks: str | None = None
+    empty_box_weight: Decimal | None = Field(default=None, ge=0)
+    rate_per_kg: Decimal | None = Field(default=None, gt=0)
+    remarks: str | None = Field(default=None, max_length=500)
 
 
 class FarmLoadUpdate(BaseModel):
-    load_date: IstDateOptional = None
-    farm_id: UUID | None = None
-    item_id: UUID | None = None
-    vehicle_id: UUID | None = None
-    vehicle_number: str | None = None
-    driver_name: str | None = None
-    driver_user_id: UUID | None = None
+    driver_name: str | None = Field(default=None, max_length=120)
     planned_kg: Decimal | None = Field(default=None, gt=0)
     loaded_weight_kg: Decimal | None = Field(default=None, gt=0)
     bird_count: int | None = None
     total_boxes: int | None = None
-    rate_per_kg: Decimal | None = None
-    total_amount: Decimal | None = None
-    paid_amount: Decimal | None = None
-    payment_method: str | None = None
-    remarks: str | None = None
+    empty_box_weight: Decimal | None = Field(default=None, ge=0)
+    weight_loss_kg: Decimal | None = Field(default=None, ge=0)
+    rate_per_kg: Decimal | None = Field(default=None, gt=0)
+    total_amount: Decimal | None = Field(default=None, ge=0)
+    paid_amount: Decimal | None = Field(default=None, ge=0)
+    payment_method: str | None = Field(default=None, max_length=50)
+    remarks: str | None = Field(default=None, max_length=500)
     status: FarmLoadStatus | None = None
 
 
@@ -85,48 +87,20 @@ class FarmLoadOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    load_date: IstDate
-    farm_id: UUID | None
+    farm_id: UUID | None = None
     item_id: UUID
-    vehicle_id: UUID | None = None
-    vehicle_number: str | None
-    driver_name: str | None
+    load_date: IstDate
+    driver_name: str | None = None
+    driver_user_id: UUID | None = None
     planned_kg: Decimal | None = None
     loaded_weight_kg: Decimal
-    bird_count: int | None
+    bird_count: int | None = None
     total_boxes: int | None = None
+    empty_box_weight: Decimal | None = None
+    weight_loss_kg: Decimal | None = None
     rate_per_kg: Decimal | None = None
     total_amount: Decimal | None = None
     paid_amount: Decimal | None = None
     payment_method: str | None = None
-    remarks: str | None
+    remarks: str | None = None
     status: FarmLoadStatus
-
-
-class VehicleCreate(BaseModel):
-    name: str | None = Field(default=None, max_length=120)
-    number: str = Field(..., min_length=2, max_length=40)
-    capacity_kg: Decimal | None = None
-    driver_name: str | None = Field(default=None, max_length=120)
-    driver_id: UUID | None = None
-
-
-class VehicleUpdate(BaseModel):
-    name: str | None = Field(default=None, max_length=120)
-    number: str | None = Field(default=None, min_length=2, max_length=40)
-    driver_name: str | None = Field(default=None, max_length=120)
-    driver_id: UUID | None = None
-    is_active: bool | None = None
-
-
-class VehicleOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    name: str | None
-    number: str
-    capacity_kg: Decimal | None = None
-    driver_name: str | None
-    driver_id: UUID | None
-    is_active: bool
-    created_at: datetime

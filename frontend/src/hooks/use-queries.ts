@@ -112,15 +112,6 @@ export function useAdminDeliveryUsers() {
   });
 }
 
-export function useAdminVehicles() {
-  return useQuery({
-    queryKey: ["admin", "vehicles"],
-    queryFn: async () => {
-      const { data } = await api.get<any[]>("/admin/vehicles");
-      return data;
-    },
-  });
-}
 
 export function useCreateDeliveryRun() {
   const queryClient = useQueryClient();

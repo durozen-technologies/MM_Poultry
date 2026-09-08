@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useAdminVehicles, useCreateDeliveryRun } from "../../../hooks/use-queries";
+import { useAdminDeliveryUsers, useCreateDeliveryRun } from "../../../hooks/use-queries";
 import type { DailyOrderOut } from "../../../types/api";
 
 interface Props {
@@ -11,27 +11,22 @@ interface Props {
 }
 
 export function AssignDeliveryModal({ order, onClose, onAssigned }: Props) {
-  const { data: vehicles, isLoading: loadingVehicles } = useAdminVehicles();
+  const { data: users, isLoading: loadingUsers } = useAdminDeliveryUsers();
   const { mutate: createRun, isPending } = useCreateDeliveryRun();
 
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
   const handleAssign = () => {
-    if (!selectedVehicleId) return;
+    if (!selectedDriverId) return;
     
-    const vehicle = vehicles?.find(v => v.id === selectedVehicleId);
-    if (!vehicle || !vehicle.driver_id) {
-      alert("Selected vehicle does not have a linked driver.");
-      return;
-    }
+    const driver = users?.find(u => u.id === selectedDriverId);
+    if (!driver) return;
 
     createRun(
       {
         order_ids: [order.id],
-        driver_user_id: vehicle.driver_id,
-        driver_name: vehicle.driver_name || "Unknown Driver",
-        vehicle_id: vehicle.id,
-        vehicle_number: vehicle.number,
+        driver_user_id: driver.id,
+        driver_name: driver.full_name || driver.username,
       },
       {
         onSuccess: () => {
@@ -65,33 +60,33 @@ export function AssignDeliveryModal({ order, onClose, onAssigned }: Props) {
             <Text className="font-label-lg text-label-lg text-on-surface font-semibold mb-2">
               Select Delivery Unit
             </Text>
-            {loadingVehicles ? (
+            {loadingUsers ? (
               <ActivityIndicator size="small" className="my-2" />
             ) : (
               <View className="flex-col gap-2 mb-4">
-                {vehicles?.map(v => (
+                {users?.map(u => (
                   <Pressable
-                    key={v.id}
-                    onPress={() => setSelectedVehicleId(v.id)}
+                    key={u.id}
+                    onPress={() => setSelectedDriverId(u.id)}
                     className={`p-3 rounded-xl border flex-row items-center justify-between ${
-                      selectedVehicleId === v.id
+                      selectedDriverId === u.id
                         ? "border-primary bg-primary-container/20"
                         : "border-outline-variant bg-surface"
                     }`}
                   >
                     <View className="flex-row items-center gap-2">
-                      <MaterialIcons name="directions-car" size={20} className={selectedVehicleId === v.id ? "text-primary" : "text-on-surface-variant"} />
-                      <Text className={`font-body-md text-body-md ${selectedVehicleId === v.id ? "text-primary font-semibold" : "text-on-surface"}`}>
-                        {v.number}
+                      <MaterialIcons name="person" size={20} className={selectedDriverId === u.id ? "text-primary" : "text-on-surface-variant"} />
+                      <Text className={`font-body-md text-body-md ${selectedDriverId === u.id ? "text-primary font-semibold" : "text-on-surface"}`}>
+                        {u.full_name || u.username}
                       </Text>
                     </View>
-                    {selectedVehicleId === v.id && (
+                    {selectedDriverId === u.id && (
                       <MaterialIcons name="check-circle" size={20} className="text-primary" />
                     )}
                   </Pressable>
                 ))}
-                {(!vehicles || vehicles.length === 0) && (
-                  <Text className="font-body-sm text-on-surface-variant italic">No vehicles available</Text>
+                {(!users || users.length === 0) && (
+                  <Text className="font-body-sm text-on-surface-variant italic">No drivers available</Text>
                 )}
               </View>
             )}
@@ -106,9 +101,9 @@ export function AssignDeliveryModal({ order, onClose, onAssigned }: Props) {
             </Pressable>
             <Pressable
               onPress={handleAssign}
-              disabled={!selectedVehicleId || isPending}
+              disabled={!selectedDriverId || isPending}
               className={`h-10 px-6 items-center justify-center rounded-full ${
-                !selectedVehicleId || isPending
+                !selectedDriverId || isPending
                   ? "bg-on-surface/12"
                   : "bg-primary"
               }`}
@@ -118,7 +113,7 @@ export function AssignDeliveryModal({ order, onClose, onAssigned }: Props) {
               ) : (
                 <Text
                   className={`font-label-md text-label-md font-semibold ${
-                    !selectedVehicleId
+                    !selectedDriverId
                       ? "text-on-surface/38"
                       : "text-on-primary"
                   }`}

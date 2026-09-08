@@ -5,7 +5,6 @@ from fastapi import APIRouter
 from app.routers.admin_dashboard import router as admin_dashboard_router
 from app.routers.admin_dispatch import router as admin_dispatch_router
 from app.routers.admin_expenses import router as admin_expenses_router
-from app.routers.admin_farms import router as admin_farms_router
 from app.routers.admin_inventory import router as admin_inventory_router
 from app.routers.admin_items import router as admin_items_router
 from app.routers.admin_orders import router as admin_orders_router
@@ -29,7 +28,6 @@ api_router.include_router(admin_retailers_router)
 api_router.include_router(admin_routes_router)
 api_router.include_router(admin_orders_router)
 api_router.include_router(admin_dispatch_router)
-api_router.include_router(admin_farms_router)
 api_router.include_router(admin_inventory_router)
 api_router.include_router(admin_dashboard_router)
 api_router.include_router(admin_reports_router)

@@ -9,7 +9,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createDeliveryRun, getDispatchToday } from "../../api/delivery";
-import { useAdminDeliveryUsers, useAdminFarms, useAdminVehicles } from "../../hooks/use-queries";
+import { useAdminDeliveryUsers, useAdminFarms } from "../../hooks/use-queries";
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
 import { AdminActionFooter } from "../../components/admin/admin-action-footer";
@@ -35,7 +35,7 @@ export function AdminRouteDispatchScreen({
     queryFn: getDispatchToday,
   });
   const { data: users = [] } = useAdminDeliveryUsers();
-  const { data: vehicles = [] } = useAdminVehicles();
+
   const { data: farmsData } = useAdminFarms();
 
   const bucket = dispatch?.routes.find((r) =>
@@ -52,7 +52,7 @@ export function AdminRouteDispatchScreen({
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [itemAdjustments, setItemAdjustments] = useState<Record<string, string>>({});
   const [driverId, setDriverId] = useState<string | null>(null);
-  const [vehicleId, setVehicleId] = useState<string | null>(null);
+
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -120,14 +120,13 @@ export function AdminRouteDispatchScreen({
       setMsg({ text: "Select at least one order", ok: false });
       return;
     }
-    if (!driverId || !vehicleId) {
-      setMsg({ text: "Select driver and vehicle", ok: false });
+    if (!driverId) {
+      setMsg({ text: "Select driver", ok: false });
       return;
     }
 
     const driver = users.find((u) => u.id === driverId);
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    if (!driver || !vehicle) return;
+    if (!driver) return;
 
     const loadIds = Array.from(selectedLoadIds);
     const perLoad = selectedKg / loadIds.length;
@@ -150,8 +149,7 @@ export function AdminRouteDispatchScreen({
         route_id: routeId ?? undefined,
         driver_user_id: driver.id,
         driver_name: driver.full_name || driver.username,
-        vehicle_id: vehicle.id,
-        vehicle_number: vehicle.number,
+
         farm_load_allocations,
       });
       await queryClient.invalidateQueries({ queryKey: ["admin", "dispatch"] });
@@ -165,10 +163,7 @@ export function AdminRouteDispatchScreen({
   }, [
     selectedOrders,
     driverId,
-    vehicleId,
-    selectedLoadIds,
-    users,
-    vehicles,
+
     selectedKg,
     allocations,
     routeId,
@@ -190,26 +185,7 @@ export function AdminRouteDispatchScreen({
         <Text className={msg.ok ? "text-primary mb-2" : "text-error mb-2"}>{msg.text}</Text>
       ) : null}
 
-      <Text className="font-label-lg font-semibold text-on-surface mb-2">Vehicle</Text>
-        <View className="gap-2 mb-4">
-          {vehicles.map((v) => (
-            <Pressable
-              key={v.id}
-              onPress={() => {
-                setVehicleId(v.id);
-                if (!driverId && v.driver_name) {
-                  const u = users.find(x => x.full_name === v.driver_name || x.username === v.driver_name);
-                  if (u) setDriverId(u.id);
-                }
-              }}
-              className={`p-3 rounded-xl border ${vehicleId === v.id ? "border-primary bg-primary-container/20" : "border-outline-variant"}`}
-            >
-              <Text className={vehicleId === v.id ? "text-primary font-semibold" : "text-on-surface"}>
-                {v.number}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+
 
         <Text className="font-label-lg font-semibold text-on-surface mb-2">Driver</Text>
         <View className="gap-2 mb-4">

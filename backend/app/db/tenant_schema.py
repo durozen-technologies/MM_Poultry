@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "b3c4d5e6f7g8"
+TENANT_MIGRATION_HEAD = "f85bff95fa2b"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -66,7 +66,6 @@ def _tenant_table_names() -> set[str]:
         "retailer_daily_orders",
         "retailer_daily_order_items",
         "farms",
-        "vehicles",
         "org_settings",
         "farm_loads",
         "delivery_runs",
@@ -296,7 +295,6 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS whatsapp VARCHAR(30)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS area VARCHAR(120)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS route_name VARCHAR(120)",
-        "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS name VARCHAR(120)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS category VARCHAR(60)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(12,2) NOT NULL DEFAULT 0.00",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS preferred_delivery_time VARCHAR(40)",
@@ -355,7 +353,6 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE delivery_stop_items ADD COLUMN IF NOT EXISTS remaining_kg NUMERIC(12,3)",
         "UPDATE delivery_stop_items SET remaining_kg = ordered_kg WHERE remaining_kg IS NULL",
         "ALTER TABLE delivery_stops ADD COLUMN IF NOT EXISTS failure_reason VARCHAR(500)",
-        "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS driver_id UUID",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
@@ -363,7 +360,6 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         for table in Base.metadata.sorted_tables:
             if table.name in {
                 "routes",
-                "vehicles",
                 "org_settings",
                 "expense_categories",
                 "expenses",

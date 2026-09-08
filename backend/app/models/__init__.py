@@ -13,7 +13,6 @@ from app.models.domain import (
     RetailerReturn,
     Route,
     TripWeightLoss,
-    Vehicle,
 )
 from app.models.enums import (
     DeliveryRunStatus,
@@ -39,7 +38,6 @@ __all__ = [
     "RetailerReturn",
     "Farm",
     "FarmLoad",
-    "Vehicle",
     "OrgSettings",
     "DeliveryRun",
     "DeliveryStop",

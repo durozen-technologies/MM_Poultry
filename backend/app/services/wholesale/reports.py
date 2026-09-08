@@ -38,7 +38,6 @@ from app.schemas import (
     TripWeightLossOut,
 )
 from app.services.wholesale.common import q_kg, q_money
-from app.services.wholesale.delivery_runs import get_delivery_run
 from app.services.wholesale.stock_audit import log_quantity_change
 
 _RECONCILE_TOLERANCE = Decimal("0.05")

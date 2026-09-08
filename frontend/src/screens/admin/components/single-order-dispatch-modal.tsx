@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView, TextInput } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAdminDeliveryUsers, useAdminVehicles, useCreateDeliveryRun } from "../../../hooks/use-queries";
+import { useAdminDeliveryUsers, useCreateDeliveryRun } from "../../../hooks/use-queries";
 import type { DailyOrderOut } from "../../../types/api";
 
 interface Props {
@@ -14,18 +14,15 @@ interface Props {
 export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) {
   const queryClient = useQueryClient();
   const { data: users, isLoading: loadingUsers } = useAdminDeliveryUsers();
-  const { data: vehicles, isLoading: loadingVehicles } = useAdminVehicles();
+
   const { mutate: createRun, isPending } = useCreateDeliveryRun();
 
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-
   const handleAssign = () => {
-    if (!selectedDriverId || !selectedVehicleId) return;
+    if (!selectedDriverId) return;
     
     const driver = users?.find(u => u.id === selectedDriverId);
-    const vehicle = vehicles?.find(v => v.id === selectedVehicleId);
-    if (!driver || !vehicle) return;
+    if (!driver) return;
 
     createRun(
       {
@@ -34,8 +31,6 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
 
         driver_user_id: driver.id,
         driver_name: driver.full_name || driver.username,
-        vehicle_id: vehicle.id,
-        vehicle_number: vehicle.number,
         farm_load_allocations: [],
       },
       {
@@ -71,45 +66,7 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
               </Text>
             </View>
 
-            <Text className="font-label-lg text-on-surface font-semibold mb-2">
-              Vehicle
-            </Text>
-            {loadingVehicles ? (
-              <ActivityIndicator size="small" className="my-2" />
-            ) : (
-              <View className="flex-col gap-2 mb-4">
-                {vehicles?.map(v => (
-                  <Pressable
-                    key={v.id}
-                    onPress={() => {
-                      setSelectedVehicleId(v.id);
-                      if (!selectedDriverId && v.driver_name) {
-                        const u = users?.find(x => x.full_name === v.driver_name || x.username === v.driver_name);
-                        if (u) setSelectedDriverId(u.id);
-                      }
-                    }}
-                    className={`p-3 rounded-xl border flex-row items-center justify-between ${
-                      selectedVehicleId === v.id
-                        ? "border-primary bg-primary-container/20"
-                        : "border-outline-variant bg-surface"
-                    }`}
-                  >
-                    <View className="flex-row items-center gap-2">
-                      <MaterialIcons name="directions-car" size={20} className={selectedVehicleId === v.id ? "text-primary" : "text-on-surface-variant"} />
-                      <Text className={`font-body-md ${selectedVehicleId === v.id ? "text-primary font-semibold" : "text-on-surface"}`}>
-                        {v.number} {v.name ? `(${v.name})` : ""}
-                      </Text>
-                    </View>
-                    {selectedVehicleId === v.id && (
-                      <MaterialIcons name="check-circle" size={20} className="text-primary" />
-                    )}
-                  </Pressable>
-                ))}
-                {(!vehicles || vehicles.length === 0) && (
-                  <Text className="font-body-sm text-on-surface-variant italic">No vehicles available</Text>
-                )}
-              </View>
-            )}
+
 
             <Text className="font-label-lg text-on-surface font-semibold mb-2">
               Driver
@@ -153,11 +110,9 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
             </Pressable>
             <Pressable
               onPress={handleAssign}
-              disabled={!selectedDriverId || !selectedVehicleId || isPending}
+              disabled={!selectedDriverId || isPending}
               className={`h-10 px-6 items-center justify-center rounded-full ${
-                !selectedDriverId || !selectedVehicleId || isPending
-                  ? "bg-on-surface/12"
-                  : "bg-primary"
+                !selectedDriverId || isPending ? "bg-on-surface/10" : "bg-primary"
               }`}
             >
               {isPending ? (
@@ -165,7 +120,7 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
               ) : (
                 <Text
                   className={`font-label-md font-semibold ${
-                    !selectedDriverId || !selectedVehicleId
+                    !selectedDriverId
                       ? "text-on-surface/38"
                       : "text-on-primary"
                   }`}

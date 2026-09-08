@@ -29,8 +29,6 @@ class DeliveryRunCreate(BaseModel):
     route_id: UUID | None = None
     driver_user_id: UUID | None = None
     driver_name: str | None = Field(default=None, max_length=120)
-    vehicle_id: UUID | None = None
-    vehicle_number: str | None = Field(default=None, max_length=40)
 
 
 class DeliveryRunCancel(BaseModel):
@@ -104,8 +102,6 @@ class DeliveryRunOut(BaseModel):
     status: DeliveryRunStatus
     driver_user_id: UUID | None = None
     driver_name: str | None = None
-    vehicle_id: UUID | None = None
-    vehicle_number: str | None = None
     planned_kg: Decimal | None = None
     actual_loaded_kg: Decimal | None = None
     returned_kg: Decimal | None = None

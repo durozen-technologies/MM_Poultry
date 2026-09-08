@@ -13,8 +13,8 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
   const [users, setUsers] = useState<User[]>([]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [mobile, setMobile] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [vehicleNumber, setVehicleNumber] = useState("");
   
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -51,13 +51,13 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
       await createDeliveryUser({
         username: username.trim(),
         password,
-        full_name: fullName.trim() || null,
-        mobile_number: mobile.trim() || null,
+        full_name: driverName.trim() || null,
+        mobile_number: vehicleNumber.trim() || null,
       });
       setUsername("");
       setPassword("");
-      setFullName("");
-      setMobile("");
+      setDriverName("");
+      setVehicleNumber("");
       setShowForm(false);
       setMsg({ text: "Delivery user created successfully", ok: true });
       setTimeout(() => setMsg(null), 3000);
@@ -214,33 +214,33 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                       <View className="h-px bg-outline-variant/30 my-1" />
 
                       <View>
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Full Name (Optional)</Text>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Driver Name (Optional)</Text>
                         <View className="relative flex-row items-center">
                           <View className="absolute left-4 z-10">
                             <MaterialIcons name="badge" size={20} className="text-on-surface-variant" />
                           </View>
                           <TextInput 
                             className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
-                            placeholder="John Doe" 
-                            value={fullName} 
-                            onChangeText={setFullName} 
+                            placeholder="e.g. Ravi Kumar" 
+                            value={driverName} 
+                            onChangeText={setDriverName} 
                             placeholderTextColor="#9ca3af" 
                           />
                         </View>
                       </View>
 
                       <View>
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Mobile (Optional)</Text>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle Number (Optional)</Text>
                         <View className="relative flex-row items-center">
                           <View className="absolute left-4 z-10">
-                            <MaterialIcons name="phone" size={20} className="text-on-surface-variant" />
+                            <MaterialIcons name="local-shipping" size={20} className="text-on-surface-variant" />
                           </View>
                           <TextInput 
                             className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
-                            placeholder="+91 9876543210" 
-                            value={mobile} 
-                            onChangeText={setMobile} 
-                            keyboardType="phone-pad" 
+                            placeholder="e.g. TN 01 AB 1234" 
+                            value={vehicleNumber} 
+                            onChangeText={setVehicleNumber} 
+                            autoCapitalize="characters" 
                             placeholderTextColor="#9ca3af" 
                           />
                         </View>
@@ -323,13 +323,25 @@ const DeliveryUserCard = React.memo(({ user: u, onRemove }: { user: User; onRemo
     <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/20 flex-row justify-between items-center relative overflow-hidden">
       <View className={`absolute top-0 left-0 w-1.5 h-full ${u.is_active ? 'bg-primary' : 'bg-error'}`} />
       
-      <View className="flex-row items-center gap-4 ml-1">
+      <View className="flex-row items-center gap-4 ml-1 flex-1">
         <View className={`w-12 h-12 rounded-full items-center justify-center ${u.is_active ? 'bg-primary/10' : 'bg-error/10'}`}>
           <MaterialIcons name="local-shipping" size={24} className={u.is_active ? 'text-primary' : 'text-error'} />
         </View>
         
-        <View>
+        <View className="flex-1">
           <Text className="font-title-md text-on-surface font-bold">{u.username}</Text>
+          {u.full_name && (
+            <View className="flex-row items-center gap-1 mt-0.5">
+              <MaterialIcons name="badge" size={13} className="text-on-surface-variant" />
+              <Text className="font-label-sm text-on-surface-variant">{u.full_name}</Text>
+            </View>
+          )}
+          {u.mobile_number && (
+            <View className="flex-row items-center gap-1 mt-0.5">
+              <MaterialIcons name="local-shipping" size={13} className="text-on-surface-variant" />
+              <Text className="font-label-sm text-on-surface-variant font-bold tracking-wider">{u.mobile_number}</Text>
+            </View>
+          )}
           <View className="flex-row items-center gap-1 mt-0.5">
             <View className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-primary' : 'bg-error'}`} />
             <Text className={`font-label-sm font-bold uppercase tracking-wider ${u.is_active ? "text-primary" : "text-error"}`}>

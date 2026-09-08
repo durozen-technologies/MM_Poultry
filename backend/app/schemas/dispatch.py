@@ -33,7 +33,6 @@ class DispatchRunSummary(BaseModel):
     id: UUID
     status: str
     driver_name: str | None = None
-    vehicle_number: str | None = None
     planned_kg: Decimal | None = None
     actual_loaded_kg: Decimal | None = None
 

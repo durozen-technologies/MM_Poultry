@@ -148,7 +148,7 @@ export function AdminInventoryDetailScreen({ route, navigation }: { route: any, 
                   <TextInput
                     placeholderTextColor="#9ca3af"
                     className="h-13 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
-                    placeholder="Search farms, vehicles..."
+                    placeholder="Search farms..."
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                   />

@@ -30,9 +30,6 @@ from app.schemas.farm import (
     FarmLoadUpdate,
     FarmOut,
     FarmUpdate,
-    VehicleCreate,
-    VehicleOut,
-    VehicleUpdate,
 )
 from app.schemas.inventory import (
     InventoryItemLoadsOut,
@@ -117,9 +114,6 @@ __all__ = [
     "FarmLoadCreate",
     "FarmLoadOut",
     "FarmLoadUpdate",
-    "VehicleCreate",
-    "VehicleUpdate",
-    "VehicleOut",
     "DeliveryRunCreate",
     "DeliveryRunCancel",
     "DeliveryRunReconcile",
