@@ -28,7 +28,7 @@ async def admin_today_orders(
 
 @router.get("/admin/orders", response_model=TodayOrdersResponse)
 async def admin_orders_by_date(
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
     date: IstDate | None = None,
 ) -> TodayOrdersResponse:
     return await svc.list_orders_by_date(auth.db, date)
@@ -38,7 +38,7 @@ async def admin_orders_by_date(
 async def admin_confirm_order(
     order_id: UUID,
     payload: ConfirmOrderRequest,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
 ) -> DailyOrderOut:
     return await svc.confirm_order(auth.db, order_id, payload.expected_delivery_date)
 
@@ -46,14 +46,14 @@ async def admin_confirm_order(
 @router.post("/admin/orders/{order_id}/cancel", response_model=DailyOrderOut)
 async def admin_cancel_order(
     order_id: UUID,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
 ) -> DailyOrderOut:
     return await svc.cancel_order(auth.db, order_id)
 
 @router.get("/admin/orders/{order_id}/bill", response_model=DeliveryBillOut)
 async def admin_get_order_bill(
     order_id: UUID,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
 ) -> DeliveryBillOut:
     from fastapi import HTTPException, status
     bill = await svc.get_bill_by_order_id(auth.db, order_id)

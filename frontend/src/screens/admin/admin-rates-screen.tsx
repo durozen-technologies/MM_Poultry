@@ -173,7 +173,7 @@ export function AdminRatesScreen({ navigation }: { navigation: any }) {
                             <Text className="font-title-lg text-on-surface-variant font-bold">₹</Text>
                           </View>
                           <TextInput 
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="#717973"
                             className="w-full bg-surface-container-lowest h-16 rounded-2xl border border-outline-variant/50 pl-10 pr-4 font-display-sm text-primary font-black focus:border-primary shadow-sm"
                             value={defaultRateInput}
                             onChangeText={setDefaultRateInput}

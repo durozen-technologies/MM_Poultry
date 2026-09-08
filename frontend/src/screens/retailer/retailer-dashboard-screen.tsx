@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getRetailerDashboard } from "../../api/retailer";
 import { getApiErrorMessage } from "../../api/client";
 import type { RetailerDashboard } from "../../types/api";
@@ -20,6 +20,7 @@ import { useAuthStore } from "../../store/auth-store";
 
 export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
   const user = useAuthStore((s) => s.user);
+  const insets = useSafeAreaInsets();
   const [dashboard, setDashboard] = useState<RetailerDashboard | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
       {/* Professional Architectural Header */}
       <View className="absolute top-0 left-0 right-0 h-[220px] bg-[#0052CC]" />
 
-      <SafeAreaView className="flex-1" edges={["top"]}>
+      <View className="flex-1" style={{ paddingTop: insets.top }}>
         <View className="h-16 px-6 flex-row items-center justify-between">
           <View>
             <Text className="text-white/70 font-label-md uppercase tracking-wider">Welcome back</Text>
@@ -189,7 +190,7 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
             </View>
           ) : null}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

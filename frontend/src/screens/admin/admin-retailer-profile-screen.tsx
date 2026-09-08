@@ -1,12 +1,5 @@
 import React, { useCallback, useState, useMemo } from "react";
-import {
-  Pressable,
-  Text,
-  View,
-  ScrollView,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
+import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatList } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
@@ -313,15 +306,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         </ScrollView>
       </View>
 
-      <ScrollView 
-        keyboardShouldPersistTaps="handled" 
-        className="flex-1 px-4 pt-4" 
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <MessageBanner message={msg} />
-
+      
+      <>
+        <View className="px-4 pt-4"><MessageBanner message={msg} /></View>
         {activeTab === "OVERVIEW" && (
+          <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+{activeTab === "OVERVIEW" && (
           <View className="flex-col gap-4">
             
             {/* Payment / Action Form */}
@@ -367,7 +357,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         value={cash}
                         onChangeText={setCash}
                         placeholder="0.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                     <View className="flex-1">
@@ -378,7 +368,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         value={upi}
                         onChangeText={setUpi}
                         placeholder="0.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                   </View>
@@ -405,7 +395,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         value={returnWeight}
                         onChangeText={setReturnWeight}
                         placeholder="0.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                     <View className="flex-1">
@@ -416,7 +406,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         value={returnRate}
                         onChangeText={setReturnRate}
                         placeholder="0.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                   </View>
@@ -427,7 +417,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       value={returnReason}
                       onChangeText={setReturnReason}
                       placeholder="Optional remarks"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                     />
                   </View>
                 </View>
@@ -458,14 +448,14 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       value={cash}
                       onChangeText={setCash}
                       placeholder="0.00"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                     />
                   </View>
                 </View>
               )}
 
               <Pressable 
-                className="h-13 bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2 mt-5 shadow-sm shadow-emerald-500/30 active:scale-[0.98] transition-transform ml-1"
+                className="h-14 bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2 mt-5 shadow-sm shadow-emerald-500/30 active:scale-[0.98] transition-transform ml-1"
                 onPress={collect}
               >
                 <MaterialIcons name="done" size={20} color="white" />
@@ -536,7 +526,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       value={portalUsername}
                       onChangeText={setPortalUsername}
                       placeholder="retailer_username"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                     />
                   </View>
                   <View>
@@ -549,11 +539,11 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       value={portalPassword}
                       onChangeText={setPortalPassword}
                       placeholder="••••••••"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                     />
                   </View>
                   <Pressable 
-                    className="w-full bg-primary h-13 rounded-xl flex items-center justify-center mt-2 active:scale-[0.98] transition-transform shadow-sm shadow-primary/30"
+                    className="w-full bg-primary h-14 rounded-xl flex items-center justify-center mt-2 active:scale-[0.98] transition-transform shadow-sm shadow-primary/30"
                     onPress={createPortalAccount}
                     disabled={portalLoading}
                   >
@@ -567,9 +557,16 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           </View>
         )}
 
+        
+          </ScrollView>
+        )}
         {activeTab === "ORDERS" && (
-          <View className="flex-col gap-3">
-            {orders.length === 0 ? (
+          <FlatList
+            data={orders}
+            keyExtractor={item => item.id}
+            className="flex-1 px-4"
+            contentContainerStyle={{ paddingBottom: 100 }}
+            ListEmptyComponent={
               <View className="bg-surface-container-lowest rounded-3xl p-8 border border-dashed border-outline-variant/50 items-center justify-center mt-2">
                 <MaterialIcons name="receipt" size={32} className="text-on-surface-variant/50 mb-3" />
                 <Text className="font-title-md text-on-surface font-bold mb-1">No Orders Today</Text>
@@ -577,11 +574,10 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   There are no orders recorded for this retailer today.
                 </Text>
               </View>
-            ) : (
-              orders.map((order) => (
+            }
+            renderItem={({ item: order }) => (
                 <Pressable 
-                  key={order.id}
-                  className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform"
+                  className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative overflow-hidden active:scale-[0.98] transition-transform mb-3"
                   onPress={() => navigation.navigate("OrderDetail", { order })}
                 >
                   <View className={`absolute top-0 left-0 w-1.5 h-full ${
@@ -617,14 +613,16 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                     </View>
                   </View>
                 </Pressable>
-              ))
             )}
-          </View>
+          />
         )}
-
         {activeTab === "BILLS" && (
-          <View className="flex-col gap-3">
-            {billEntries.length === 0 ? (
+          <FlatList
+            data={billEntries}
+            keyExtractor={(_, idx) => String(idx)}
+            className="flex-1 px-4"
+            contentContainerStyle={{ paddingBottom: 100 }}
+            ListEmptyComponent={
               <View className="bg-surface-container-lowest rounded-3xl p-8 border border-dashed border-outline-variant/50 items-center justify-center mt-2">
                 <MaterialIcons name="receipt-long" size={32} className="text-on-surface-variant/50 mb-3" />
                 <Text className="font-title-md text-on-surface font-bold mb-1">No Bills Found</Text>
@@ -632,9 +630,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   There are no billing records for this retailer.
                 </Text>
               </View>
-            ) : (
-              billEntries.map((item, idx) => (
-                <View key={idx} className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm flex-row justify-between items-center relative overflow-hidden">
+            }
+            renderItem={({ item }) => (
+                <View className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm flex-row justify-between items-center relative overflow-hidden mb-3">
                   <View className="absolute top-0 left-0 w-1.5 h-full bg-error" />
                   <View className="ml-2 flex-row items-center gap-3">
                     <View className="w-10 h-10 rounded-full bg-error/10 items-center justify-center border border-error/20">
@@ -650,47 +648,50 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   </View>
                   <Text className="font-title-lg text-error font-black">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                 </View>
-              ))
             )}
-          </View>
+          />
         )}
-
         {activeTab === "LEDGER" && (
-          <View className="bg-surface-container-lowest rounded-3xl p-2 shadow-sm border border-outline-variant/30">
-            {entries.length === 0 ? (
-              <View className="p-8 items-center justify-center">
-                <MaterialIcons name="menu-book" size={32} className="text-on-surface-variant/50 mb-3" />
-                <Text className="font-body-md text-on-surface-variant text-center">No ledger entries found.</Text>
-              </View>
-            ) : (
-              entries.map((item, idx) => (
-                <View key={idx} className={`flex-row justify-between p-4 ${idx !== entries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
-                  <View className="flex-col justify-center">
-                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(item.entry_date)}</Text>
-                    <Text className="font-title-sm text-on-surface font-bold">{item.entry_type}</Text>
-                    {item.notes ? (
-                      <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
-                    ) : null}
+          <View className="flex-1 px-4">
+            <View className="bg-surface-container-lowest rounded-3xl p-2 shadow-sm border border-outline-variant/30 flex-1">
+              <FlatList
+                data={entries}
+                keyExtractor={(_, idx) => String(idx)}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                ListEmptyComponent={
+                  <View className="p-8 items-center justify-center">
+                    <MaterialIcons name="menu-book" size={32} className="text-on-surface-variant/50 mb-3" />
+                    <Text className="font-body-md text-on-surface-variant text-center">No ledger entries found.</Text>
                   </View>
-                  <View className="flex-col items-end justify-center">
-                    {Number(item.debit) > 0 && (
-                      <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10">
-                        <Text className="font-title-sm font-black text-error">Dr ₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
-                      </View>
-                    )}
-                    {Number(item.credit) > 0 && (
-                      <View className="bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/10 mt-1">
-                        <Text className="font-title-sm font-black text-primary">Cr ₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
-                      </View>
-                    )}
+                }
+                renderItem={({ item, index }) => (
+                  <View className={`flex-row justify-between p-4 ${index !== entries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
+                    <View className="flex-col justify-center">
+                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(item.entry_date)}</Text>
+                      <Text className="font-title-sm text-on-surface font-bold">{item.entry_type}</Text>
+                      {item.notes ? (
+                        <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
+                      ) : null}
+                    </View>
+                    <View className="flex-col items-end justify-center">
+                      {Number(item.debit) > 0 && (
+                        <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10">
+                          <Text className="font-title-sm font-black text-error">Dr ₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                        </View>
+                      )}
+                      {Number(item.credit) > 0 && (
+                        <View className="bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/10 mt-1">
+                          <Text className="font-title-sm font-black text-primary">Cr ₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                </View>
-              ))
-            )}
+                )}
+              />
+            </View>
           </View>
         )}
-
-        {activeTab === "RATES" && (
+{activeTab === "RATES" && (
           <View className="flex-col gap-6">
             <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl py-4 shadow-sm">
               <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-5">Select Item to Override</Text>
@@ -756,13 +757,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                       onChangeText={setCustomRateInput}
                       placeholder="0.00"
                       keyboardType="decimal-pad"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                     />
                   </View>
                 </View>
                 
                 <Pressable 
-                  className={`h-13 rounded-2xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+                  className={`h-14 rounded-2xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
                     !customRateInput.trim() ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
                   }`} 
                   onPress={saveCustomRate}
@@ -819,7 +820,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             </View>
           </View>
         )}
-      </ScrollView>
+      </>
     </AdminScreenContainer>
   );
 }

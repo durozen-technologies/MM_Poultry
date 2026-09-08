@@ -153,7 +153,7 @@ export function AdminSettingsScreen({ navigation }: { navigation: any }) {
                         onChangeText={setWarn}
                         keyboardType="decimal-pad"
                         placeholder="2.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                   </View>
@@ -169,7 +169,7 @@ export function AdminSettingsScreen({ navigation }: { navigation: any }) {
                         onChangeText={setAlert}
                         keyboardType="decimal-pad"
                         placeholder="5.00"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#717973"
                       />
                     </View>
                   </View>
@@ -196,7 +196,7 @@ export function AdminSettingsScreen({ navigation }: { navigation: any }) {
               <Pressable
                 onPress={onSave}
                 disabled={saving}
-                className={`h-13 rounded-xl flex-row items-center justify-center active:scale-[0.98] transition-transform ${saving ? "bg-primary/70" : "bg-primary shadow-sm shadow-primary/30"}`}
+                className={`h-14 rounded-xl flex-row items-center justify-center active:scale-[0.98] transition-transform ${saving ? "bg-primary/70" : "bg-primary shadow-sm shadow-primary/30"}`}
               >
                 {saving ? (
                   <ActivityIndicator color="#fff" />

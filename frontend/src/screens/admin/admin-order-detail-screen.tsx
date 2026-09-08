@@ -30,7 +30,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
   const { data: bill } = useQuery({
     queryKey: ["order_bill", order?.id],
     queryFn: () => getOrderBill(order!.id),
-    enabled: !!order && (order.status === "FULFILLED" || order.status === "DELIVERED"),
+    enabled: !!order && order.status === "FULFILLED",
   });
   
   const allItems = itemsPage?.items || [];
@@ -97,36 +97,50 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
       <ScrollView className="flex-1 px-4 pt-2" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         
         {/* Status Banner */}
-        <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-5 mb-6 shadow-sm relative overflow-hidden">
-          <View className={`absolute top-0 left-0 w-1.5 h-full ${
+        <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-[24px] p-6 mb-6 shadow-sm relative overflow-hidden">
+          <View className={`absolute top-0 left-0 w-2 h-full ${
             order.status === 'PLACED' ? 'bg-error' : 
-            order.status === 'ACKNOWLEDGED' ? 'bg-tertiary' :
-            order.status === 'DISPATCHED' ? 'bg-[#f59e0b]' :
+            order.status === 'ACKNOWLEDGED' ? 'bg-[#0052CC]' :
+            order.status === 'DISPATCHED' ? 'bg-[#d97706]' :
             order.status === 'FULFILLED' ? 'bg-primary' : 
             order.status === 'CANCELLED' ? 'bg-error' : 'bg-surface-variant'
           }`} />
           
-          <View className="flex-row justify-between items-center ml-2">
-            <View className="flex-row items-center gap-2">
-              <MaterialIcons name="info-outline" size={20} className="text-on-surface-variant" />
-              <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider">Status</Text>
-            </View>
-            <View className={`px-3 py-1.5 rounded-full border ${
-              order.status === 'PLACED' ? 'bg-error-container/50 border-error/20' : 
-              order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20' :
-              order.status === 'DISPATCHED' ? 'bg-[#fef3c7] border-[#f59e0b]/20' :
-              order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20' : 
-              order.status === 'CANCELLED' ? 'bg-error/10 border-error/20' : 'bg-surface-variant/30 border-outline-variant/20'
-            }`}>
-              <Text className={`font-label-sm uppercase tracking-widest font-bold ${
-                order.status === 'PLACED' ? 'text-error' : 
-                order.status === 'ACKNOWLEDGED' ? 'text-tertiary' :
-                order.status === 'DISPATCHED' ? 'text-[#f59e0b]' :
-                order.status === 'FULFILLED' ? 'text-primary' : 
-                order.status === 'CANCELLED' ? 'text-error' : 'text-on-surface-variant'
+          <View className="flex-row justify-between items-center ml-3">
+            <View className="flex-row items-center gap-3">
+              <View className={`w-10 h-10 rounded-full items-center justify-center ${
+                order.status === 'PLACED' ? 'bg-error/10' : 
+                order.status === 'ACKNOWLEDGED' ? 'bg-[#0052CC]/10' :
+                order.status === 'DISPATCHED' ? 'bg-[#fef3c7]' :
+                order.status === 'FULFILLED' ? 'bg-primary/10' : 
+                order.status === 'CANCELLED' ? 'bg-error/10' : 'bg-surface-variant/30'
               }`}>
-                {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
-              </Text>
+                <MaterialIcons name={(
+                  order.status === 'PLACED' ? 'pending-actions' : 
+                  order.status === 'ACKNOWLEDGED' ? 'check-circle' :
+                  order.status === 'DISPATCHED' ? 'local-shipping' :
+                  order.status === 'FULFILLED' ? 'done-all' : 
+                  order.status === 'CANCELLED' ? 'cancel' : 'info-outline'
+                ) as any} size={22} className={
+                  order.status === 'PLACED' ? 'text-error' : 
+                  order.status === 'ACKNOWLEDGED' ? 'text-[#0052CC]' :
+                  order.status === 'DISPATCHED' ? 'text-[#d97706]' :
+                  order.status === 'FULFILLED' ? 'text-primary' : 
+                  order.status === 'CANCELLED' ? 'text-error' : 'text-on-surface-variant'
+                } />
+              </View>
+              <View>
+                <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-widest mb-1">Status</Text>
+                <Text className={`font-headline-sm font-black uppercase tracking-wider ${
+                  order.status === 'PLACED' ? 'text-error' : 
+                  order.status === 'ACKNOWLEDGED' ? 'text-[#0052CC]' :
+                  order.status === 'DISPATCHED' ? 'text-[#d97706]' :
+                  order.status === 'FULFILLED' ? 'text-primary' : 
+                  order.status === 'CANCELLED' ? 'text-error' : 'text-on-surface-variant'
+                }`}>
+                  {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -146,16 +160,16 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
             
             <View className="h-[1px] bg-outline-variant/20 my-2 mx-3" />
             
-            <View className="flex-row justify-between items-center p-3 border-b border-outline-variant/10">
-              <View className="flex-row items-center gap-2">
-                <View className="w-8 items-center">
-                  <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
+            <View className="flex-row justify-between items-center p-4 border-b border-outline-variant/10">
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-[#0052CC]/10 items-center justify-center">
+                  <MaterialIcons name="inventory-2" size={20} className="text-[#0052CC]" />
                 </View>
-                <Text className="text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Total Boxes</Text>
+                <Text className="text-label-lg font-bold text-[#0052CC] uppercase tracking-wider">Total Boxes</Text>
               </View>
-              <View className="flex-row items-end gap-1">
-                <Text className="font-title-md font-black text-on-surface">{totalBoxes}</Text>
-                <Text className="font-label-md font-bold text-on-surface mb-0.5">BOXES</Text>
+              <View className="flex-row items-end gap-1.5 bg-[#0052CC]/10 px-4 py-2 rounded-xl border border-[#0052CC]/20">
+                <Text className="font-headline-sm font-black text-[#0052CC]">{totalBoxes}</Text>
+                <Text className="font-label-md font-bold text-[#0052CC] mb-1">BOXES</Text>
               </View>
             </View>
 
@@ -266,13 +280,17 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
 
         {/* Action Buttons */}
         {order.status === "PLACED" && (
-          <PrimaryButton
-            title="Confirm Order"
-            icon="check-circle"
-            variant="primary"
+          <Pressable
+            className="mb-4 h-14 rounded-full flex-row items-center justify-center px-6 bg-[#0052CC] shadow-sm shadow-[#0052CC]/30 active:scale-[0.98] transition-transform"
             onPress={() => setShowConfirmModal(true)}
-            className="mb-4"
-          />
+          >
+            <View className="flex-row items-center justify-center gap-2">
+              <MaterialIcons name="check-circle" size={22} color="white" />
+              <Text className="text-white font-bold text-label-lg uppercase tracking-wider">
+                Confirm Order
+              </Text>
+            </View>
+          </Pressable>
         )}
         {(order.status === "PLACED" || order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
           <PrimaryButton
@@ -286,13 +304,17 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
         )}
 
         {user?.role !== "DELIVERY" && (order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
-          <PrimaryButton
-            title="Dispatch Order"
-            icon="local-shipping"
-            variant="primary"
+          <Pressable
+            className="mb-8 h-14 rounded-full flex-row items-center justify-center px-6 bg-[#d97706] shadow-sm shadow-[#d97706]/30 active:scale-[0.98] transition-transform"
             onPress={() => setShowDispatchModal(true)}
-            className="mb-8"
-          />
+          >
+            <View className="flex-row items-center justify-center gap-2">
+              <MaterialIcons name="local-shipping" size={22} color="white" />
+              <Text className="text-white font-bold text-label-lg uppercase tracking-wider">
+                Dispatch Order
+              </Text>
+            </View>
+          </Pressable>
         )}
       </ScrollView>
       

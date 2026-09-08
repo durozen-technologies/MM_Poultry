@@ -9,6 +9,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createDeliveryRun, getDispatchToday } from "../../api/delivery";
+import { getApiErrorMessage } from "../../api/client";
 import { useAdminDeliveryUsers, useAdminFarms } from "../../hooks/use-queries";
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
@@ -20,6 +21,14 @@ type Params = {
   routeId: string | null;
   routeName: string;
 };
+
+function matchRouteBucket(
+  bucketRouteId: string | null | undefined,
+  targetRouteId: string | null | undefined
+) {
+  if (!targetRouteId) return bucketRouteId == null;
+  return bucketRouteId != null && String(bucketRouteId) === String(targetRouteId);
+}
 
 export function AdminRouteDispatchScreen({
   navigation,
@@ -38,9 +47,7 @@ export function AdminRouteDispatchScreen({
 
   const { data: farmsData } = useAdminFarms();
 
-  const bucket = dispatch?.routes.find((r) =>
-    routeId ? r.route_id === routeId : r.route_id === null
-  );
+  const bucket = dispatch?.routes.find((r) => matchRouteBucket(r.route_id, routeId));
 
   const loads = useMemo(
     () => farmsData?.loads?.filter((l) => l.status === "OPEN" || l.status === "IN_TRANSIT") ?? [],
@@ -126,55 +133,78 @@ export function AdminRouteDispatchScreen({
     }
 
     const driver = users.find((u) => u.id === driverId);
-    if (!driver) return;
+    if (!driver) {
+      setMsg({ text: "Selected driver is no longer available", ok: false });
+      return;
+    }
 
     const loadIds = Array.from(selectedLoadIds);
-    const perLoad = selectedKg / loadIds.length;
-    const farm_load_allocations = loadIds.map((farm_load_id) => ({
-      farm_load_id,
-      allocated_kg: allocations[farm_load_id] || String(perLoad.toFixed(3)),
-    }));
+    const farm_load_allocations = loadIds
+      .map((farm_load_id) => ({
+        farm_load_id,
+        allocated_kg:
+          allocations[farm_load_id] ||
+          (loadIds.length > 0 ? String((selectedKg / loadIds.length).toFixed(3)) : "0"),
+      }))
+      .filter((row) => Number(row.allocated_kg) > 0);
 
-    const order_adjustments = Object.entries(itemAdjustments).map(([k, v]) => {
-      const [order_id, item_id] = k.split("_");
-      return { order_id, item_id, requested_kg: v };
-    });
+    const order_adjustments = Object.entries(itemAdjustments)
+      .filter(([, v]) => v.trim() !== "" && Number(v) > 0)
+      .map(([k, v]) => {
+        const sep = k.indexOf("_");
+        return {
+          order_id: k.slice(0, sep),
+          item_id: k.slice(sep + 1),
+          requested_kg: v,
+        };
+      });
 
     setSubmitting(true);
     setMsg(null);
     try {
       await createDeliveryRun({
         order_ids: Array.from(selectedOrders),
-        order_adjustments,
+        ...(order_adjustments.length > 0 ? { order_adjustments } : {}),
         route_id: routeId ?? undefined,
         driver_user_id: driver.id,
         driver_name: driver.full_name || driver.username,
-
-        farm_load_allocations,
+        ...(farm_load_allocations.length > 0 ? { farm_load_allocations } : {}),
       });
       await queryClient.invalidateQueries({ queryKey: ["admin", "dispatch"] });
       setMsg({ text: "Delivery run created", ok: true });
       navigation.goBack();
-    } catch (e: any) {
-      setMsg({ text: e?.response?.data?.error?.message || e.message || "Failed", ok: false });
+    } catch (e: unknown) {
+      setMsg({ text: getApiErrorMessage(e), ok: false });
     } finally {
       setSubmitting(false);
     }
   }, [
     selectedOrders,
     driverId,
-
+    users,
     selectedKg,
+    selectedLoadIds,
     allocations,
+    itemAdjustments,
     routeId,
     queryClient,
     navigation,
   ]);
 
-  if (isLoading || !bucket) {
+  if (isLoading) {
     return (
       <AdminScreenContainer header={<AdminHeader title={routeName} onBack={() => navigation.goBack()} />}>
         <ActivityIndicator className="mt-8" />
+      </AdminScreenContainer>
+    );
+  }
+
+  if (!bucket) {
+    return (
+      <AdminScreenContainer header={<AdminHeader title={routeName} onBack={() => navigation.goBack()} />}>
+        <Text className="text-error px-4 py-8 text-center">
+          Route not found on today&apos;s dispatch board. Go back and refresh.
+        </Text>
       </AdminScreenContainer>
     );
   }

@@ -4,10 +4,10 @@ import re
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.database import Base, get_engine
+from app.db.database import Base, get_engine, get_session_factory
 from app.db.tenant_context_var import (
     get_active_tenant_schema,
     reset_active_tenant_schema,
@@ -280,6 +280,20 @@ async def provision_tenant_schema_async(schema_name: str) -> None:
             {"v": TENANT_MIGRATION_HEAD},
         )
         await conn.execute(text("SET search_path TO public"))
+
+
+async def repair_all_tenant_schemas_async() -> None:
+    """Repair every provisioned tenant schema (expand-only alters + missing tables)."""
+    from app.models.organization import Organization
+
+    session = get_session_factory()()
+    try:
+        await set_search_path(session, None)
+        orgs = list(await session.scalars(select(Organization)))
+        for org in orgs:
+            await repair_tenant_schema_async(org.schema_name)
+    finally:
+        await session.close()
 
 
 async def repair_tenant_schema_async(schema_name: str) -> None:

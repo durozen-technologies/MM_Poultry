@@ -114,7 +114,12 @@ function ReceiptImagePrintBridge({
     }
 
     requestedExportKeyRef.current = currentExportKey;
-    webViewRef.current?.injectJavaScript("window.__EXPORT_RECEIPT_IMAGE__ && window.__EXPORT_RECEIPT_IMAGE__(); true;");
+    // ponytail: brief delay so inline script defines __EXPORT_RECEIPT_IMAGE__ before inject
+    setTimeout(() => {
+      webViewRef.current?.injectJavaScript(
+        "window.__EXPORT_RECEIPT_IMAGE__ && window.__EXPORT_RECEIPT_IMAGE__(); true;"
+      );
+    }, 150);
   }, [currentExportKey]);
 
   const handleMessage = useCallback(
@@ -171,6 +176,9 @@ function ReceiptImagePrintBridge({
         source={{ html: sourceHtml }}
         onLoadEnd={handleLoadEnd}
         onMessage={handleMessage}
+        javaScriptEnabled
+        domStorageEnabled
+        androidLayerType="software"
         scrollEnabled={false}
         nestedScrollEnabled={false}
         showsVerticalScrollIndicator={false}
@@ -221,9 +229,20 @@ export function useReceiptImagePrintJob() {
           );
         }
 
+        const timeout = setTimeout(() => {
+          if (!pendingPromiseRef.current) return;
+          clearPendingJob(new Error("Receipt print timed out. Check printer connection and try again."));
+        }, 20000);
+
         pendingPromiseRef.current = {
-          resolve,
-          reject,
+          resolve: () => {
+            clearTimeout(timeout);
+            resolve();
+          },
+          reject: (error: Error) => {
+            clearTimeout(timeout);
+            reject(error);
+          },
         };
 
         setJob({
@@ -232,7 +251,7 @@ export function useReceiptImagePrintJob() {
           device,
         });
       }),
-    [],
+    [clearPendingJob],
   );
 
   useEffect(
@@ -267,11 +286,13 @@ export function useReceiptImagePrintJob() {
 const styles = StyleSheet.create({
   hiddenBridge: {
     position: "absolute",
-    left: -10000,
     top: 0,
-    opacity: 0.01,
+    left: 0,
     width: 404,
-    height: 1400,
+    height: 1200,
+    opacity: 0.01,
+    zIndex: -1,
+    overflow: "hidden",
   },
   hiddenWebView: {
     width: "100%",

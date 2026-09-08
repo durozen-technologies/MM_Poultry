@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
+import { createDeliveryRun } from "../api/delivery";
 
 import type {
   DailyOrderOut,
@@ -116,12 +117,12 @@ export function useAdminDeliveryUsers() {
 export function useCreateDeliveryRun() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: any) => {
-      const { data } = await api.post("/admin/delivery-runs", payload);
-      return data;
+    mutationFn: async (payload: Parameters<typeof createDeliveryRun>[0]) => {
+      return createDeliveryRun(payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dispatch"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
     },

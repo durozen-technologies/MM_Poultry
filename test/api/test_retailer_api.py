@@ -165,7 +165,7 @@ async def test_retailer_bills_scoped(client: AsyncClient) -> None:
     await client.post(f"/delivery/runs/{run.json()['id']}/start", headers=admin_headers)
     await client.post(
         f"/delivery/stops/{stop_a['id']}/weigh",
-        json={"items": [{"item_id": item["id"], "gross_weight_kg": 25.5, "delivered_boxes": 1, "empty_box_weight_kg": 1.5}], "scale_device_id": "SIM"},
+        json={"items": [{"item_id": item["id"], "weight_kg": 25.5, "delivered_boxes": 1}], "scale_device_id": "SIM"},
         headers=admin_headers,
     )
     bill = await client.post(

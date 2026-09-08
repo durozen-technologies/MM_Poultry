@@ -353,59 +353,6 @@ async def start_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     return await get_delivery_run(db, run.id)
 
 
-async def skip_stop(db: AsyncSession, stop_id: UUID, reason: str | None = None) -> DeliveryStopOut:
-    stop = await db.scalar(
-        select(DeliveryStop)
-        .options(selectinload(DeliveryStop.items))
-        .where(DeliveryStop.id == stop_id)
-    )
-    if stop is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
-    if stop.status == DeliveryStopStatus.BILLED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
-    if stop.status == DeliveryStopStatus.SKIPPED:
-        return await _stop_out(db, stop)
-    stop.status = DeliveryStopStatus.SKIPPED
-    if reason:
-        stop.failure_reason = reason[:500]
-    await db.flush()
-    return await _stop_out(db, stop)
-
-
-async def fail_stop(
-    db: AsyncSession,
-    stop_id: UUID,
-    failure_reason: str,
-    *,
-    actor_user_id: UUID | None = None,
-) -> DeliveryStopOut:
-    stop = await db.scalar(
-        select(DeliveryStop)
-        .options(selectinload(DeliveryStop.items))
-        .where(DeliveryStop.id == stop_id)
-    )
-    if stop is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
-    if stop.status in {DeliveryStopStatus.BILLED, DeliveryStopStatus.FAILED}:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already terminal")
-    stop.status = DeliveryStopStatus.FAILED
-    stop.failure_reason = failure_reason[:500]
-    await log_quantity_change(
-        db,
-        entity_type="delivery_stop",
-        entity_id=stop.id,
-        field="status",
-        old_value=None,
-        new_value=None,
-        reason=failure_reason,
-        actor_user_id=actor_user_id,
-        ref_type="delivery_run",
-        ref_id=stop.delivery_run_id,
-    )
-    await db.flush()
-    return await _stop_out(db, stop)
-
-
 async def cancel_delivery_run(
     db: AsyncSession,
     run_id: UUID,

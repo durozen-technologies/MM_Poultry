@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./src/query-client";
+import { ReceiptPrintProvider } from "./src/components/receipt-print-provider";
 import { AppNavigator } from "./src/navigation/app-navigator";
 import { useAuthStore } from "./src/store/auth-store";
 import { usePrinterStore } from "./src/store/printer-store";
@@ -54,7 +55,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <AppNavigator />
+        <ReceiptPrintProvider>
+          <AppNavigator />
+        </ReceiptPrintProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

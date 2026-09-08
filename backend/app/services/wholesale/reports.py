@@ -43,11 +43,7 @@ from app.services.wholesale.stock_audit import log_quantity_change
 
 _RECONCILE_TOLERANCE = Decimal("0.05")
 _ACTIVE_RUN = (DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS)
-_TERMINAL_STOP = (
-    DeliveryStopStatus.BILLED,
-    DeliveryStopStatus.SKIPPED,
-    DeliveryStopStatus.FAILED,
-)
+_TERMINAL_STOP = (DeliveryStopStatus.BILLED,)
 _ZERO = Decimal("0")
 
 
@@ -256,7 +252,7 @@ async def complete_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOu
     if non_terminal and non_terminal > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="All stops must be billed, skipped, or failed before completing",
+            detail="All stops must be billed before completing",
         )
 
     if run.reconciled_at is None:

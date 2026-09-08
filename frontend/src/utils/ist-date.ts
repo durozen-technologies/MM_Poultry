@@ -83,6 +83,20 @@ export function todayIstDate(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
 }
 
+/** Format time as HH:MM AM/PM in Asia/Kolkata. */
+export function formatIstTime(value: Date = new Date()): string {
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(value);
+  } catch {
+    return "";
+  }
+}
+
 /** Value to send to API (always DD/MM/YYYY). */
 export function toApiDate(value: Date | string | null | undefined): string | null {
   const formatted = formatIstDate(value);

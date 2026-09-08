@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { getRetailerOrder } from "../../api/retailer";
 import { apiItems } from "../../api/items";
@@ -11,6 +11,7 @@ import { formatIstDate } from "../../utils/ist-date";
 
 export function RetailerOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const orderId = route.params?.orderId as string;
+  const insets = useSafeAreaInsets();
   const [order, setOrder] = useState<RetailerOrderDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
   );
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
         <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full" onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
@@ -126,6 +127,6 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
           </>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

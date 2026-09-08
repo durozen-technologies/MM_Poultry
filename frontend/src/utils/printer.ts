@@ -34,6 +34,10 @@ export type DeliveryReceiptItem = {
   quantity: number;
   price: number;
   total: number;
+  /** Overrides qty column — e.g. "2 / 48.500" for boxes + kg */
+  quantity_display?: string;
+  /** Shown under item name — e.g. "₹180/kg" */
+  rate_line?: string;
 };
 
 
@@ -49,6 +53,7 @@ export type DeliveryReceiptData = {
   buyer_name: string;
   buyer_address: string;
   buyer_phone?: string;
+  route_info?: string;
 
   receipt_type?: 'DELIVERY' | 'PAYMENT' | 'TEST';
   opening_balance: number;
@@ -58,6 +63,8 @@ export type DeliveryReceiptData = {
   total_bill: number;
   cash_collected: number;
   upi_collected: number;
+  total_boxes?: number;
+  total_weight_kg?: number;
 
   closing_balance: number;
   cylinder_balances?: { name: string; count: number; given?: number; taken?: number }[];
@@ -419,12 +426,13 @@ function getCommandText() {
     CENTER: "\x1B\x61\x01",
     RIGHT: "\x1B\x61\x02",
     NORMAL: "\x1D\x21\x00",
-    DOUBLE_SIZE: "\x1D\x21\x11",
     BOLD_ON: "\x1B\x45\x01",
     BOLD_OFF: "\x1B\x45\x00",
     DIVIDER: "--------------------------------",
   };
 }
+
+export { getCommandText };
 
 export async function printTestReceipt(device: PrinterDevice) {
   return enqueuePrinterJob(async () => {

@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { getRetailerBill } from "../../api/retailer";
 import { apiItems } from "../../api/items";
@@ -43,7 +43,7 @@ export function RetailerBillDetailScreen({ route, navigation }: { route: any; na
   );
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row items-center bg-surface/90 border-b border-outline-variant/20">
         <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full" onPress={() => navigation.goBack()}>
           <MaterialIcons name="arrow-back" size={24} className="text-on-surface" />
@@ -82,7 +82,7 @@ export function RetailerBillDetailScreen({ route, navigation }: { route: any; na
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

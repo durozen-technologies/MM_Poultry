@@ -100,42 +100,27 @@ async def weigh_stop(
     for item in stop.items:
         pi = payload_item_map.get(item.item_id)
         if pi:
-            if pi.gross_weight_kg <= Decimal("0"):
+            if pi.weight_kg <= Decimal("0"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Gross weight must be > 0 for item {item.item_id}",
+                    detail=f"Weight must be > 0 for item {item.item_id}",
                 )
             if pi.delivered_boxes <= 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Delivered boxes must be > 0 for item {item.item_id}",
                 )
-            if pi.empty_box_weight_kg < Decimal("0"):
+            weight = q_kg(pi.weight_kg)
+            if weight > Decimal("10000"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Empty box weight cannot be negative for item {item.item_id}",
+                    detail=f"Weight {weight}kg exceeds sanity limit for item {item.item_id}",
                 )
-            net_weight = pi.gross_weight_kg - (Decimal(pi.delivered_boxes) * pi.empty_box_weight_kg)
-            if net_weight <= Decimal("0"):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Net weight must be > 0 for item {item.item_id} (gross {pi.gross_weight_kg} - boxes {pi.delivered_boxes}*{pi.empty_box_weight_kg})",
-                )
-            # Guard against unrealistic values
-            if net_weight > Decimal("10000"):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Net weight {net_weight}kg exceeds sanity limit for item {item.item_id}",
-                )
-            prev_delivered = item.delivered_weight_kg or ZERO
-            total_delivered = q_kg(prev_delivered + q_kg(net_weight))
-            item.delivered_weight_kg = total_delivered
-            item.gross_weight_kg = q_kg(pi.gross_weight_kg)
+            item.delivered_weight_kg = weight
             item.delivered_boxes = pi.delivered_boxes
-            item.empty_box_weight_kg = q_kg(pi.empty_box_weight_kg)
             item.delivered_bird_count = pi.delivered_bird_count
-            item.gross_amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
-            item.remaining_kg = q_kg(max(item.ordered_kg - total_delivered, ZERO))
+            item.gross_amount = q_money(weight * item.rate_per_kg)
+            item.remaining_kg = q_kg(max(item.ordered_kg - weight, ZERO))
             if payload.weight_override_reason:
                 item.weight_override_reason = payload.weight_override_reason[:500]
             if payload.scale_device_id:
@@ -518,7 +503,9 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
     stops_counts = {row.status: row.count for row in stops_res.mappings()}
 
     completed = stops_counts.get(DeliveryStopStatus.BILLED, 0)
-    skipped = stops_counts.get(DeliveryStopStatus.SKIPPED, 0)
+    skipped = stops_counts.get(DeliveryStopStatus.SKIPPED, 0) + stops_counts.get(
+        DeliveryStopStatus.FAILED, 0
+    )
     pending = stops_counts.get(DeliveryStopStatus.PENDING, 0) + stops_counts.get(
         DeliveryStopStatus.WEIGHED, 0
     )

@@ -1,12 +1,82 @@
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import React, { useCallback } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, FlatList } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRetailerCart } from "../../hooks/use-retailer-cart";
 import type { Item } from "../../types/api";
 
 
+
+const OrderItemRow = React.memo(({ item, cartItem, onAdjust, onUpdate }: any) => {
+  const qty = cartItem ? String(cartItem.total_boxes || 0) : "0";
+  const expectedKg = cartItem ? cartItem.requested_kg : "";
+  const isSelected = Number(qty) > 0;
+
+  const handleMinus = useCallback(() => onAdjust(item.id, -1), [item.id, onAdjust]);
+  const handlePlus = useCallback(() => onAdjust(item.id, 1), [item.id, onAdjust]);
+  const handleQtyChange = useCallback((v: string) => {
+    const num = parseInt(v, 10);
+    onUpdate(item.id, "total_boxes", isNaN(num) ? 0 : num);
+  }, [item.id, onUpdate]);
+  const handleKgChange = useCallback((v: string) => onUpdate(item.id, "requested_kg", v), [item.id, onUpdate]);
+  const handleNotesChange = useCallback((v: string) => onUpdate(item.id, "notes", v), [item.id, onUpdate]);
+
+  return (
+    <View className={`bg-white rounded-2xl p-5 mb-4 shadow-sm elevation-sm border ${isSelected ? "border-[#003E99] border-[2px]" : "border-black/5"}`}>
+      <Text className="font-headline-sm text-on-surface mb-1">{item.name}</Text>
+      {item.description ? <Text className="font-body-sm text-on-surface-variant mb-3">{item.description}</Text> : <View className="mb-2" />}
+
+      <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Boxes Count</Text>
+      <View className="flex-row items-center justify-between mb-4">
+        <Pressable accessibilityRole="button"
+          className="w-14 h-14 rounded-full bg-surface-container-highest items-center justify-center active:opacity-70"
+          onPress={handleMinus}
+        >
+          <MaterialIcons name="remove" size={28} className="text-on-surface" />
+        </Pressable>
+        <TextInput
+          className="flex-1 mx-4 text-center font-display-sm font-bold text-[#003E99] border border-outline-variant/50 bg-surface-container-lowest rounded-xl py-4"
+          value={qty}
+          onChangeText={handleQtyChange}
+          keyboardType="number-pad"
+        />
+        <Pressable accessibilityRole="button"
+          className="w-14 h-14 rounded-full bg-[#003E99] items-center justify-center active:opacity-70 shadow-sm"
+          onPress={handlePlus}
+        >
+          <MaterialIcons name="add" size={28} className="text-white" />
+        </Pressable>
+      </View>
+
+      {isSelected && (
+        <>
+          <Text className="font-label-md text-on-surface-variant mb-2">Expected Kg (Optional)</Text>
+          <TextInput
+            className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl px-4 py-3 text-body-lg text-[#003E99] font-bold mb-4"
+            value={expectedKg || ""}
+            onChangeText={handleKgChange}
+            keyboardType="decimal-pad"
+            placeholder="e.g. 50"
+          />
+
+          <Text className="font-label-md text-on-surface-variant mb-2">Notes (optional)</Text>
+          <TextInput
+            className="bg-surface border border-outline-variant rounded-xl px-3 py-3 text-body-md text-on-surface min-h-[60px] placeholder:text-on-surface-variant"
+            value={cartItem?.notes || ""}
+            onChangeText={handleNotesChange}
+            placeholder="Delivery instructions, cut preference, etc."
+          />
+        </>
+      )}
+    </View>
+  );
+});
+
 export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: any; route: any }) {
   const orderId = route.params?.orderId;
+  const insets = useSafeAreaInsets();
+  
+  const handleGoBack = useCallback(() => navigation.goBack(), [navigation]);
   const {
     cart,
     busy,
@@ -17,91 +87,46 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
     updateCartItem,
     adjustBoxes,
     onSubmit,
-  } = useRetailerCart(() => navigation.goBack(), orderId);
+  } = useRetailerCart(handleGoBack, orderId);
+
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
-      <View className="h-16 px-4 flex-row items-center bg-[#0052CC] border-b border-black/10">
-        <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full active:bg-white/10" onPress={() => navigation.goBack()}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
+      <View className="h-16 px-4 flex-row items-center bg-[#003E99] border-b border-black/10">
+        <Pressable accessibilityRole="button" className="w-11 h-11 -ml-2 items-center justify-center rounded-full active:bg-white/10" onPress={handleGoBack}>
           <MaterialIcons name="arrow-back" size={24} className="text-white" />
         </Pressable>
         <Text className="font-headline-sm text-white font-semibold ml-2">Place Order</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ paddingBottom: 100 }}>
-        {message ? (
-          <View className="bg-error-container rounded-lg px-3 py-2 mb-3">
-            <Text className="text-error text-center">{message}</Text>
-          </View>
-        ) : null}
+      
+      {message ? (
+        <View className="bg-error-container rounded-lg px-3 py-2 mb-3 mt-4 mx-4">
+          <Text className="text-error text-center">{message}</Text>
+        </View>
+      ) : null}
+      
+      {loadingItems ? (
+        <ActivityIndicator color="#003E99" size="large" className="mt-8" />
+      ) : items.length === 0 ? (
+        <Text className="text-center text-on-surface-variant mt-8">No items available to order.</Text>
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(item: any) => item.id}
+          className="flex-1 px-4 py-4"
+          contentContainerStyle={{ paddingBottom: 100 }}
+          renderItem={({ item }: { item: any }) => (
+            <OrderItemRow
+              item={item}
+              cartItem={cart[item.id]}
+              onAdjust={adjustBoxes}
+              onUpdate={updateCartItem}
+            />
+          )}
+        />
+      )}
 
-        {loadingItems ? (
-          <ActivityIndicator color="#0052CC" size="large" className="mt-8" />
-        ) : items.length === 0 ? (
-          <Text className="text-center text-on-surface-variant mt-8">No items available to order.</Text>
-        ) : (
-          items.map((item: Item) => {
-            const cartItem = cart[item.id];
-            const qty = cartItem ? String(cartItem.total_boxes || 0) : "0";
-            const expectedKg = cartItem ? cartItem.requested_kg : "";
-            const isSelected = Number(qty) > 0;
-
-            return (
-              <View key={item.id} className={`bg-white rounded-2xl p-5 mb-4 shadow-sm elevation-sm border ${isSelected ? "border-[#0052CC] border-[2px]" : "border-black/5"}`}>
-                <Text className="font-headline-sm text-on-surface mb-1">{item.name}</Text>
-                {item.description ? <Text className="font-body-sm text-on-surface-variant mb-3">{item.description}</Text> : <View className="mb-2" />}
-
-                <Text className="font-label-md text-on-surface-variant uppercase font-semibold mb-2">Boxes Count</Text>
-                <View className="flex-row items-center justify-between mb-4">
-                  <Pressable accessibilityRole="button"
-                    className="w-14 h-14 rounded-full bg-surface-container-highest items-center justify-center active:opacity-70"
-                    onPress={() => adjustBoxes(item.id, -1)}
-                  >
-                    <MaterialIcons name="remove" size={28} className="text-on-surface" />
-                  </Pressable>
-                  <TextInput
-                    className="flex-1 mx-4 text-center font-display-sm font-bold text-[#0052CC] border border-outline-variant/50 bg-surface-container-lowest rounded-xl py-4"
-                    value={qty}
-                    onChangeText={(v) => {
-                       const num = parseInt(v, 10);
-                       updateCartItem(item.id, "total_boxes", isNaN(num) ? 0 : num);
-                    }}
-                    keyboardType="number-pad"
-                  />
-                  <Pressable accessibilityRole="button"
-                    className="w-14 h-14 rounded-full bg-[#0052CC] items-center justify-center active:opacity-70 shadow-sm"
-                    onPress={() => adjustBoxes(item.id, 1)}
-                  >
-                    <MaterialIcons name="add" size={28} className="text-white" />
-                  </Pressable>
-                </View>
-
-                {isSelected && (
-                  <>
-                    <Text className="font-label-md text-on-surface-variant mb-2">Expected Kg (Optional)</Text>
-                    <TextInput
-                      className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl px-4 py-3 text-body-lg text-[#0052CC] font-bold mb-4"
-                      value={expectedKg || ""}
-                      onChangeText={(v) => updateCartItem(item.id, "requested_kg", v)}
-                      keyboardType="decimal-pad"
-                      placeholder="e.g. 50"
-                    />
-                    
-
-                    <Text className="font-label-md text-on-surface-variant mb-2">Notes (optional)</Text>
-                    <TextInput
-                      className="bg-surface border border-outline-variant rounded-xl px-3 py-3 text-body-md text-on-surface min-h-[60px] placeholder:text-on-surface-variant"
-                      value={cartItem?.notes || ""}
-                      onChangeText={(v) => updateCartItem(item.id, "notes", v)}
-                      placeholder="Delivery instructions, cut preference, etc."
-                    />
-                  </>
-                )}
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
 
       {/* Floating Action Button for total summary */}
       <View className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto">
@@ -121,6 +146,6 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
           )}
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

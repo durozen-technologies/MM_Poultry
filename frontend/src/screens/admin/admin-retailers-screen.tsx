@@ -151,8 +151,8 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                   <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
                 </View>
                 <TextInput
-                  placeholderTextColor="#9ca3af"
-                  className="flex-1 h-13 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
+                  placeholderTextColor="#717973"
+                  className="flex-1 h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
                   placeholder="Search retailers..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -305,22 +305,22 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                   <View className="flex-1">
                     <Text className="font-label-md text-on-surface-variant font-bold mb-1.5 ml-1">Cash (₹)</Text>
                     <TextInput
-                      className="h-13 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg font-bold text-on-surface focus:border-primary"
+                      className="h-14 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg font-bold text-on-surface focus:border-primary"
                       value={cash}
                       onChangeText={setCash}
                       placeholder="0.00"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                       keyboardType="decimal-pad"
                     />
                   </View>
                   <View className="flex-1">
                     <Text className="font-label-md text-on-surface-variant font-bold mb-1.5 ml-1">UPI (₹)</Text>
                     <TextInput
-                      className="h-13 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg font-bold text-on-surface focus:border-primary"
+                      className="h-14 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg font-bold text-on-surface focus:border-primary"
                       value={upi}
                       onChangeText={setUpi}
                       placeholder="0.00"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                       keyboardType="decimal-pad"
                     />
                   </View>

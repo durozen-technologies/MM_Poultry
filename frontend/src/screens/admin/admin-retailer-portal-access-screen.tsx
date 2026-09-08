@@ -99,7 +99,7 @@ export function AdminRetailerPortalAccessScreen({ navigation }: { navigation: an
               <TextInput
                 className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary"
                 placeholder="Search by name or phone..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={search}
                 onChangeText={setSearch}
                 autoCorrect={false}
@@ -178,7 +178,7 @@ export function AdminRetailerPortalAccessScreen({ navigation }: { navigation: an
                     <TextInput
                       className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary"
                       placeholder="Username"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                       autoCapitalize="none"
                       autoCorrect={false}
                       value={username}
@@ -196,7 +196,7 @@ export function AdminRetailerPortalAccessScreen({ navigation }: { navigation: an
                     <TextInput
                       className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary"
                       placeholder="Password"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#717973"
                       secureTextEntry
                       autoCapitalize="none"
                       autoCorrect={false}

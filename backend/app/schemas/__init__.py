@@ -18,7 +18,6 @@ from app.schemas.delivery import (
     DeliveryRunOut,
     DeliveryRunReconcile,
     DeliveryStopOut,
-    FailStopRequest,
     StockAdjustmentCreate,
     WeighRequest,
 )
@@ -119,7 +118,6 @@ __all__ = [
     "DeliveryRunReconcile",
     "DeliveryRunOut",
     "DeliveryStopOut",
-    "FailStopRequest",
     "StockAdjustmentCreate",
     "DispatchTodayOut",
     "WeighRequest",

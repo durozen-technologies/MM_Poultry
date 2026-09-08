@@ -99,7 +99,7 @@ export function AdminAddExpenseScreen({ navigation }: any) {
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0.00"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="decimal-pad"
               />
             </View>
@@ -143,7 +143,7 @@ export function AdminAddExpenseScreen({ navigation }: any) {
               value={notes}
               onChangeText={setNotes}
               placeholder="Optional notes or reference..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
             />

@@ -2,22 +2,21 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   completeRun,
-  failStop,
   getActiveRun,
   markWhatsAppShared,
   previewBill,
   commitBill,
   reconcileRun,
-  skipStop,
   startRun,
   updatePrintStatus,
   weighStop,
 } from "../api/delivery";
 import { getApiErrorMessage } from "../api/client";
 import { readScaleWeight } from "../services/ble-scale";
-import { printThermalReceipt, shareWhatsAppBill } from "../services/printer";
+import { printThermalReceipt, shareWhatsAppBill, deliveryBillToPrintPayload } from "../services/printer";
 import type { DeliveryBill, DeliveryRun, DeliveryStop } from "../types/api";
 import { getTripWeightLoss } from "../api/reports";
+import { useAuthStore } from "../store/auth-store";
 
 function genCheckoutId(stopId: string): string {
   return `chk-${stopId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -30,8 +29,11 @@ export function useDeliveryRun() {
   const [upi, setUpi] = useState("0");
   const [msg, setMsg] = useState<string | null>(null);
   const [lastBill, setLastBill] = useState<DeliveryBill | null>(null);
+  const [lastBilledStop, setLastBilledStop] = useState<DeliveryStop | null>(null);
   const [billing, setBilling] = useState(false);
   const [startingRun, setStartingRun] = useState(false);
+  const organizationName = useAuthStore((s) => s.user?.organization_name);
+  const receiptOpts = { organizationName };
 
   const refresh = useCallback(async () => {
     try {
@@ -62,8 +64,6 @@ export function useDeliveryRun() {
   }
 
   const [weights, setWeights] = useState<Record<string, string>>({});
-  const [failReason, setFailReason] = useState("");
-  const [showFail, setShowFail] = useState(false);
 
   async function onCompleteRun() {
     if (!run) return;
@@ -97,23 +97,6 @@ export function useDeliveryRun() {
     }
   }
 
-  async function onFailStop() {
-    if (!activeStop || !failReason.trim()) {
-      setMsg("Failure reason required");
-      return;
-    }
-    try {
-      await failStop(activeStop.id, failReason.trim());
-      setMsg(`Failed stop for ${activeStop.retailer_name}`);
-      setActiveStop(null);
-      setShowFail(false);
-      setFailReason("");
-      await refresh();
-    } catch (e) {
-      setMsg(getApiErrorMessage(e));
-    }
-  }
-
   const weighAndBill = async (options?: { skipScale?: boolean; skipPrint?: boolean }) => {
     if (!activeStop || !run) return;
     setBilling(true);
@@ -123,17 +106,15 @@ export function useDeliveryRun() {
     try {
       const itemsPayload = (activeStop.items || []).map((item) => {
         const inputWeight = weights[item.item_id];
-        const gross = Number(inputWeight || item.ordered_kg || "0");
-        const boxes = Number(item.original_total_boxes || "1");
-        const empty = 0;
+        const weight = Number(inputWeight || item.ordered_kg || "0");
+        const boxes = Number(item.delivered_boxes ?? item.original_total_boxes ?? "1");
         
-        if (gross <= 0) throw new Error(`Gross weight must be > 0 for ${item.item_id.slice(0, 8)}`);
+        if (weight <= 0) throw new Error(`Weight must be > 0 for ${item.item_id.slice(0, 8)}`);
         
         return {
           item_id: item.item_id,
-          gross_weight_kg: gross,
+          weight_kg: weight,
           delivered_boxes: boxes,
-          empty_box_weight_kg: empty,
           delivered_bird_count: 0,
         };
       });
@@ -197,12 +178,6 @@ export function useDeliveryRun() {
       if (!bill) throw new Error("Commit failed");
 
       const totalWeight = bill.items?.reduce((sum: number, it: { weight_kg: string }) => sum + Number(it.weight_kg), 0) || 0;
-      const itemsForPrint = (bill.items || []).map((it: any) => ({
-        name: it.item_id.slice(0, 8),
-        weightKg: String(it.weight_kg),
-        rate: String(it.rate_per_kg),
-        amount: String(it.amount),
-      }));
 
       // Step 3: Print — never fail the billing if print fails; update status accordingly
       let printStatus: "PRINTED" | "FAILED" | "SKIPPED" = "FAILED";
@@ -210,18 +185,9 @@ export function useDeliveryRun() {
         printStatus = "SKIPPED";
       } else {
         try {
-          printStatus = await printThermalReceipt({
-            shopName: "Demo Wholesaler",
-            billNumber: bill.bill_number,
-            retailerName: activeStop.retailer_name || "",
-            weightKg: String(totalWeight),
-            rate: "Mixed",
-            total: bill.total_amount,
-            cash: bill.cash_payment,
-            upi: bill.upi_payment,
-            balance: bill.balance_amount,
-            items: itemsForPrint,
-          });
+          printStatus = await printThermalReceipt(
+            deliveryBillToPrintPayload(bill, activeStop, (id) => id.slice(0, 8), receiptOpts)
+          );
         } catch {
           printStatus = "FAILED";
         }
@@ -237,6 +203,7 @@ export function useDeliveryRun() {
         console.warn("Failed to update print status", e);
       }
       setLastBill(updated);
+      setLastBilledStop(activeStop);
       setMsg(`Billed ${updated.bill_number} → print ${updated.print_status}`);
       setActiveStop(null);
       setWeights({});
@@ -250,43 +217,12 @@ export function useDeliveryRun() {
     }
   }
 
-  async function onSkipStop() {
-    if (!activeStop) return;
-    try {
-      await skipStop(activeStop.id);
-      setMsg(`Skipped stop for ${activeStop.retailer_name}`);
-      setActiveStop(null);
-      setWeights({});
-      await refresh();
-    } catch (e) {
-      setMsg(getApiErrorMessage(e));
-    }
-  }
-
   async function shareBill() {
-    if (!lastBill) return;
+    if (!lastBill || !lastBilledStop) return;
     try {
-      const totalWeight = lastBill.items?.reduce((sum: number, it: { weight_kg: string }) => sum + Number(it.weight_kg), 0) || 0;
-      
-      const payload = {
-        shopName: "MM Broilers", // fallback if not available
-        billNumber: lastBill.bill_number || "Draft",
-        retailerName: "Retailer", // fallback
-        weightKg: String(totalWeight),
-        rate: lastBill.items?.[0]?.rate_per_kg || "0",
-        total: String(lastBill.total_amount),
-        cash: String(lastBill.cash_payment || 0),
-        upi: String(lastBill.upi_payment || 0),
-        balance: String(lastBill.balance_amount || 0),
-        items: (lastBill.items || []).map((it: any) => ({
-          name: String(it.item_id).slice(0, 8),
-          weightKg: String(it.weight_kg),
-          rate: String(it.rate_per_kg),
-          amount: String(it.amount),
-        }))
-      };
-
-      await shareWhatsAppBill(payload);
+      await shareWhatsAppBill(
+        deliveryBillToPrintPayload(lastBill, lastBilledStop, (id) => id.slice(0, 8), receiptOpts)
+      );
       await markWhatsAppShared(lastBill.id);
       setMsg("WhatsApp share marked");
     } catch (e) {
@@ -310,14 +246,7 @@ export function useDeliveryRun() {
     startingRun,
     onStartRun,
     onCompleteRun,
-
-    onFailStop,
-    failReason,
-    setFailReason,
-    showFail,
-    setShowFail,
     weighAndBill,
-    onSkipStop,
     shareBill,
     refresh,
   };

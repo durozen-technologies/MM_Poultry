@@ -245,7 +245,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               <TextInput
                 className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="0"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="number-pad"
                 value={quantity}
                 onChangeText={setQuantity}
@@ -256,7 +256,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               <TextInput
                 className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="0.00"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="decimal-pad"
                 value={weight}
                 onChangeText={setWeight}
@@ -268,7 +268,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="0.00"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               keyboardType="decimal-pad"
               value={rate}
               onChangeText={setRate}
@@ -314,7 +314,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
               <TextInput
                 className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="0.00"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="decimal-pad"
                 value={paidAmount}
                 onChangeText={setPaidAmount}
@@ -335,7 +335,7 @@ export function AdminFarmPurchaseScreen({ route, navigation }: { route: any, nav
             <TextInput
               className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Optional notes..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={remarks}

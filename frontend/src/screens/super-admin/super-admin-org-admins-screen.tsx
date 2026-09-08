@@ -59,7 +59,7 @@ function AdminCard({
             <View className="flex-1 flex-row items-center bg-surface-container-low rounded-full px-4 h-12 border border-[rgba(1,45,29,0.2)]">
               <MaterialCommunityIcons name="lock-reset" size={18} className="text-[rgba(65,72,68,0.7)] mr-2" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)] pr-2"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-outline pr-2"
                 placeholder="New password"
                 secureTextEntry={!showEditPassword}
                 value={editPassword}
@@ -271,7 +271,7 @@ export function SuperAdminOrgAdminsScreen() {
             <View className="flex-row items-center bg-surface-container-low rounded-2xl px-4 mb-4 h-[56px] border border-outline-variant/30 focus:border-brand-ink">
               <MaterialCommunityIcons name="account" size={22} className="text-[rgba(65,72,68,0.7)] mr-3" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-outline"
                 placeholder="Admin Username"
                 autoCapitalize="none"
                 value={username}
@@ -281,7 +281,7 @@ export function SuperAdminOrgAdminsScreen() {
             <View className="flex-row items-center bg-surface-container-low rounded-2xl px-4 mb-6 h-[56px] border border-outline-variant/30 focus:border-brand-ink">
               <MaterialCommunityIcons name="lock-outline" size={22} className="text-[rgba(65,72,68,0.7)] mr-3" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-[rgba(65,72,68,0.5)]"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-outline"
                 placeholder="Secure Password"
                 secureTextEntry={!showPassword}
                 value={password}

@@ -19,6 +19,7 @@ from app.core.errors import (
     validation_exception_handler,
 )
 from app.db.database import dispose_engine
+from app.db.tenant_schema import repair_all_tenant_schemas_async, repair_platform_schema_async
 from app.routers import api_router, health_router
 
 logger = logging.getLogger("app.main")
@@ -35,6 +36,15 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    settings = get_settings()
+    # ponytail: local uvicorn skips entrypoint migrate.py — repair once on startup (non-prod, non-test DB)
+    if not settings.production and not settings.postgres_db.endswith("_test"):
+        try:
+            await repair_platform_schema_async()
+            await repair_all_tenant_schemas_async()
+            logger.info("Tenant schema repair completed on startup")
+        except Exception:
+            logger.warning("Tenant schema repair on startup failed", exc_info=True)
     yield
     await dispose_engine()
 

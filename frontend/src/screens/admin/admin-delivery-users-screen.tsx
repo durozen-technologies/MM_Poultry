@@ -182,7 +182,7 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                             value={username} 
                             onChangeText={setUsername} 
                             autoCapitalize="none" 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                         </View>
                       </View>
@@ -199,7 +199,7 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                             value={password} 
                             onChangeText={setPassword} 
                             secureTextEntry={!showPassword} 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                           <Pressable 
                             accessibilityRole="button" 
@@ -224,7 +224,7 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                             placeholder="e.g. Ravi Kumar" 
                             value={driverName} 
                             onChangeText={setDriverName} 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                         </View>
                       </View>
@@ -241,13 +241,13 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                             value={vehicleNumber} 
                             onChangeText={setVehicleNumber} 
                             autoCapitalize="characters" 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                         </View>
                       </View>
 
                       <Pressable 
-                        className={`h-13 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+                        className={`h-14 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
                           !username || !password ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
                         }`}
                         onPress={onAdd}

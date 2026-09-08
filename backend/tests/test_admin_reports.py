@@ -49,6 +49,14 @@ def test_complete_delivery_run_coverage(client: TestClient, mock_admin_auth: Non
     # 2. Setup Retailer
     ret_resp = client.post("/api/v1/admin/retailers", json={"name": "Report Ret"})
     ret_id = ret_resp.json()["id"]
+    client.put(
+        "/api/v1/admin/rates",
+        json={
+            "retailer_id": ret_id,
+            "item_id": "00000000-0000-0000-0000-000000000999",
+            "rate_per_kg": 180.0,
+        },
+    )
 
     from app.main import app
     from app.auth.dependencies import get_current_auth, AuthContext
@@ -111,10 +119,26 @@ def test_complete_delivery_run_coverage(client: TestClient, mock_admin_auth: Non
     stop_id = run_resp.json()["stops"][0]["id"]
 
     client.post(f"/api/v1/delivery/runs/{run_id}/start")
-    client.post(f"/api/v1/delivery/stops/{stop_id}/skip")
+    client.post(
+        f"/api/v1/delivery/stops/{stop_id}/weigh",
+        json={
+            "items": [
+                {
+                    "item_id": "00000000-0000-0000-0000-000000000999",
+                    "weight_kg": 100,
+                    "delivered_boxes": 2,
+                }
+            ],
+            "scale_device_id": "TEST",
+        },
+    )
+    client.post(
+        f"/api/v1/delivery/stops/{stop_id}/bill/commit",
+        json={"cash_payment": "0", "upi_payment": "0", "checkout_id": "chk-report-test"},
+    )
     client.post(
         f"/api/v1/delivery/runs/{run_id}/reconcile",
-        json={"returned_kg": "100", "wastage_kg": "0"},
+        json={"returned_kg": "0", "wastage_kg": "0"},
     )
 
     # Complete run

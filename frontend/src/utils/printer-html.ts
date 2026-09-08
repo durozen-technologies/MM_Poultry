@@ -22,6 +22,7 @@ type ReceiptExportPayload = {
   toText: string;
   buyerName: string;
   buyerShopName: string;
+  routeInfoText?: string;
   openingBalanceLabel?: string;
   openingBalanceValue?: string;
   itemHeader: string;
@@ -34,6 +35,10 @@ type ReceiptExportPayload = {
 
   totalLabel?: string;
   totalValue?: string;
+  totalBoxesLabel?: string;
+  totalBoxesValue?: string;
+  totalWeightLabel?: string;
+  totalWeightValue?: string;
   balanceAmountLabel?: string;
   balanceAmountValue?: string;
   closingBalanceLabel?: string;
@@ -82,32 +87,47 @@ type ReceiptExportPayload = {
  * =========================================================================
  */
 export function buildReceiptExportPayload(data: DeliveryReceiptData): ReceiptExportPayload {
-  const items = data.items.map(item => ({
-    itemName: item.name,
-    quantityText: String(item.quantity),
+  const hasBoxWeight = data.items.some((item) => item.quantity_display);
+  const items = data.items.map((item) => ({
+    itemName: item.rate_line ? `${item.name}  ${item.rate_line}` : item.name,
+    quantityText: item.quantity_display ?? String(item.quantity),
     lineTotal: formatReceiptCurrency(item.total),
   }));
 
   const isPayment = data.receipt_type === 'PAYMENT';
   const isTestReceipt = data.receipt_type === 'TEST';
+  const isDelivery = data.receipt_type === 'DELIVERY';
 
   return {
     isTestReceipt,
     companyName: data.agency_name || "",
     shopName: data.agency_address || "",
     mobileText: data.agency_mobile ? `Mobile: ${data.agency_mobile}` : "",
-    receiptTitleText: isTestReceipt ? undefined : (isPayment ? "PAYMENT RECEIPT" : undefined),
+    receiptTitleText: isTestReceipt
+      ? undefined
+      : isPayment
+        ? "PAYMENT RECEIPT"
+        : isDelivery
+          ? "DELIVERY BILL"
+          : undefined,
     receiptNumberText: isTestReceipt ? "" : `${isPayment ? 'Receipt No' : 'Bill No'}: ${data.receipt_number}`,
-    dateText: isTestReceipt ? `Date & Time: ${format(new Date(data.date), "dd-MMM-yyyy hh:mm a")}` : `Date: ${format(new Date(data.date), "dd-MMM-yyyy hh:mm a")}`,
+    dateText: isTestReceipt
+      ? `Date & Time: ${format(new Date(data.date), "dd-MMM-yyyy hh:mm a")}`
+      : `Date: ${format(new Date(data.date), "dd-MMM-yyyy hh:mm a")}`,
     toText: isPayment ? "Customer:" : "To:",
     buyerName: data.buyer_name,
     buyerShopName: data.buyer_address,
-    openingBalanceLabel: "Opening Balance",
-    openingBalanceValue: formatReceiptCurrency(data.opening_balance),
+    routeInfoText: data.route_info || undefined,
+    openingBalanceLabel: data.opening_balance > 0 ? "Opening Balance" : undefined,
+    openingBalanceValue: data.opening_balance > 0 ? formatReceiptCurrency(data.opening_balance) : undefined,
     itemHeader: "Item",
-    quantityHeader: "Qty",
+    quantityHeader: hasBoxWeight ? "Bx / Kg" : "Qty",
     totalHeader: "Total",
     items: items,
+    totalBoxesLabel: data.total_boxes != null ? "Total Boxes:" : undefined,
+    totalBoxesValue: data.total_boxes != null ? String(data.total_boxes) : undefined,
+    totalWeightLabel: data.total_weight_kg != null ? "Total Weight:" : undefined,
+    totalWeightValue: data.total_weight_kg != null ? `${data.total_weight_kg.toFixed(3)} kg` : undefined,
     totalLabel: isPayment ? undefined : "Total Bill Amount:",
     totalValue: isPayment ? undefined : formatReceiptCurrency(data.total_bill),
     cashLabel: isPayment ? "Amount Paid (Cash):" : "Cash Paid:",
@@ -115,11 +135,11 @@ export function buildReceiptExportPayload(data: DeliveryReceiptData): ReceiptExp
     upiLabel: isPayment ? "Amount Paid (UPI):" : "UPI Paid:",
     upiValue: formatReceiptCurrency(data.upi_collected),
     balanceAmountLabel: isPayment ? undefined : "Balance Amount:",
-    balanceAmountValue: isPayment ? undefined : formatReceiptCurrency(
-      data.total_bill - data.cash_collected - data.upi_collected,
-    ),
-    closingBalanceLabel: "Closing Balance",
-    closingBalanceValue: formatReceiptCurrency(data.closing_balance),
+    balanceAmountValue: isPayment
+      ? undefined
+      : formatReceiptCurrency(data.total_bill - data.cash_collected - data.upi_collected),
+    closingBalanceLabel: data.closing_balance > 0 ? "Closing Balance" : undefined,
+    closingBalanceValue: data.closing_balance > 0 ? formatReceiptCurrency(data.closing_balance) : undefined,
     cylinderBalances: data.cylinder_balances,
     thankYou: "Thank You",
     poweredBy: "Software Provided By",
@@ -353,7 +373,7 @@ function buildReceiptImageExportScript() {
 
             function renderReceiptToCanvas(payload) {
               var receiptWidth = 380;
-              var bottomFeedPadding = 70;
+              var bottomFeedPadding = 48;
               var measureCanvas = document.createElement("canvas");
               var measureContext = measureCanvas.getContext("2d");
               if (!measureContext) {
@@ -468,6 +488,15 @@ function buildReceiptImageExportScript() {
                         lineHeightRatio: 1.3,
                     }).height;
                 }
+
+                if (payload.routeInfoText) {
+                  y += drawWrappedText(measureContext, payload.routeInfoText, 10, y, receiptWidth - 10, {
+                    size: 16,
+                    weight: 700,
+                    align: "left",
+                    lineHeightRatio: 1.3,
+                  }).height;
+                }
                 
                 y += 10;
                 y += 7; // divider
@@ -536,6 +565,10 @@ function buildReceiptImageExportScript() {
                 }
 
                 var rowH;
+                rowH = measureTotalRow(payload.totalBoxesLabel, payload.totalBoxesValue, 17, 700);
+                if (rowH > 0) y += rowH + 6;
+                rowH = measureTotalRow(payload.totalWeightLabel, payload.totalWeightValue, 17, 700);
+                if (rowH > 0) y += rowH + 6;
                 rowH = measureTotalRow(payload.totalLabel, payload.totalValue, 20, 800);
                 if (rowH > 0) y += rowH + 8;
                 rowH = measureTotalRow(payload.cashLabel, payload.cashValue, 18, 700);
@@ -751,6 +784,15 @@ function buildReceiptImageExportScript() {
                       lineHeightRatio: 1.3,
                   }).height;
               }
+
+              if (payload.routeInfoText) {
+                y += drawWrappedText(context, payload.routeInfoText, 10, y, receiptWidth - 10, {
+                  size: 16,
+                  weight: 700,
+                  align: "left",
+                  lineHeightRatio: 1.3,
+                }).height;
+              }
               
               y += 10;
               
@@ -879,6 +921,10 @@ function buildReceiptImageExportScript() {
               }
 
               var rowH;
+              rowH = drawTotalRow(payload.totalBoxesLabel, payload.totalBoxesValue, 17, 700);
+              if (rowH > 0) y += rowH + 6;
+              rowH = drawTotalRow(payload.totalWeightLabel, payload.totalWeightValue, 17, 700);
+              if (rowH > 0) y += rowH + 6;
               rowH = drawTotalRow(payload.totalLabel, payload.totalValue, 20, 800);
               if (rowH > 0) y += rowH + 8;
               rowH = drawTotalRow(payload.cashLabel, payload.cashValue, 18, 700);

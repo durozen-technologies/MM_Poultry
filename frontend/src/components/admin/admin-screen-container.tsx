@@ -1,4 +1,5 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -13,8 +14,9 @@ export function AdminScreenContainer({
   noScroll?: boolean;
   refreshControl?: React.ReactElement<any>;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView className="flex-1 bg-surface" edges={["top", "bottom"]}>
+    <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
       {header}
       
       {noScroll ? (
@@ -35,6 +37,6 @@ export function AdminScreenContainer({
           </Animated.View>
         </KeyboardAwareScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }

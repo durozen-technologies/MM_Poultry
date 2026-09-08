@@ -155,7 +155,7 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
               label="" 
               value={reportDate} 
               onChange={setReportDate} 
-              inputStyle="h-13 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg"
+              inputStyle="h-14 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg"
             />
           </View>
         </View>

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdminTodayOrders } from "../../hooks/use-queries";
 import type { OrderStatus } from "../../types/api";
 
@@ -48,12 +48,17 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top", "bottom"]}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="h-16 px-4 flex-row items-center justify-between bg-surface/90 z-20">
-        <Text className="font-headline-sm text-headline-sm text-on-surface font-semibold">
-          Orders
-        </Text>
+      <View className="h-16 px-4 flex-row items-center justify-between bg-surface-container-lowest border-b border-outline-variant/20 z-20">
+        <View className="flex-row items-center gap-2">
+          <View className="w-8 h-8 rounded-full bg-[#0052CC]/10 items-center justify-center">
+            <MaterialIcons name="receipt-long" size={18} className="text-[#0052CC]" />
+          </View>
+          <Text className="font-headline-sm text-on-surface font-bold tracking-tight">
+            Orders
+          </Text>
+        </View>
         <View className="flex-row items-center gap-1">
 
           <Pressable accessibilityRole="button" accessibilityLabel="Button"
@@ -179,7 +184,7 @@ export function DeliveryOrdersScreen({ navigation }: { navigation: any }) {
         )}
       />
 
-    </SafeAreaView>
+    </View>
   );
 }
 

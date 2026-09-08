@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getRetailerProfile } from "../../api/retailer";
 import { useAuthStore } from "../../store/auth-store";
 import type { RetailerProfile } from "../../types/api";
@@ -43,7 +43,7 @@ export function RetailerProfileScreen() {
   const outstanding = Number(retailer?.credit_balance || 0);
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
         <Text className="font-headline-sm text-white font-semibold">Profile</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={logout}>
@@ -98,7 +98,7 @@ export function RetailerProfileScreen() {
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

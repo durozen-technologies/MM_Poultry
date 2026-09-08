@@ -100,7 +100,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter Retailer/Company Name"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
             />
@@ -112,7 +112,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. SR Chicken Center"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={shopName}
               onChangeText={setShopName}
             />
@@ -128,7 +128,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Enter owner name"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={ownerName}
                 onChangeText={setOwnerName}
               />
@@ -141,7 +141,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Wholesale, Retail"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={category}
               onChangeText={setCategory}
             />
@@ -153,7 +153,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Any additional notes..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={notes}
@@ -177,7 +177,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="10-digit primary number"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={setPhone}
@@ -195,7 +195,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="WhatsApp number"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={whatsapp}
                 onChangeText={setWhatsapp}
@@ -213,7 +213,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Other phone number"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 value={alternatePhone}
                 onChangeText={setAlternatePhone}
@@ -233,7 +233,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Downtown"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={area}
               onChangeText={setArea}
             />
@@ -245,7 +245,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Morning 6 AM"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={preferredDeliveryTime}
               onChangeText={setPreferredDeliveryTime}
             />
@@ -257,7 +257,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
             <TextInput
               className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Enter complete address"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={address}
@@ -281,7 +281,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Unique login username"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={username}
@@ -300,7 +300,7 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Secure password"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 autoCapitalize="none"
                 autoCorrect={false}
                 secureTextEntry

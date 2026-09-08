@@ -28,7 +28,10 @@ export const API_BASE_URL = defaultApiBaseUrl();
 export const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   timeout: 20000,
-  headers: { "X-Client": "mm-poultry-mobile" },
+  headers: { 
+    "X-Client": "mm-poultry-mobile",
+    "ngrok-skip-browser-warning": "true" 
+  },
 });
 
 let authToken: string | null = null;

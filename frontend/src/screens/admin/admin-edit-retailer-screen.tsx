@@ -129,7 +129,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter Retailer/Company Name"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
             />
@@ -141,7 +141,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. SR Chicken Center"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={shopName}
               onChangeText={setShopName}
             />
@@ -157,7 +157,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Enter owner name"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={ownerName}
                 onChangeText={setOwnerName}
               />
@@ -170,7 +170,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
             <TextInput
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="e.g. Wholesale, Retail"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={category}
               onChangeText={setCategory}
             />
@@ -193,7 +193,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-[72px] pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="10 digit number"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={phone}
@@ -212,7 +212,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-16 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="10 digit number (optional)"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={alternatePhone}
@@ -231,7 +231,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-16 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="10 digit number (optional)"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="phone-pad"
                 maxLength={10}
                 value={whatsapp}
@@ -250,7 +250,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="Enter email (optional)"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -271,7 +271,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
             <TextInput
               className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Enter complete address"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={address}
@@ -286,7 +286,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="e.g. MG Road"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={area}
                 onChangeText={setArea}
               />
@@ -304,7 +304,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
               <TextInput
                 className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
                 placeholder="e.g. Morning 6-8 AM"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={preferredDeliveryTime}
                 onChangeText={setPreferredDeliveryTime}
               />
@@ -318,7 +318,7 @@ export function AdminEditRetailerScreen({ navigation, route }: { navigation: any
         <TextInput
           className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
           placeholder="Any special instructions or notes about this retailer..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#717973"
           multiline
           textAlignVertical="top"
           value={notes}

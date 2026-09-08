@@ -45,17 +45,17 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const pendingCount = useMemo(() => orders.filter((o) => o.status === "PLACED").length, [orders]);
   const confirmedCount = useMemo(() => orders.filter((o) => o.status === "ACKNOWLEDGED").length, [orders]);
 
-  const getStatusColor = (status: OrderStatus) => {
+  const getStatusColor = useCallback((status: OrderStatus) => {
     switch (status) {
-      case "PLACED": return { bg: "bg-error-container/80", text: "text-error", icon: "pending-actions" };
-      case "ACKNOWLEDGED": return { bg: "bg-primary-container/80", text: "text-primary", icon: "check-circle" };
-      case "DISPATCHED": return { bg: "bg-[#fef3c7]", text: "text-[#f59e0b]", icon: "local-shipping" };
-      case "PARTIAL": return { bg: "bg-tertiary-container/80", text: "text-tertiary", icon: "local-shipping" };
-      case "FULFILLED": return { bg: "bg-secondary-container/80", text: "text-secondary", icon: "done-all" };
+      case "PLACED": return { bg: "bg-error/10", text: "text-error", icon: "pending-actions" };
+      case "ACKNOWLEDGED": return { bg: "bg-[#0052CC]/10", text: "text-[#0052CC]", icon: "check-circle" };
+      case "DISPATCHED": return { bg: "bg-[#fef3c7]", text: "text-[#d97706]", icon: "local-shipping" };
+      case "PARTIAL": return { bg: "bg-tertiary-fixed", text: "text-on-tertiary-fixed-variant", icon: "local-shipping" };
+      case "FULFILLED": return { bg: "bg-primary/10", text: "text-primary", icon: "done-all" };
       case "CANCELLED": return { bg: "bg-error/10", text: "text-error", icon: "cancel" };
       default: return { bg: "bg-surface-variant", text: "text-on-surface-variant", icon: "help" };
     }
-  };
+  }, []);
 
   return (
     <AdminScreenContainer
@@ -131,9 +131,9 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
                 <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
               </View>
               <TextInput 
-                className="flex-1 bg-surface-container-lowest h-13 rounded-2xl border border-outline-variant/50 pl-11 pr-4 font-body-lg text-on-surface focus:border-primary shadow-sm"
+                className="flex-1 bg-surface-container-lowest h-14 rounded-2xl border border-outline-variant/50 pl-11 pr-4 font-body-lg text-on-surface focus:border-primary shadow-sm"
                 placeholder="Search orders..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#717973"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -142,16 +142,16 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
             {/* KPI Summary Cards */}
             <View className="flex-row flex-wrap justify-between gap-y-3 mb-4">
               {/* Big Stat 1 */}
-              <View className="w-[48%] bg-primary rounded-2xl p-4 shadow-sm relative overflow-hidden">
+              <View className="w-[48%] bg-[#1A1C1E] rounded-3xl p-5 shadow-md relative overflow-hidden">
                 <View className="absolute -right-4 -top-4 w-20 h-20 bg-white/10 rounded-full" />
-                <Text className="font-label-md text-primary-fixed font-bold mb-1 uppercase tracking-wider">Total Orders</Text>
-                <Text className="font-display-md text-white font-bold">{orders.length}</Text>
+                <Text className="font-label-md text-surface-variant font-bold mb-1 uppercase tracking-wider">Total Orders</Text>
+                <Text className="font-display-lg text-white font-black tracking-tight">{orders.length}</Text>
               </View>
               {/* Big Stat 2 */}
-              <View className="w-[48%] bg-primary-container rounded-2xl p-4 shadow-sm relative overflow-hidden border border-primary/20">
-                <View className="absolute -right-4 -top-4 w-20 h-20 bg-primary/5 rounded-full" />
-                <Text className="font-label-md text-primary font-bold mb-1 uppercase tracking-wider">Total Boxes</Text>
-                <Text className="font-display-md text-on-primary-container font-bold">{totalBoxes}</Text>
+              <View className="w-[48%] bg-[#0052CC] rounded-3xl p-5 shadow-md shadow-[#0052CC]/30 relative overflow-hidden">
+                <View className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-md" />
+                <Text className="font-label-md text-[#E0E7FF] font-bold mb-1 uppercase tracking-wider">Total Boxes</Text>
+                <Text className="font-display-lg text-white font-black tracking-tight">{totalBoxes}</Text>
               </View>
               {/* Small Stat 1 */}
               <View className="w-[48%] bg-surface-container-lowest rounded-2xl p-3 shadow-sm border border-outline-variant/30 flex-row items-center gap-3">
@@ -267,76 +267,77 @@ const OrderListItem = React.memo(({
 }) => {
   const statusColors = getStatusColor(order.status);
   return (
-    <Pressable
-      className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/20 active:scale-[0.98] transition-transform overflow-hidden relative"
-      onPress={onPress}
-    >
-      {/* Status indicator bar */}
+    <View className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/20 overflow-hidden relative">
       <View className={`absolute top-0 left-0 w-1.5 h-full ${statusColors.bg.replace('/80', '').replace('/10', '')}`} />
-      
-      <View className="flex-row items-center justify-between w-full mb-4 pl-2">
-        <Text className="font-title-md text-on-surface font-bold tracking-tight">
-          {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}
-        </Text>
-        <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1.5 border border-white/10`}>
-          <MaterialIcons name={statusColors.icon as any} size={14} className={statusColors.text} />
-          <Text className={`font-label-sm font-bold ${statusColors.text}`}>
-            {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status === 'FULFILLED' ? 'Delivered' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
-          </Text>
-        </View>
-      </View>
 
-      <View className="flex-row items-center gap-3 mb-4 pl-2">
-        <View className="w-10 h-10 rounded-full bg-surface-variant/30 items-center justify-center">
-          <MaterialIcons name="storefront" size={20} className="text-on-surface-variant" />
-        </View>
-        <View className="flex-1">
-          <Text className="font-title-sm text-on-surface font-bold truncate">
-            {order.shop_name || "No Business Name"}
+      <Pressable
+        className="p-5 active:scale-[0.98] transition-transform"
+        onPress={onPress}
+      >
+        <View className="flex-row items-center justify-between w-full mb-4 pl-2">
+          <Text className="font-title-md text-on-surface font-bold tracking-tight">
+            {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}
           </Text>
-          <Text className="font-body-sm text-on-surface-variant font-medium mt-0.5">
-            {order.retailer_name || "Unknown Owner"}
-          </Text>
-        </View>
-      </View>
-
-      <View className="bg-surface-container-highest/30 rounded-2xl p-3 mb-4 border border-outline-variant/10 ml-2">
-        {order.items?.map((it: any, idx: number) => (
-          <View key={it.item_id ?? idx} className="flex-row items-center justify-between py-1.5 border-b border-surface-variant/30 last:border-b-0">
-            <Text className="font-label-md text-on-surface font-semibold flex-1 pr-2 truncate">
-              {it.item_name || "Item"}
-            </Text>
-            <Text className="font-label-md text-on-surface-variant">
-              <Text className="font-bold text-on-surface">{it.total_boxes}</Text> Box • <Text className="font-bold text-on-surface">{Number(it.requested_kg || 0).toFixed(1)}</Text> KG
+          <View className={`${statusColors.bg} px-3 py-1 rounded-full flex-row items-center gap-1.5 border border-white/10`}>
+            <MaterialIcons name={statusColors.icon as any} size={14} className={statusColors.text} />
+            <Text className={`font-label-sm font-bold ${statusColors.text}`}>
+              {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status === 'FULFILLED' ? 'Delivered' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
             </Text>
           </View>
-        ))}
-        {(!order.items || order.items.length === 0) && (
-          <Text className="font-body-sm text-on-surface-variant italic py-1">No items listed</Text>
-        )}
-      </View>
+        </View>
 
-      <View className="flex-row justify-end gap-2 pl-2">
+        <View className="flex-row items-center gap-3 mb-4 pl-2">
+          <View className="w-10 h-10 rounded-full bg-surface-variant/30 items-center justify-center">
+            <MaterialIcons name="storefront" size={20} className="text-on-surface-variant" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-title-sm text-on-surface font-bold truncate">
+              {order.shop_name || "No Business Name"}
+            </Text>
+            <Text className="font-body-sm text-on-surface-variant font-medium mt-0.5">
+              {order.retailer_name || "Unknown Owner"}
+            </Text>
+          </View>
+        </View>
+
+        <View className="bg-surface-container-highest/30 rounded-2xl p-3 mb-4 border border-outline-variant/10 ml-2">
+          {order.items?.map((it: any, idx: number) => (
+            <View key={it.item_id ?? idx} className="flex-row items-center justify-between py-1.5 border-b border-surface-variant/30 last:border-b-0">
+              <Text className="font-label-md text-on-surface font-semibold flex-1 pr-2 truncate">
+                {it.item_name || "Item"}
+              </Text>
+              <Text className="font-label-md text-on-surface-variant">
+                <Text className="font-bold text-on-surface">{it.total_boxes}</Text> Box • <Text className="font-bold text-on-surface">{Number(it.requested_kg || 0).toFixed(1)}</Text> KG
+              </Text>
+            </View>
+          ))}
+          {(!order.items || order.items.length === 0) && (
+            <Text className="font-body-sm text-on-surface-variant italic py-1">No items listed</Text>
+          )}
+        </View>
+      </Pressable>
+
+      <View className="flex-row justify-end gap-2 px-5 pb-5 pl-7">
         {order.status === "PLACED" && (
           <Pressable
-              className="bg-primary h-11 px-5 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80 shadow-sm shadow-primary/20"
-              onPress={onConfirm}
-            >
-              <Text className="font-label-md text-white font-bold">Confirm</Text>
-              <MaterialIcons name="check-circle" size={18} color="white" />
-            </Pressable>
+            className="bg-[#0052CC] h-12 px-6 rounded-full flex-row items-center justify-center gap-2 active:scale-95 transition-transform shadow-md shadow-[#0052CC]/30"
+            onPress={onConfirm}
+          >
+            <Text className="font-label-md text-white font-bold uppercase tracking-wider">Confirm</Text>
+            <MaterialIcons name="check-circle" size={18} color="white" />
+          </Pressable>
         )}
-        
+
         {order.status === "ACKNOWLEDGED" && (
           <Pressable
-            className="bg-primary-container h-11 px-5 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80 border border-primary/10"
+            className="bg-[#d97706] h-12 px-6 rounded-full flex-row items-center justify-center gap-2 active:scale-95 transition-transform shadow-md shadow-[#d97706]/30"
             onPress={onDispatch}
           >
-            <MaterialIcons name="route" size={18} className="text-primary" />
-            <Text className="font-label-md text-primary font-bold">Dispatch</Text>
+            <MaterialIcons name="local-shipping" size={18} color="white" />
+            <Text className="font-label-md text-white font-bold uppercase tracking-wider">Dispatch</Text>
           </Pressable>
         )}
       </View>
-    </Pressable>
+    </View>
   );
 });

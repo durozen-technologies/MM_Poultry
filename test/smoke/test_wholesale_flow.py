@@ -43,7 +43,7 @@ async def test_wholesale_flow(client: AsyncClient) -> None:
     await client.post(f"/delivery/runs/{run.json()['id']}/start", headers=headers)
     weigh_resp = await client.post(
         f"/delivery/stops/{stop_id}/weigh",
-        json={"items": [{"item_id": item["id"], "gross_weight_kg": 49.5, "delivered_boxes": 1, "empty_box_weight_kg": 1.5}], "scale_device_id": "BLE-1"},
+        json={"items": [{"item_id": item["id"], "weight_kg": 48.0, "delivered_boxes": 1}], "scale_device_id": "BLE-1"},
         headers=headers,
     )
     assert weigh_resp.status_code == 200, weigh_resp.text

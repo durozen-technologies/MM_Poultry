@@ -71,7 +71,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <TextInput 
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter farm name"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={name}
               onChangeText={setName}
             />
@@ -83,7 +83,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <TextInput 
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter mobile number"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               keyboardType="phone-pad"
               value={mobile}
               onChangeText={setMobile}
@@ -96,7 +96,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <TextInput 
               className="h-24 border border-outline-variant/50 rounded-xl p-4 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
               placeholder="Enter full address"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               multiline
               textAlignVertical="top"
               value={address}
@@ -110,7 +110,7 @@ export function AdminAddFarmScreen({ navigation }: { navigation: any }) {
             <TextInput 
               className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
               placeholder="Enter village or city"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#717973"
               value={village}
               onChangeText={setVillage}
             />

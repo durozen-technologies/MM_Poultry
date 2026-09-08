@@ -159,7 +159,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
                             placeholder="e.g. Broiler Chicken" 
                             value={name} 
                             onChangeText={setName} 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                         </View>
                       </View>
@@ -175,7 +175,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
                             placeholder="Brief description of the item" 
                             value={description} 
                             onChangeText={setDescription} 
-                            placeholderTextColor="#9ca3af" 
+                            placeholderTextColor="#717973" 
                           />
                         </View>
                       </View>
@@ -196,7 +196,7 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
                       )}
 
                       <Pressable 
-                        className={`h-13 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+                        className={`h-14 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
                           !name.trim() ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
                         }`}
                         onPress={handleSave}

@@ -11,11 +11,12 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth-store";
 import { getApiErrorMessage, isHttpStatus } from "../../api/client";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export function LoginScreen() {
   const login = useAuthStore((s) => s.login);
+  const insets = useSafeAreaInsets();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [orgSlug, setOrgSlug] = useState("");
@@ -62,7 +63,7 @@ export function LoginScreen() {
         enableOnAndroid={true}
         extraScrollHeight={20}
       >
-          <SafeAreaView className="flex-1 justify-center items-center px-6 py-8 min-h-screen" edges={["top", "bottom"]}>
+          <View className="flex-1 justify-center items-center px-6 py-8 min-h-screen" style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}>
             <View className="w-full max-w-sm justify-center items-center">
               
               <Animated.View entering={FadeInDown.springify().damping(22)} className="flex-col items-center mb-10 w-full mt-8">
@@ -86,7 +87,7 @@ export function LoginScreen() {
                       <MaterialIcons name="person-outline" size={22} className="text-[#012D1D]/70" />
                     </View>
                     <TextInput
-                      className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
+                      className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                       placeholder="e.g. admin"
                       autoCapitalize="none"
                       value={username}
@@ -102,7 +103,7 @@ export function LoginScreen() {
                       <MaterialIcons name="lock-outline" size={22} className="text-[#012D1D]/70" />
                     </View>
                     <TextInput
-                      className="flex-1 pl-12 pr-12 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
+                      className="flex-1 pl-12 pr-12 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                       placeholder="Enter password"
                       secureTextEntry={!showPassword}
                       value={password}
@@ -129,7 +130,7 @@ export function LoginScreen() {
                         <MaterialIcons name="business" size={22} className="text-[#012D1D]/70" />
                       </View>
                       <TextInput
-                        className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-on-surface-variant/50"
+                        className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                         placeholder="e.g. demo"
                         autoCapitalize="none"
                         value={orgSlug}
@@ -162,7 +163,7 @@ export function LoginScreen() {
               </Animated.View>
 
             </View>
-          </SafeAreaView>
+          </View>
       </KeyboardAwareScrollView>
     </View>
   );

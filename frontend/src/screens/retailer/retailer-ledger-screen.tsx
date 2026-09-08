@@ -7,12 +7,13 @@ import { FlatList, ActivityIndicator,
   View, } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getRetailerLedger } from "../../api/retailer";
 import type { LedgerOut } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
 
 export function RetailerLedgerScreen() {
+  const insets = useSafeAreaInsets();
   const [ledger, setLedger] = useState<LedgerOut | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export function RetailerLedgerScreen() {
   }, [ledger]);
 
   return (
-    <SafeAreaView className="flex-1 max-w-3xl mx-auto w-full bg-background" edges={["top"]}>
+    <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
         <Text className="font-headline-sm text-white font-semibold">Ledger</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="Button" className="w-11 h-11 items-center justify-center rounded-full active:bg-white/10" onPress={refresh}>
@@ -108,7 +109,7 @@ export function RetailerLedgerScreen() {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

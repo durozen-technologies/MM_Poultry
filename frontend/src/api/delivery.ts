@@ -72,19 +72,6 @@ export async function weighStop(stopId: string, payload: Record<string, unknown>
   return data;
 }
 
-export async function skipStop(stopId: string, reason?: string) {
-  const payload = reason ? { reason } : {};
-  const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/skip`, payload);
-  return data;
-}
-
-export async function failStop(stopId: string, failure_reason: string) {
-  const { data } = await api.post<DeliveryStop>(`/delivery/stops/${stopId}/fail`, {
-    failure_reason,
-  });
-  return data;
-}
-
 export async function previewBill(stopId: string, payload: { cash_payment: string; upi_payment: string }) {
   const { data } = await api.post(`/delivery/stops/${stopId}/bill/preview`, payload);
   return data;

@@ -93,7 +93,7 @@ export function DatePickerField({
               {value ? formatIstDate(value) : "DD/MM/YYYY"}
             </Text>
             {showIcon && (
-              <Text style={{ fontFamily: "Material Icons", fontSize: 18, color: "#9ca3af" }}>&#xe916;</Text>
+              <Text style={{ fontFamily: "Material Icons", fontSize: 18, color: "#717973" }}>&#xe916;</Text>
             )}
           </Pressable>
           {open ? (

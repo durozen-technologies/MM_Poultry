@@ -116,9 +116,8 @@ class DeliveryRunOut(BaseModel):
 
 class WeighItemRequest(BaseModel):
     item_id: UUID
-    gross_weight_kg: Decimal = Field(gt=0)
     delivered_boxes: int = Field(gt=0)
-    empty_box_weight_kg: Decimal = Field(ge=0)
+    weight_kg: Decimal = Field(gt=0)
     delivered_bird_count: int | None = None
 
 
@@ -126,7 +125,3 @@ class WeighRequest(BaseModel):
     items: list[WeighItemRequest] = Field(..., min_length=1)
     scale_device_id: str | None = Field(default=None, max_length=120)
     weight_override_reason: str | None = Field(default=None, max_length=500)
-
-
-class FailStopRequest(BaseModel):
-    failure_reason: str = Field(..., min_length=1, max_length=500)

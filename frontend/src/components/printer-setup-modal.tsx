@@ -1,15 +1,16 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, SafeAreaView } from "react-native";
+import { Modal, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrinterStore } from "../store/printer-store";
 import { PrinterDevice } from "../types/printer";
 import { DeliveryReceiptData } from "../utils/printer";
+import { runReceiptImagePrintJob } from "../services/receipt-print-registry";
 import {
   getPrinterSupportState,
   loadBluetoothPrinters,
   connectPrinterDevice,
 } from "../utils/printer";
-import { useReceiptImagePrintJob } from "../hooks/use-receipt-image-print-job";
 
 type PrinterSetupModalProps = {
   visible: boolean;
@@ -17,12 +18,12 @@ type PrinterSetupModalProps = {
 };
 
 export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) {
+  const insets = useSafeAreaInsets();
   const [printers, setPrinters] = useState<PrinterDevice[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { connectedPrinter, setPrinter, disconnectPrinter } = usePrinterStore();
-  const { receiptImagePrintBridge, startReceiptImagePrintJob } = useReceiptImagePrintJob();
 
   useEffect(() => {
     if (visible) {
@@ -90,7 +91,7 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
         closing_balance: 0,
       };
 
-      await startReceiptImagePrintJob([dummyData], connectedPrinter);
+      await runReceiptImagePrintJob([dummyData], connectedPrinter);
       Alert.alert("Success", "Test receipt printed.");
     } catch (e: any) {
       setError(e.message || "Failed to print test receipt");
@@ -110,9 +111,8 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      {receiptImagePrintBridge}
       <View className="flex-1 justify-end bg-black/50">
-        <SafeAreaView className="bg-white rounded-t-3xl min-h-[60%] p-6">
+        <View className="bg-white rounded-t-3xl min-h-[60%] p-6" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
           <View className="flex-row items-center justify-between mb-6">
             <Text className="text-xl font-bold text-gray-900">Thermal Printer Setup</Text>
             <TouchableOpacity onPress={onClose} className="p-2 bg-gray-100 rounded-full">
@@ -231,7 +231,7 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
               }}
             />
           )}
-        </SafeAreaView>
+        </View>
       </View>
     </Modal>
   );

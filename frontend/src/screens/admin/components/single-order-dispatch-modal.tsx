@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView, TextInput } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminDeliveryUsers, useCreateDeliveryRun } from "../../../hooks/use-queries";
+import { getApiErrorMessage } from "../../../api/client";
 import type { DailyOrderOut } from "../../../types/api";
 
 interface Props {
@@ -18,26 +19,32 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
   const { mutate: createRun, isPending } = useCreateDeliveryRun();
 
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const handleAssign = () => {
     if (!selectedDriverId) return;
-    
-    const driver = users?.find(u => u.id === selectedDriverId);
-    if (!driver) return;
 
+    const driver = users?.find((u) => u.id === selectedDriverId);
+    if (!driver) {
+      setError("Selected driver is no longer available. Refresh and try again.");
+      return;
+    }
+
+    setError(null);
     createRun(
       {
         order_ids: [order.id],
-        order_adjustments: [],
-
         driver_user_id: driver.id,
         driver_name: driver.full_name || driver.username,
-        farm_load_allocations: [],
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
           queryClient.invalidateQueries({ queryKey: ["admin", "dispatch"] });
           onAssigned();
+        },
+        onError: (err) => {
+          setError(getApiErrorMessage(err));
         },
       }
     );
@@ -57,6 +64,12 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
           </View>
 
           <ScrollView className="p-4 max-h-[70vh]">
+            {error ? (
+              <View className="mb-3 p-3 rounded-xl bg-error-container/30">
+                <Text className="text-error font-semibold">{error}</Text>
+              </View>
+            ) : null}
+
             <View className="mb-4 bg-surface-container-lowest rounded-2xl p-3 border border-outline-variant/30">
               <Text className="font-title-sm font-bold text-on-surface mb-1">
                 {order.shop_name || order.retailer_name || "Unknown Retailer"}
@@ -73,9 +86,13 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
             </Text>
             {loadingUsers ? (
               <ActivityIndicator size="small" className="my-2" />
+            ) : users?.length === 0 ? (
+              <Text className="text-on-surface-variant italic mb-6">
+                No delivery users yet. Add one under Settings → Delivery Users.
+              </Text>
             ) : (
               <View className="flex-col gap-2 mb-6">
-                {users?.map(u => (
+                {users?.map((u) => (
                   <Pressable
                     key={u.id}
                     onPress={() => setSelectedDriverId(u.id)}

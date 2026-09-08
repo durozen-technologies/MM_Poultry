@@ -276,7 +276,7 @@ export function SuperAdminHomeScreen() {
             <View className="flex-row items-center bg-surface-container-low rounded-2xl px-4 mb-6 h-[56px] border border-outline-variant/30 focus:border-brand-ink">
               <MaterialCommunityIcons name="office-building" size={22} className="text-on-surface-variant/70 mr-3" />
               <TextInput
-                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-on-surface-variant/50"
+                className="flex-1 text-on-surface font-body-lg h-full placeholder:text-outline"
                 placeholder="Organization Name"
                 value={name}
                 onChangeText={setName}

@@ -146,8 +146,8 @@ export function AdminInventoryDetailScreen({ route, navigation }: { route: any, 
                     <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
                   </View>
                   <TextInput
-                    placeholderTextColor="#9ca3af"
-                    className="h-13 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
+                    placeholderTextColor="#717973"
+                    className="h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
                     placeholder="Search farms..."
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -162,7 +162,7 @@ export function AdminInventoryDetailScreen({ route, navigation }: { route: any, 
                   )}
                 </View>
                 <Pressable
-                  className={`w-13 h-13 rounded-xl flex items-center justify-center shadow-sm border active:scale-[0.95] transition-transform ${
+                  className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm border active:scale-[0.95] transition-transform ${
                     filterType !== "all" 
                       ? "bg-primary-container border-primary/30" 
                       : "bg-surface-container-lowest border-outline-variant/50"
@@ -287,7 +287,7 @@ export function AdminInventoryDetailScreen({ route, navigation }: { route: any, 
                   label="" 
                   value={searchDate} 
                   onChange={setSearchDate} 
-                  inputStyle="h-13 bg-surface border border-outline-variant/50 rounded-xl px-4"
+                  inputStyle="h-14 bg-surface border border-outline-variant/50 rounded-xl px-4"
                 />
               </View>
             )}

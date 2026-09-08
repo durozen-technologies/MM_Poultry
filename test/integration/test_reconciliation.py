@@ -71,9 +71,29 @@ async def test_complete_requires_reconciliation(client: AsyncClient) -> None:
     run_id = run.json()["id"]
     stop_id = run.json()["stops"][0]["id"]
 
+    await client.put(
+        "/admin/rates",
+        json={"rate_per_kg": "180.00", "item_id": item["id"]},
+        headers=headers,
+    )
     await client.post(f"/delivery/runs/{run_id}/start", headers=headers)
     await client.post(
-        f"/delivery/stops/{stop_id}/skip",
+        f"/delivery/stops/{stop_id}/weigh",
+        json={
+            "items": [
+                {
+                    "item_id": item["id"],
+                    "weight_kg": 50.0,
+                    "delivered_boxes": 2,
+                }
+            ],
+            "scale_device_id": "TEST",
+        },
+        headers=headers,
+    )
+    await client.post(
+        f"/delivery/stops/{stop_id}/bill/commit",
+        json={"cash_payment": "0", "upi_payment": "0", "checkout_id": "chk-recon-test"},
         headers=headers,
     )
 
@@ -82,7 +102,7 @@ async def test_complete_requires_reconciliation(client: AsyncClient) -> None:
 
     reconcile = await client.post(
         f"/delivery/runs/{run_id}/reconcile",
-        json={"returned_kg": "50.000", "wastage_kg": "0.000"},
+        json={"returned_kg": "0.000", "wastage_kg": "0.000"},
         headers=headers,
     )
     assert reconcile.status_code == 200

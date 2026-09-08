@@ -159,8 +159,8 @@ export function AdminRetailerUsersScreen({ navigation }: { navigation: any }) {
                       <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
                     </View>
                     <TextInput
-                      placeholderTextColor="#9ca3af"
-                      className="flex-1 h-13 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
+                      placeholderTextColor="#717973"
+                      className="flex-1 h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/50 rounded-xl text-body-lg text-on-surface focus:border-primary shadow-sm"
                       placeholder="Search users or retailers..."
                       value={searchQuery}
                       onChangeText={setSearchQuery}
@@ -337,7 +337,7 @@ const RetailerUserCard = React.memo(({ user, onToggleStatus, onRemove }: { user:
                 {isUpdating ? (
                   <ActivityIndicator size="small" color="#ffffff" />
                 ) : (
-                  <MaterialIcons name="check" size={22} color={!newPassword.trim() ? "#9ca3af" : "white"} />
+                  <MaterialIcons name="check" size={22} color={!newPassword.trim() ? "#717973" : "white"} />
                 )}
               </Pressable>
             </View>
