@@ -2,8 +2,8 @@ import React, { useCallback, useState, useMemo } from "react";
 import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatList } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getLedger, createRetailerPortalUser } from "../../api/retailers";
-import { listTodayOrders } from "../../api/orders";
+import { getLedger, createRetailerPortalUser, recordRetailerPayment } from "../../api/retailers";
+import { listOrdersByDate } from "../../api/orders";
 import { apiItems } from "../../api/items";
 import { listRates, upsertRate } from "../../api/rates";
 import type { DailyOrder, LedgerOut } from "../../types/api";
@@ -21,6 +21,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const [ledger, setLedger] = useState<LedgerOut | null>(null);
   const [orders, setOrders] = useState<DailyOrder[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [paymentDate, setPaymentDate] = useState(new Date());
+  const [paymentCash, setPaymentCash] = useState("0");
+  const [paymentUpi, setPaymentUpi] = useState("0");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [recordingPayment, setRecordingPayment] = useState(false);
 
 
   const queryClient = useQueryClient();
@@ -62,10 +69,10 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     try {
       const [ledgerData, orderData] = await Promise.all([
         getLedger(retailerId),
-        listTodayOrders(),
+        listOrdersByDate(undefined, retailerId),
       ]);
       setLedger(ledgerData);
-      setOrders(orderData.items.filter((o) => o.retailer_id === retailerId));
+      setOrders(orderData.items);
     } catch (e) {
       console.warn("Failed to load retailer profile", e);
     } finally {
@@ -78,6 +85,27 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
       void refresh();
     }, [refresh])
   );
+
+  const handleRecordPayment = async () => {
+    setRecordingPayment(true);
+    try {
+      await recordRetailerPayment(retailerId, {
+        payment_date: toApiDate(paymentDate) || "",
+        cash_amount: paymentCash || "0",
+        upi_amount: paymentUpi || "0",
+        notes: paymentNotes
+      });
+      setPaymentModalVisible(false);
+      setPaymentCash("0");
+      setPaymentUpi("0");
+      setPaymentNotes("");
+      refresh();
+    } catch (e) {
+      alert(getApiErrorMessage(e));
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState("OVERVIEW");
   const [portalUsername, setPortalUsername] = useState("");
@@ -114,6 +142,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
 
   const bal = useMemo(() => Number(ledger?.retailer?.credit_balance || 0), [ledger?.retailer?.credit_balance]);
   const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "BILL") || [], [ledger?.entries]);
+  const ledgerEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type !== "BILL") || [], [ledger?.entries]);
 
   if (loading && !ledger) {
     return (
@@ -235,6 +264,15 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 {activeTab === "OVERVIEW" && (
           <View className="flex-col gap-4">
+            <View className="flex-row justify-end mb-2">
+              <Pressable
+                onPress={() => setPaymentModalVisible(true)}
+                className="flex-row items-center bg-primary px-4 py-2 rounded-full active:bg-primary/80"
+              >
+                <MaterialIcons name="payments" size={18} className="text-on-primary mr-2" />
+                <Text className="text-on-primary font-bold">Record Payment</Text>
+              </Pressable>
+            </View>
             
 
             <View className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30 flex-col gap-2">
@@ -343,9 +381,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             ListEmptyComponent={
               <View className="bg-surface-container-lowest rounded-3xl p-8 border border-dashed border-outline-variant/50 items-center justify-center mt-2">
                 <MaterialIcons name="receipt" size={32} className="text-on-surface-variant/50 mb-3" />
-                <Text className="font-title-md text-on-surface font-bold mb-1">No Orders Today</Text>
+                <Text className="font-title-md text-on-surface font-bold mb-1">No Orders Found</Text>
                 <Text className="font-body-md text-on-surface-variant text-center max-w-[250px]">
-                  There are no orders recorded for this retailer today.
+                  There are no orders recorded for this retailer.
                 </Text>
               </View>
             }
@@ -414,19 +452,19 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
             }
             renderItem={({ item }) => (
                 <View className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/20 shadow-sm relative overflow-hidden mb-3">
-                  <View className="absolute top-0 left-0 w-1.5 h-full bg-error" />
+                  <View className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
                   
                   <View className="ml-2 flex-row justify-between items-start mb-1">
                     <View className="flex-row items-center gap-3">
-                      <View className="w-10 h-10 rounded-full bg-error/10 items-center justify-center border border-error/20">
-                        <MaterialIcons name="receipt" size={18} className="text-error" />
+                      <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center border border-primary/20">
+                        <MaterialIcons name="receipt" size={18} className="text-primary" />
                       </View>
                       <View>
                         <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">{formatIstDate(item.entry_date)}</Text>
                         <Text className="font-title-sm text-on-surface font-bold">{item.reference || "Bill"}</Text>
                       </View>
                     </View>
-                    <Text className="font-title-lg text-error font-black mt-1">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                    <Text className="font-title-lg text-primary font-black mt-1">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                   </View>
 
                   {item.bill_items && item.bill_items.length > 0 ? (
@@ -455,9 +493,9 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         )}
         {activeTab === "LEDGER" && (
           <View className="flex-1 px-4">
-            <View className="bg-surface-container-lowest rounded-3xl p-2 shadow-sm border border-outline-variant/30 flex-1">
+            <View className="bg-surface-container-lowest rounded-3xl p-2 shadow-sm border border-outline-variant/30 flex-1 overflow-hidden">
               <FlatList
-                data={entries}
+                data={ledgerEntries}
                 keyExtractor={(_, idx) => String(idx)}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 ListEmptyComponent={
@@ -467,7 +505,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   </View>
                 }
                 renderItem={({ item, index }) => (
-                  <View className={`flex-row justify-between p-4 ${index !== entries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
+                  <View className={`flex-row justify-between p-4 ${index !== ledgerEntries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
                     <View className="flex-col justify-center">
                       <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(item.entry_date)}</Text>
                       <Text className="font-title-sm text-on-surface font-bold">{item.entry_type}</Text>
@@ -478,12 +516,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                     <View className="flex-col items-end justify-center">
                       {Number(item.debit) > 0 && (
                         <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10">
-                          <Text className="font-title-sm font-black text-error">Dr ₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                          <Text className="font-title-sm font-black text-error">₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                         </View>
                       )}
                       {Number(item.credit) > 0 && (
                         <View className="bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/10 mt-1">
-                          <Text className="font-title-sm font-black text-primary">Cr ₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                          <Text className="font-title-sm font-black text-primary">₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                         </View>
                       )}
                     </View>
@@ -623,6 +661,70 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           </View>
         )}
       </>
+
+      {/* Record Payment Modal */}
+      {paymentModalVisible && (
+        <View className="absolute inset-0 bg-black/50 justify-center items-center p-4 z-50">
+          <View className="bg-surface-container-lowest w-full max-w-sm rounded-3xl overflow-hidden shadow-lg border border-outline-variant/30">
+            <View className="bg-surface-container-low px-6 py-4 flex-row justify-between items-center border-b border-outline-variant/20">
+              <Text className="font-title-lg text-on-surface font-bold">Record Payment</Text>
+              <Pressable onPress={() => setPaymentModalVisible(false)} className="w-8 h-8 rounded-full items-center justify-center active:bg-surface-variant/50">
+                <MaterialIcons name="close" size={20} className="text-on-surface-variant" />
+              </Pressable>
+            </View>
+            <ScrollView className="p-6">
+              <View className="mb-4">
+                <DatePickerField
+                  label="Payment Date"
+                  value={paymentDate}
+                  onChange={setPaymentDate}
+                />
+              </View>
+              <View className="flex-row gap-3 mb-4">
+                <View className="flex-1">
+                  <FormField
+                    label="Cash (₹)"
+                    value={paymentCash}
+                    onChangeText={setPaymentCash}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View className="flex-1">
+                  <FormField
+                    label="UPI (₹)"
+                    value={paymentUpi}
+                    onChangeText={setPaymentUpi}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+              <View className="mb-6">
+                <FormField
+                  label="Notes (Optional)"
+                  value={paymentNotes}
+                  onChangeText={setPaymentNotes}
+                  placeholder="e.g. Bank transfer, old due"
+                />
+              </View>
+              <Pressable
+                onPress={handleRecordPayment}
+                disabled={recordingPayment}
+                className={`w-full py-4 rounded-xl items-center flex-row justify-center ${recordingPayment ? "bg-primary/50" : "bg-primary active:bg-primary/90"}`}
+              >
+                {recordingPayment ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <MaterialIcons name="check-circle" size={20} className="text-on-primary mr-2" />
+                    <Text className="text-on-primary font-bold text-base">Save Payment</Text>
+                  </>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
     </AdminScreenContainer>
   );
 }

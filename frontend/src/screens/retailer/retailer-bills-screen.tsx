@@ -110,7 +110,6 @@ const Summary = React.memo(({ label, value }: { label: string; value: string }) 
 });
 
 const BillListItem = React.memo(({ bill, onPress }: { bill: DeliveryBill; onPress: () => void }) => {
-  const isPaid = Number(bill.balance_amount) <= 0;
   const totalKg = bill.items?.reduce((sum, it) => sum + Number(it.weight_kg), 0) || 0;
   
   return (
@@ -125,17 +124,9 @@ const BillListItem = React.memo(({ bill, onPress }: { bill: DeliveryBill; onPres
             {bill.bill_date ? formatIstDate(bill.bill_date) : "?"} · {totalKg} kg Total
           </Text>
         </View>
-        <Text className="font-headline-sm text-[#0052CC] font-bold">₹{bill.total_amount}</Text>
-      </View>
-      <View className="flex-row items-center justify-between mt-4">
-        <View className={`px-3 py-1.5 rounded-md ${isPaid ? "bg-[#e8f5e9]" : "bg-error-container"}`}>
-          <Text className={`font-label-sm font-bold uppercase tracking-wider ${isPaid ? "text-[#2e7d32]" : "text-error"}`}>
-            {isPaid ? "Paid" : "Due"}
-          </Text>
+        <View className="bg-[#e8f5e9] px-3 py-1.5 rounded-xl border border-[#2e7d32]/10">
+          <Text className="font-headline-sm text-[#2e7d32] font-bold">₹{bill.total_amount}</Text>
         </View>
-        {!isPaid && (
-          <Text className="font-label-md text-error font-bold">Bal: ₹{bill.balance_amount}</Text>
-        )}
       </View>
     </Pressable>
   );

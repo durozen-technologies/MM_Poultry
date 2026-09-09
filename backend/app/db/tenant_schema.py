@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "a1b2c3d40002"
+TENANT_MIGRATION_HEAD = "a1b2c3d40003"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -339,6 +339,7 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS planned_kg NUMERIC(12,3)",
         "UPDATE farm_loads SET planned_kg = loaded_weight_kg WHERE planned_kg IS NULL",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
+        "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS overall_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))

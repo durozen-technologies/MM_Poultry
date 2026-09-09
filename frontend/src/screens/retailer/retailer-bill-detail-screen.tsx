@@ -78,7 +78,7 @@ export function RetailerBillDetailScreen({ route, navigation }: { route: any; na
               <Row label="Total Amount" value={`₹${bill.total_amount}`} />
               <Row label="Cash paid" value={`₹${bill.cash_payment}`} />
               <Row label="UPI paid" value={`₹${bill.upi_payment}`} />
-              <Row label="Balance" value={`₹${bill.balance_amount}`} />
+              <Row label="Overall Balance" value={`₹${bill.overall_balance || bill.balance_amount}`} />
             </View>
           </View>
         ) : null}

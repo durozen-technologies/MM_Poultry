@@ -48,6 +48,10 @@ export function RetailerLedgerScreen() {
     return { purchases: purchases.toFixed(2), payments: payments.toFixed(2) };
   }, [ledger]);
 
+  const ledgerEntries = useMemo(() => {
+    return ledger?.entries?.filter(e => e.entry_type !== "BILL") || [];
+  }, [ledger]);
+
   return (
     <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row items-center justify-between bg-[#0052CC] border-b border-black/10">
@@ -58,7 +62,7 @@ export function RetailerLedgerScreen() {
       </View>
 
       <FlatList
-        data={ledger?.entries || []}
+        data={ledgerEntries}
         keyExtractor={(item, index) => `${item.entry_date}-${item.entry_type}-${index}`}
         className="flex-1 px-4 pt-2"
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -84,26 +88,27 @@ export function RetailerLedgerScreen() {
             ) : null}
           </>
         }
-        renderItem={({ item: entry }) => (
-          <View className="bg-white rounded-[16px] p-4 border border-black/5 shadow-sm elevation-sm mb-3">
-            <View className="flex-row justify-between">
-              <View>
-                <Text className="font-headline-sm text-on-surface font-semibold mb-1">{entry.entry_type}</Text>
-                <Text className="font-label-md text-on-surface-variant">
-                  {formatIstDate(entry.entry_date)}
-                  {entry.reference ? ` · ${entry.reference}` : ""}
-                </Text>
+        renderItem={({ item: entry, index }) => (
+          <View className={`bg-white p-4 ${index !== ledgerEntries.length - 1 ? 'border-b border-black/5' : ''} shadow-sm elevation-sm ${index === 0 ? 'rounded-t-[16px]' : ''} ${index === ledgerEntries.length - 1 ? 'rounded-b-[16px] mb-3' : ''}`}>
+            <View className="flex-row justify-between items-center">
+              <View className="flex-col justify-center flex-1">
+                <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(entry.entry_date)}</Text>
+                <Text className="font-title-sm text-on-surface font-bold">{entry.entry_type}</Text>
+                {entry.notes ? (
+                  <Text className="font-body-sm text-on-surface-variant mt-0.5">{entry.notes}</Text>
+                ) : null}
               </View>
-              <View className="items-end">
-                {Number(entry.debit) > 0 ? (
-                  <Text className="font-headline-sm text-error font-bold">-₹{entry.debit}</Text>
-                ) : null}
-                {Number(entry.credit) > 0 ? (
-                  <Text className="font-headline-sm text-[#0052CC] font-bold">+₹{entry.credit}</Text>
-                ) : null}
-                <Text className="font-label-md text-on-surface-variant mt-1 font-semibold">
-                  Bal ₹{entry.balance_after ?? "—"}
-                </Text>
+              <View className="flex-col items-end justify-center">
+                {Number(entry.debit) > 0 && (
+                  <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10">
+                    <Text className="font-title-sm font-black text-error">₹{Number(entry.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                  </View>
+                )}
+                {Number(entry.credit) > 0 && (
+                  <View className="bg-primary-container/30 px-3 py-1.5 rounded-lg border border-[#0052CC]/10">
+                    <Text className="font-title-sm font-black text-[#0052CC]">₹{Number(entry.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>

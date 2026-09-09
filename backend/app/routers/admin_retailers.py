@@ -18,7 +18,9 @@ from app.schemas import (
     RetailerUpdate,
     UserOut,
 )
+from app.schemas.billing import PaymentCreateRequest
 from app.services import wholesale as svc
+from app.services.wholesale.billing import record_standalone_payment
 
 router = APIRouter()
 
@@ -111,4 +113,11 @@ async def admin_ledger(
 ) -> LedgerOut:
     return await svc.get_ledger(auth.db, retailer_id)
 
+@router.post("/admin/retailers/{retailer_id}/payments", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_record_payment(
+    retailer_id: UUID,
+    payload: PaymentCreateRequest,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> None:
+    await record_standalone_payment(auth.db, retailer_id, payload)
 

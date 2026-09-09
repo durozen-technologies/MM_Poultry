@@ -12,6 +12,7 @@ from app.schemas.dates import IstDate, IstDateTime
 class BillPreviewRequest(BaseModel):
     cash_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
     upi_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
+    notes: str | None = Field(default=None, max_length=500)
 
 
 class BillItemPreviewOut(BaseModel):
@@ -29,6 +30,7 @@ class BillPreviewOut(BaseModel):
     cash_payment: Decimal
     upi_payment: Decimal
     balance_amount: Decimal
+    overall_balance: Decimal = Field(default=Decimal("0.00"))
 
 
 class BillCommitRequest(BaseModel):
@@ -36,6 +38,13 @@ class BillCommitRequest(BaseModel):
     upi_payment: Decimal = Field(default=Decimal("0.00"), ge=0)
     print_status: PrintStatus = PrintStatus.PENDING
     checkout_id: str | None = Field(default=None, max_length=64)
+    notes: str | None = Field(default=None, max_length=500)
+
+class PaymentCreateRequest(BaseModel):
+    payment_date: IstDate
+    cash_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    upi_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    notes: str | None = Field(default=None, max_length=500)
 
 
 class DeliveryBillItemOut(BaseModel):
@@ -63,6 +72,7 @@ class DeliveryBillOut(BaseModel):
     cash_payment: Decimal
     upi_payment: Decimal
     balance_amount: Decimal
+    overall_balance: Decimal = Field(default=Decimal("0.00"))
     print_status: PrintStatus
     whatsapp_shared_at: IstDateTime | None = None
     items: list[DeliveryBillItemOut] = []

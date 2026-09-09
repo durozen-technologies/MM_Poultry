@@ -337,6 +337,7 @@ export type DeliveryBill = {
   cash_payment: string;
   upi_payment: string;
   balance_amount: string;
+  overall_balance: string;
   print_status: string;
   whatsapp_shared_at: string | null;
   items: DeliveryBillItem[];

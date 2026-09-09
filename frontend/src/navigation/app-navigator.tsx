@@ -19,6 +19,7 @@ import { AdminFarmProfileScreen } from "../screens/admin/admin-farm-profile-scre
 import { AdminFarmLoadDetailScreen } from "../screens/admin/admin-farm-load-detail-screen";
 
 import { AdminRetailerUsersScreen } from "../screens/admin/admin-retailer-users-screen";
+import { AdminDeliveryUsersScreen } from "../screens/admin/admin-delivery-users-screen";
 import { AdminFarmEditScreen } from "../screens/admin/admin-farm-edit-screen";
 import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-screen";
 import { AdminInventoryDetailScreen } from "../screens/admin/admin-inventory-detail-screen";
@@ -248,6 +249,7 @@ export function AppNavigator() {
               <Stack.Screen name="Reports" component={AdminReportsScreen} />
               <Stack.Screen name="Rates" component={AdminRatesScreen} />
               <Stack.Screen name="AdminRetailerUsers" component={AdminRetailerUsersScreen} />
+              <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
               <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
               <Stack.Screen name="AdminFarmLoadDetail" component={AdminFarmLoadDetailScreen} />
               <Stack.Screen name="AdminFarmProfile" component={AdminFarmProfileScreen} />

@@ -368,6 +368,9 @@ class DeliveryBill(Base, BaseModelMixin):
         Numeric(12, 2), nullable=False, server_default=text("0.00")
     )
     balance_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    overall_balance: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("0.00")
+    )
     print_status: Mapped[PrintStatus] = mapped_column(
         SqlEnum(PrintStatus, name="print_status", native_enum=False),
         nullable=False,

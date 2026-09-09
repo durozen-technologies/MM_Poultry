@@ -32,7 +32,9 @@ export async function getLedger(retailerId: string) {
   const { data } = await api.get<LedgerOut>(`/admin/retailers/${retailerId}/ledger`);
   return data;
 }
-
+export async function recordRetailerPayment(retailerId: string, payload: { payment_date: string; cash_amount: string; upi_amount: string; notes?: string }) {
+  await api.post(`/admin/retailers/${retailerId}/payments`, payload);
+}
 
 
 export async function createRetailerPortalUser(

@@ -72,7 +72,7 @@ export async function weighStop(stopId: string, payload: Record<string, unknown>
   return data;
 }
 
-export async function previewBill(stopId: string, payload: { cash_payment: string; upi_payment: string }) {
+export async function previewBill(stopId: string, payload: { cash_payment: string; upi_payment: string; notes?: string }) {
   const { data } = await api.post(`/delivery/stops/${stopId}/bill/preview`, payload);
   return data;
 }

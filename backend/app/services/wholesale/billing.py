@@ -36,6 +36,7 @@ from app.schemas.billing import (
     BillPreviewOut,
     BillPreviewRequest,
     DeliveryBillOut,
+    PaymentCreateRequest,
     PrintStatusUpdate,
 )
 from app.schemas.delivery import DeliveryStopOut, WeighRequest
@@ -132,7 +133,9 @@ async def weigh_stop(
     return await _stop_out(db, stop)
 
 
-def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillPreviewOut:
+def _preview_from_stop(
+    stop: DeliveryStop, payload: BillPreviewRequest, retailer_balance: Decimal
+) -> BillPreviewOut:
     items_out = []
     total_amount = ZERO
     for item in stop.items:
@@ -153,10 +156,10 @@ def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillP
     cash = q_money(payload.cash_payment)
     upi = q_money(payload.upi_payment)
     balance = q_money(total_amount - cash - upi)
-    if balance < ZERO:
+    if (cash + upi) > q_money(retailer_balance + total_amount):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payments exceed bill total",
+            detail="Payments exceed total outstanding balance",
         )
     return BillPreviewOut(
         stop_id=stop.id,
@@ -166,6 +169,7 @@ def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillP
         cash_payment=cash,
         upi_payment=upi,
         balance_amount=balance,
+        overall_balance=q_money(retailer_balance + balance),
     )
 
 
@@ -181,7 +185,8 @@ async def preview_bill(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
     if stop.status != DeliveryStopStatus.WEIGHED and stop.status != DeliveryStopStatus.BILLED:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop not weighed")
-    return _preview_from_stop(stop, payload)
+    retailer = await get_retailer(db, stop.retailer_id)
+    return _preview_from_stop(stop, payload, retailer.credit_balance)
 
 
 async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
@@ -238,10 +243,10 @@ async def commit_bill(
             detail="Stop must be weighed before commit",
         )
 
-    preview = _preview_from_stop(
-        stop, BillPreviewRequest(cash_payment=payload.cash_payment, upi_payment=payload.upi_payment)
-    )
     retailer = await get_retailer(db, stop.retailer_id)
+    preview = _preview_from_stop(
+        stop, BillPreviewRequest(cash_payment=payload.cash_payment, upi_payment=payload.upi_payment), retailer.credit_balance
+    )
     settings = await _get_org_settings(db)
     if (
         settings.enforce_credit_limit
@@ -298,6 +303,7 @@ async def commit_bill(
         cash_payment=preview.cash_payment,
         upi_payment=preview.upi_payment,
         balance_amount=preview.balance_amount,
+        overall_balance=preview.overall_balance,
         print_status=print_status,
     )
     db.add(bill)
@@ -334,6 +340,7 @@ async def commit_bill(
     payment = None
     collected = preview.cash_payment + preview.upi_payment
     if collected > ZERO:
+        payment_notes = payload.notes.strip() if payload.notes else f"Collected on bill {bill_number}"
         payment = Payment(
             retailer_id=stop.retailer_id,
             delivery_bill_id=None,  # set after flush
@@ -342,7 +349,7 @@ async def commit_bill(
             upi_amount=preview.upi_payment,
             total_amount=q_money(collected),
             type=PaymentType.RECEIVED,
-            notes=f"Collected on bill {bill_number}",
+            notes=payment_notes,
         )
         db.add(payment)
 
@@ -412,6 +419,41 @@ async def update_bill_print_status(
         bill.print_status = target
         await db.flush()
     return DeliveryBillOut.model_validate(bill, from_attributes=True)
+
+
+async def record_standalone_payment(
+    db: AsyncSession, retailer_id: UUID, payload: PaymentCreateRequest
+) -> None:
+    retailer = await get_retailer(db, retailer_id)
+    cash = q_money(payload.cash_amount)
+    upi = q_money(payload.upi_amount)
+    total_payment = q_money(cash + upi)
+
+    if total_payment <= ZERO:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payment amount must be greater than zero",
+        )
+
+    if total_payment > retailer.credit_balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payment exceeds total outstanding balance",
+        )
+
+    payment = Payment(
+        retailer_id=retailer.id,
+        payment_date=payload.payment_date,
+        cash_amount=cash,
+        upi_amount=upi,
+        total_amount=total_payment,
+        type=PaymentType.RECEIVED,
+        notes=payload.notes,
+    )
+    db.add(payment)
+    retailer.credit_balance = q_money(retailer.credit_balance - total_payment)
+    await db.flush()
+
 
 
 async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDashboard:

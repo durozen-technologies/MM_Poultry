@@ -30,6 +30,7 @@ export function DeliveryWeighingScreen() {
   const [weights, setWeights] = useState<Record<string, { boxes: string; weight: string }>>({});
   const [cash, setCash] = useState("0");
   const [upi, setUpi] = useState("0");
+  const [notes, setNotes] = useState("");
   const [billing, setBilling] = useState(false);
   const [skipPrint, setSkipPrint] = useState(false);
   const [printerModalVisible, setPrinterModalVisible] = useState(false);
@@ -131,7 +132,7 @@ export function DeliveryWeighingScreen() {
       }
       if (!weighDone) throw new Error("Weigh failed");
 
-      const preview = await previewBill(stop.id, { cash_payment: String(cashNum), upi_payment: String(upiNum) });
+      const preview = await previewBill(stop.id, { cash_payment: String(cashNum), upi_payment: String(upiNum), notes });
       if (!preview) throw new Error("Failed to preview bill");
 
       // Step 2: Commit
@@ -143,6 +144,7 @@ export function DeliveryWeighingScreen() {
             upi_payment: String(upiNum),
             print_status: "PENDING",
             checkout_id: checkoutId,
+            notes,
           });
           break;
         } catch (e: any) {
@@ -320,6 +322,16 @@ export function DeliveryWeighingScreen() {
                 keyboardType="decimal-pad"
               />
             </View>
+          </View>
+          <View className="mt-3">
+            <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">Notes (Optional)</Text>
+            <TextInput
+              className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="e.g. Paid for previous bills too"
+              placeholderTextColor="#9ca3af"
+            />
           </View>
           
           <View className="flex-row items-center gap-2 mt-4 pt-4 border-t border-outline-variant/20">

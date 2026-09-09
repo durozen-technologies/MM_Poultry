@@ -8,6 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.domain import (
     DeliveryBill,
+    DeliveryRun,
+    DeliveryStop,
     DeliveryStopItem,
     Item,
     Payment,
@@ -62,6 +64,23 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         for stop_id, it_id, boxes, item_name in stop_res:
             stop_map[(stop_id, it_id)] = (boxes or 0, item_name)
 
+    bill_payments_map = {}
+    for payment in payments:
+        if payment.delivery_bill_id:
+            bill_payments_map[payment.delivery_bill_id] = payment.notes
+
+    driver_map = {}
+    bill_ids = [b.id for b in bills]
+    if bill_ids:
+        driver_stmt = (
+            select(DeliveryBill.id, DeliveryRun.driver_name)
+            .join(DeliveryStop, DeliveryStop.id == DeliveryBill.delivery_stop_id)
+            .join(DeliveryRun, DeliveryRun.id == DeliveryStop.delivery_run_id)
+            .where(DeliveryBill.id.in_(bill_ids))
+        )
+        for b_id, d_name in await db.execute(driver_stmt):
+            driver_map[b_id] = d_name or "Unknown Driver"
+
     entries: list[LedgerEntry] = []
     for bill in bills:
         total_wt = sum((i.weight_kg for i in bill.items), ZERO)
@@ -88,28 +107,55 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         )
         collected = bill.cash_payment + bill.upi_payment
         if collected > ZERO:
+            driver_name = driver_map.get(bill.id, "Unknown Driver")
+            base_notes = bill_payments_map.get(bill.id) or ""
+            
+            breakdowns = []
+            if bill.cash_payment > ZERO:
+                breakdowns.append(f"Cash ₹{bill.cash_payment}")
+            if bill.upi_payment > ZERO:
+                breakdowns.append(f"UPI ₹{bill.upi_payment}")
+            
+            note_str = f"Received by {driver_name}"
+            if breakdowns:
+                note_str += f"\n({', '.join(breakdowns)})"
+            if base_notes:
+                note_str += f" - {base_notes}"
+
             entries.append(
                 LedgerEntry(
-                    entry_type="BILL_PAYMENT",
+                    entry_type="Delivery Payment",
                     entry_date=bill.bill_date,
                     reference=bill.bill_number,
                     debit=ZERO,
                     credit=q_money(collected),
+                    notes=note_str
                 )
             )
     for payment in payments:
         if payment.delivery_bill_id:
             continue  # already represented via bill payment lines
+            
+        breakdowns = []
+        if payment.cash_amount > ZERO:
+            breakdowns.append(f"Cash ₹{payment.cash_amount}")
+        if payment.upi_amount > ZERO:
+            breakdowns.append(f"UPI ₹{payment.upi_amount}")
+            
+        note_str = ", ".join(breakdowns)
+        if payment.notes:
+            note_str = f"{note_str} - {payment.notes}" if note_str else payment.notes
+            
         entries.append(
             LedgerEntry(
-                entry_type="PAYMENT",
+                entry_type="Admin Payment",
                 entry_date=payment.payment_date,
                 reference=str(payment.id),
                 debit=ZERO,
                 credit=payment.total_amount
                 if payment.type == PaymentType.RECEIVED and payment.is_credit
                 else ZERO,
-                notes=payment.notes,
+                notes=note_str,
             )
         )
     for ret in returns:

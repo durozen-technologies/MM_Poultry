@@ -38,6 +38,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
   const [cash, setCash] = useState("0");
   const [upi, setUpi] = useState("0");
   const [paymentDate, setPaymentDate] = useState(todayIstDate());
+  const [paymentNotes, setPaymentNotes] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"All" | "Active" | "Inactive">("All");
@@ -58,6 +59,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
         cash_amount: cash,
         upi_amount: upi,
         payment_date: toApiDate(paymentDate),
+        notes: paymentNotes
       });
       await openLedger(selected.retailer.id);
       await refetch();
@@ -65,6 +67,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       setTimeout(() => setMsg(null), 3000);
       setCash("0");
       setUpi("0");
+      setPaymentNotes("");
     } catch (e) {
       setMsg(getApiErrorMessage(e));
     }
@@ -267,32 +270,6 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                 </Text>
               </View>
 
-              <Text className="font-title-md font-bold text-on-surface mb-3">Recent Transactions</Text>
-              <View className="flex-1 mb-6 border border-outline-variant/30 rounded-2xl bg-surface-container-lowest">
-                <FlatList
-                  data={selected?.entries || []}
-                  keyExtractor={(_, idx) => String(idx)}
-                  contentContainerStyle={{ padding: 12 }}
-                  ItemSeparatorComponent={() => <View className="h-[1px] bg-outline-variant/20 my-2" />}
-                  ListEmptyComponent={
-                    <View className="py-8 items-center">
-                      <Text className="text-on-surface-variant font-medium">No recent transactions.</Text>
-                    </View>
-                  }
-                  renderItem={({ item }) => (
-                    <View className="flex-row justify-between items-center py-1">
-                      <View>
-                        <Text className="font-label-md text-on-surface-variant mb-1">{formatIstDate(item.entry_date)}</Text>
-                        <Text className="font-title-sm font-bold text-on-surface">{item.entry_type}</Text>
-                      </View>
-                      <View className="items-end">
-                        {Number(item.debit) > 0 && <Text className="font-title-md font-black text-error">Dr ₹{Number(item.debit).toLocaleString("en-IN")}</Text>}
-                        {Number(item.credit) > 0 && <Text className="font-title-md font-black text-primary">Cr ₹{Number(item.credit).toLocaleString("en-IN")}</Text>}
-                      </View>
-                    </View>
-                  )}
-                />
-              </View>
 
               <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl p-5 gap-4">
                 <View className="flex-row items-center gap-2 mb-1">
@@ -330,6 +307,17 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                       keyboardType="decimal-pad"
                     />
                   </View>
+                </View>
+                
+                <View>
+                  <Text className="font-label-md text-on-surface-variant font-bold mb-1.5 ml-1">Notes (Optional)</Text>
+                  <TextInput
+                    className="h-14 bg-surface border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface focus:border-primary"
+                    value={paymentNotes}
+                    onChangeText={setPaymentNotes}
+                    placeholder="e.g. Bank Transfer"
+                    placeholderTextColor="#717973"
+                  />
                 </View>
                 
                 <Pressable
