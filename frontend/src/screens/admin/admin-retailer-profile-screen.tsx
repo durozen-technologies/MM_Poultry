@@ -8,6 +8,7 @@ import { apiItems } from "../../api/items";
 import { listRates, upsertRate } from "../../api/rates";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { formatIstDate } from "../../utils/ist-date";
 
 import { FormField } from "../../components/form-field";
 import { getApiErrorMessage } from "../../api/client";
@@ -231,9 +232,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
         <View className="px-4 pt-4"><MessageBanner message={msg} /></View>
         {activeTab === "OVERVIEW" && (
           <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-{activeTab === "OVERVIEW" && (
           <View className="flex-col gap-4">
-            
 
             <View className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30 flex-col gap-2">
               <View className="flex-row items-center gap-2 mb-2">
@@ -327,9 +326,6 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               </View>
             )}
           </View>
-        )}
-
-        
           </ScrollView>
         )}
         {activeTab === "ORDERS" && (
