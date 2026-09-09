@@ -62,32 +62,6 @@ async def _setup_acknowledged_order(
     return order_id
 
 
-@pytest.mark.asyncio
-async def test_dispatch_today_acknowledged_only(client: AsyncClient) -> None:
-    org, admin = await create_org_with_admin(client, slug="dispatchorg1")
-    headers = auth_headers(admin["access_token"])
-    item = await create_default_item(client, admin["access_token"])
-    await _setup_acknowledged_order(client, admin["access_token"], org["slug"], item["id"])
-
-    dispatch = await client.get("/admin/dispatch/today", headers=headers)
-    assert dispatch.status_code == 200
-    body = dispatch.json()
-    assert "total_remaining_unassigned_kg" in body
-    assert "routes" in body
-    assert "confirmed_items" in body
-    assert "unassigned_items" in body
-    assert "available_items" in body
-
-    eligible_orders = [
-        o
-        for route in body["routes"]
-        for o in route["orders"]
-    ]
-    assert len(eligible_orders) >= 1
-    order_line = eligible_orders[0]
-    assert order_line["items"]
-    item_line = order_line["items"][0]
-    assert item_line["item_id"] == item["id"]
 
 
 @pytest.mark.asyncio

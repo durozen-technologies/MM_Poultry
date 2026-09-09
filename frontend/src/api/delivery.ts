@@ -6,10 +6,7 @@ export type FarmLoadAllocationPayload = {
   allocated_kg: string | number;
 };
 
-export async function getDispatchToday() {
-  const { data } = await api.get<DispatchTodayOut>("/admin/dispatch/today");
-  return data;
-}
+
 
 export async function createDeliveryRun(payload: {
   farm_load_id?: string | null;
@@ -20,8 +17,6 @@ export async function createDeliveryRun(payload: {
   route_id?: string | null;
   driver_user_id?: string;
   driver_name?: string;
-  vehicle_id?: string;
-  vehicle_number?: string;
 }) {
   const { data } = await api.post<DeliveryRun>("/admin/delivery-runs", payload);
   return data;

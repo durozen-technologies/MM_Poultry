@@ -82,6 +82,11 @@ async def weigh_stop(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Stop has no items to weigh"
         )
 
+    from app.services.wholesale.rates import resolve_rate
+    from app.models.domain import DeliveryRun
+    run = await db.get(DeliveryRun, stop.delivery_run_id)
+    run_date = run.run_date if run else today_ist()
+
     payload_item_map = {pi.item_id: pi for pi in payload.items}
     # Validate all stop items are present in payload
     missing = [str(i.item_id) for i in stop.items if i.item_id not in payload_item_map]
@@ -116,6 +121,11 @@ async def weigh_stop(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Weight {weight}kg exceeds sanity limit for item {item.item_id}",
                 )
+            
+            # Fetch latest rate in case admin changed it while run was active
+            live_rate = await resolve_rate(db, item.item_id, stop.retailer_id, run_date)
+            item.rate_per_kg = live_rate
+
             item.delivered_weight_kg = weight
             item.delivered_boxes = pi.delivered_boxes
             item.delivered_bird_count = pi.delivered_bird_count
@@ -129,7 +139,9 @@ async def weigh_stop(
     stop.status = DeliveryStopStatus.WEIGHED
     stop.weighed_at = now_ist()
     await db.flush()
-    return await _stop_out(db, stop)
+    out = await _stop_out(db, stop)
+    await db.commit()
+    return out
 
 
 def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillPreviewOut:

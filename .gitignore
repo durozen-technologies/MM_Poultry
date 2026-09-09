@@ -84,6 +84,7 @@ frontend/ios/
 frontend/android/
 
 # --- Agent / local tooling (project skills live in .agents/) ---
+.agents/skills/
 .codex/
 .gemini/
 .impeccable/

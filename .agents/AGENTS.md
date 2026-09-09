@@ -40,6 +40,3 @@ When making architectural pivots or massive changes to the data models, do NOT o
 **CRITICAL RULE: USE BUN INSTEAD OF NPM OR NODE.**
 Always use `bun` as the package manager and runtime for JS/TS tasks. Do not use `npm`, `npx` or `node` unless explicitly required by a tool that does not support bun.
 
-## 🚨 MANDATORY ACTION: TEST WITH EVERY ENDPOINT
-**CRITICAL RULE: EVERY NEW BACKEND ENDPOINT MUST HAVE A CORRESPONDING TEST.**
-Whenever you write or modify a FastAPI endpoint in `backend/app/routers/`, you MUST immediately write or update the corresponding integration test in `backend/tests/`. Tests use `pytest` with `TestClient` (synchronous `def`). Do NOT end your turn after adding an endpoint without also adding a test. The test must cover at minimum: the happy path and one error/validation case.

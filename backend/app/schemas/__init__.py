@@ -21,7 +21,7 @@ from app.schemas.delivery import (
     StockAdjustmentCreate,
     WeighRequest,
 )
-from app.schemas.dispatch import DispatchTodayOut
+
 from app.schemas.farm import (
     FarmCreate,
     FarmLoadCreate,
@@ -120,7 +120,6 @@ __all__ = [
     "DeliveryRunOut",
     "DeliveryStopOut",
     "StockAdjustmentCreate",
-    "DispatchTodayOut",
     "WeighRequest",
     "BillPreviewRequest",
     "BillPreviewOut",
