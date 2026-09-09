@@ -127,12 +127,7 @@ const BillListItem = React.memo(({ bill, onPress }: { bill: DeliveryBill; onPres
         </View>
         <Text className="font-headline-sm text-[#0052CC] font-bold">₹{bill.total_amount}</Text>
       </View>
-      <View className="flex-row items-center justify-between mt-4">
-        <View className={`px-3 py-1.5 rounded-md ${isPaid ? "bg-[#e8f5e9]" : "bg-error-container"}`}>
-          <Text className={`font-label-sm font-bold uppercase tracking-wider ${isPaid ? "text-[#2e7d32]" : "text-error"}`}>
-            {isPaid ? "Paid" : "Due"}
-          </Text>
-        </View>
+      <View className="flex-row items-center justify-end mt-4">
         {!isPaid && (
           <Text className="font-label-md text-error font-bold">Bal: ₹{bill.balance_amount}</Text>
         )}

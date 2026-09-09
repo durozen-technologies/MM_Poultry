@@ -3,7 +3,7 @@ import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatLi
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getLedger, createRetailerPortalUser } from "../../api/retailers";
-import { listTodayOrders } from "../../api/orders";
+import { listOrdersByDate } from "../../api/orders";
 import { apiItems } from "../../api/items";
 import { listRates, upsertRate } from "../../api/rates";
 import type { DailyOrder, LedgerOut } from "../../types/api";
@@ -66,7 +66,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     try {
       const [ledgerData, orderData] = await Promise.all([
         getLedger(retailerId),
-        listTodayOrders(),
+        listOrdersByDate(),
       ]);
       setLedger(ledgerData);
       setOrders(orderData.items.filter((o) => o.retailer_id === retailerId));
@@ -111,7 +111,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   }, [portalUsername, portalPassword, retailerId]);
 
   const bal = useMemo(() => Number(ledger?.retailer?.credit_balance || 0), [ledger?.retailer?.credit_balance]);
-  const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "BILL") || [], [ledger?.entries]);
+  const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "OUTLET") || [], [ledger?.entries]);
 
   if (loading && !ledger) {
     return (
@@ -193,15 +193,31 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           {retailer.shop_name || retailer.owner_name || "—"}
         </Text>
 
-        <View className="w-64 bg-error-container/20 p-5 rounded-3xl border border-error/20 flex-col items-center justify-center shadow-sm">
+        <View className={`w-64 p-5 rounded-3xl border flex-col items-center justify-center shadow-sm ${
+          bal > 0 ? "bg-error-container/20 border-error/20" : 
+          bal < 0 ? "bg-primary-container/20 border-primary/20" : 
+          "bg-surface-variant/20 border-outline-variant/20"
+        }`}>
           <View className="flex-row items-center gap-1.5 mb-1.5">
-            <MaterialIcons name="account-balance-wallet" size={16} className="text-error" />
-            <Text className="font-label-md text-error uppercase tracking-widest font-bold">
-              Outstanding Balance
+            <MaterialIcons name="account-balance-wallet" size={16} className={
+              bal > 0 ? "text-error" : 
+              bal < 0 ? "text-primary" : 
+              "text-on-surface-variant"
+            } />
+            <Text className={`font-label-md uppercase tracking-widest font-bold ${
+              bal > 0 ? "text-error" : 
+              bal < 0 ? "text-primary" : 
+              "text-on-surface-variant"
+            }`}>
+              {bal > 0 ? "Outstanding Balance" : bal < 0 ? "Advance Balance" : "Settled Balance"}
             </Text>
           </View>
-          <Text className="font-display-sm text-error font-black">
-            ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+          <Text className={`font-display-sm font-black ${
+            bal > 0 ? "text-error" : 
+            bal < 0 ? "text-primary" : 
+            "text-on-surface-variant"
+          }`}>
+            ₹{Math.abs(bal).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
           </Text>
         </View>
       </View>
@@ -229,7 +245,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
 
       
       <>
-        <View className="px-4 pt-4"><MessageBanner message={msg} /></View>
+        {msg ? <View className="px-4 pt-4"><MessageBanner message={msg} /></View> : null}
         {activeTab === "OVERVIEW" && (
           <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           <View className="flex-col gap-4">
@@ -360,15 +376,6 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                         <MaterialIcons name="event" size={16} className="text-on-surface-variant" />
                         <Text className="font-title-sm text-on-surface font-bold">{formatIstDate(order.order_date)}</Text>
                       </View>
-                      <View className={`px-2.5 py-1 rounded-full border ${
-                        order.status === 'PLACED' ? 'bg-error-container/50 border-error/20 text-error' : 
-                        order.status === 'ACKNOWLEDGED' ? 'bg-tertiary/10 border-tertiary/20 text-tertiary' :
-                        order.status === 'FULFILLED' ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-surface-variant/30 border-outline-variant/20 text-on-surface-variant'
-                      }`}>
-                        <Text className="font-label-sm uppercase tracking-widest font-bold text-inherit">
-                          {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
-                        </Text>
-                      </View>
                     </View>
                     <View className="mt-2 border-t border-surface-variant/40 pt-2">
                       {order.items?.map((it) => (
@@ -461,36 +468,53 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                   </View>
                 }
                 renderItem={({ item, index }) => (
-                  <View className={`flex-row justify-between p-4 ${index !== entries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
+                <View className={`p-4 ${index !== entries.length - 1 ? 'border-b border-surface-variant/50' : ''}`}>
+                  <View className="flex-row justify-between">
                     <View className="flex-col justify-center">
                       <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-1">{formatIstDate(item.entry_date)}</Text>
-                      <Text className="font-title-sm text-on-surface font-bold">{item.entry_type}</Text>
+                      <Text className={`font-title-sm font-bold ${item.entry_type === 'INLET' ? 'text-primary' : 'text-error'}`}>{item.entry_type}</Text>
                       {item.notes ? (
                         <Text className="font-body-sm text-on-surface-variant mt-0.5">{item.notes}</Text>
                       ) : null}
                     </View>
                     <View className="flex-col items-end justify-center">
                       {Number(item.debit) > 0 && (
-                        <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10">
-                          <Text className="font-title-sm font-black text-error">Dr ₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                        <View className="bg-error-container/30 px-3 py-1.5 rounded-lg border border-error/10 mb-1">
+                          <Text className="font-title-sm font-black text-error">-₹{Number(item.debit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                         </View>
                       )}
                       {Number(item.credit) > 0 && (
-                        <View className="bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/10 mt-1">
-                          <Text className="font-title-sm font-black text-primary">Cr ₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+                        <View className="bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/10 mb-1">
+                          <Text className="font-title-sm font-black text-primary">+₹{Number(item.credit).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
                         </View>
                       )}
+                      <Text className="font-label-sm text-on-surface-variant font-semibold">Bal ₹{item.balance_after ?? "—"}</Text>
                     </View>
                   </View>
+                  {item.bill_items && item.bill_items.length > 0 ? (
+                    <View className="bg-surface-container rounded-xl p-3 mt-3 border border-outline-variant/30">
+                      {item.bill_items.map((b, i) => (
+                        <View key={i} className={`flex-row justify-between items-center py-1 ${i !== item.bill_items!.length - 1 ? 'border-b border-outline-variant/20' : ''}`}>
+                          <Text className="font-label-sm text-on-surface">{b.item_name}</Text>
+                          <View className="flex-row gap-4">
+                            <Text className="font-label-sm text-on-surface-variant">{b.net_kg} kg</Text>
+                            <Text className="font-label-sm font-semibold text-on-surface">₹{b.amount}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
                 )}
               />
             </View>
           </View>
         )}
 {activeTab === "RATES" && (
-          <View className="flex-col gap-6">
-            <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl py-4 shadow-sm">
-              <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-5">Select Item to Override</Text>
+          <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+            <View className="flex-col gap-6">
+              <View className="bg-surface-container-lowest border border-outline-variant/30 rounded-3xl py-4 shadow-sm">
+                <Text className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-5">Select Item to Override</Text>
               {loadingItems ? (
                 <View className="py-4 items-center">
                   <ActivityIndicator color="#115E29" />
@@ -615,6 +639,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
               })}
             </View>
           </View>
+          </ScrollView>
         )}
       </>
     </AdminScreenContainer>

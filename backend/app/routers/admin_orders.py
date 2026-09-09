@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
-from app.schemas import ConfirmOrderRequest, DailyOrderOut, TodayOrdersResponse
+from app.schemas import DailyOrderOut, TodayOrdersResponse
 from app.schemas.billing import DeliveryBillOut
 from app.schemas.dates import IstDate
 from app.services import wholesale as svc
@@ -37,10 +37,9 @@ async def admin_orders_by_date(
 @router.post("/admin/orders/{order_id}/confirm", response_model=DailyOrderOut)
 async def admin_confirm_order(
     order_id: UUID,
-    payload: ConfirmOrderRequest,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
 ) -> DailyOrderOut:
-    return await svc.confirm_order(auth.db, order_id, payload.expected_delivery_date)
+    return await svc.confirm_order(auth.db, order_id)
 
 
 @router.post("/admin/orders/{order_id}/cancel", response_model=DailyOrderOut)

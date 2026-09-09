@@ -1,8 +1,6 @@
 from app.models.domain import (
     BillSequence,
     DeliveryBill,
-    DeliveryRun,
-    DeliveryStop,
     Farm,
     FarmLoad,
     OrgSettings,
@@ -12,11 +10,8 @@ from app.models.domain import (
     RetailerItemRate,
     RetailerReturn,
     Route,
-    TripWeightLoss,
 )
 from app.models.enums import (
-    DeliveryRunStatus,
-    DeliveryStopStatus,
     FarmLoadStatus,
     OrderStatus,
     PaymentType,
@@ -39,16 +34,11 @@ __all__ = [
     "Farm",
     "FarmLoad",
     "OrgSettings",
-    "DeliveryRun",
-    "DeliveryStop",
     "DeliveryBill",
     "Payment",
-    "TripWeightLoss",
     "BillSequence",
     "OrderStatus",
     "FarmLoadStatus",
-    "DeliveryRunStatus",
-    "DeliveryStopStatus",
     "PaymentType",
     "PrintStatus",
 ]

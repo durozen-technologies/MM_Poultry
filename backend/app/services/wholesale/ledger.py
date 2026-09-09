@@ -10,8 +10,6 @@ from sqlalchemy.orm import selectinload
 from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
-    DeliveryStopItem,
-    Item,
     Payment,
     RetailerReturn,
 )
@@ -123,18 +121,6 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
             .order_by(RetailerReturn.return_date.asc(), RetailerReturn.created_at.asc())
         )
     )
-    stop_ids = [b.delivery_stop_id for b in bills]
-    stop_map = {}
-    if stop_ids:
-        stop_stmt = (
-            select(DeliveryStopItem.delivery_stop_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_boxes, Item.name)
-            .join(Item, Item.id == DeliveryStopItem.item_id)
-            .where(DeliveryStopItem.delivery_stop_id.in_(stop_ids))
-        )
-        stop_res = await db.execute(stop_stmt)
-        for stop_id, it_id, boxes, item_name in stop_res:
-            stop_map[(stop_id, it_id)] = (boxes or 0, item_name)
-
     entries: list[LedgerEntry] = []
     for bill in bills:
         total_wt = sum((i.weight_kg for i in bill.items), ZERO)
@@ -145,12 +131,12 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
         )
         bill_items = []
         for i in bill.items:
-            boxes, item_name = stop_map.get((bill.delivery_stop_id, i.item_id), (0, "Unknown Item"))
-            bill_items.append(LedgerBillItem(item_name=item_name, boxes=boxes, net_kg=i.weight_kg, amount=i.amount))
+            item_name = i.item.name if i.item else "Unknown Item"
+            bill_items.append(LedgerBillItem(item_name=item_name, boxes=0, net_kg=i.weight_kg, amount=i.amount))
 
         entries.append(
             LedgerEntry(
-                entry_type="BILL",
+                entry_type="OUTLET",
                 entry_date=bill.bill_date,
                 reference=bill.bill_number,
                 debit=bill.total_amount,
@@ -170,30 +156,29 @@ async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
                     credit=q_money(collected),
                 )
             )
-    for payment in payments:
-        if payment.delivery_bill_id:
-            continue  # already represented via bill payment lines
+    for p in payments:
+        if p.delivery_bill_id:
+            continue  # already represented
         entries.append(
             LedgerEntry(
-                entry_type="PAYMENT",
-                entry_date=payment.payment_date,
-                reference=str(payment.id),
+                entry_type="INLET",
+                entry_date=p.payment_date,
+                reference=f"{p.type.name} Payment",
                 debit=ZERO,
-                credit=payment.total_amount
-                if payment.type == PaymentType.RECEIVED and payment.is_credit
-                else ZERO,
-                notes=payment.notes,
+                credit=p.total_amount,
+                notes=p.notes,
             )
         )
-    for ret in returns:
+
+    for r in returns:
         entries.append(
             LedgerEntry(
-                entry_type="RETURN",
-                entry_date=ret.return_date,
-                reference=str(ret.id),
+                entry_type="INLET",
+                entry_date=r.return_date,
+                reference="Return",
                 debit=ZERO,
-                credit=ret.total_amount,
-                notes=f"Return {ret.weight_kg}kg " + (ret.reason or ""),
+                credit=r.total_amount,
+                notes=f"{r.weight_kg}kg @ {r.rate_per_kg}",
             )
         )
     entries.sort(key=lambda e: (e.entry_date, e.entry_type))

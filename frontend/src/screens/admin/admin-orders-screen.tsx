@@ -12,7 +12,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useAdminTodayOrders, useConfirmOrder } from "../../hooks/use-queries";
 import type { OrderStatus, DailyOrderOut } from "../../types/api";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
-import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 import { cancelOrder, listOrdersByDate } from "../../api/orders";
 import { DatePickerField } from "../../components/date-picker-field";
 import { todayIstDate, toApiDate } from "../../utils/ist-date";
@@ -34,7 +33,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
   const [confirmOrderModal, setConfirmOrderModal] = useState<DailyOrderOut | null>(null);
-  const [dispatchOrderModal, setDispatchOrderModal] = useState<DailyOrderOut | null>(null);
 
   const filteredOrders = useMemo(() => orders.filter((o) => {
     if (searchQuery && !(o.shop_name?.toLowerCase().includes(searchQuery.toLowerCase()) || o.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
@@ -67,13 +65,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           onBack={() => navigation.goBack()} 
           rightContent={
             <View className="flex-row items-center gap-2">
-              <Pressable
-                accessibilityRole="button"
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 active:bg-primary/20"
-                onPress={() => navigation.navigate("DeliveryRuns")}
-              >
-                <MaterialIcons name="local-shipping" size={22} className="text-primary" />
-              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest active:bg-surface-variant"
@@ -220,7 +211,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           <OrderListItem 
             order={order}
             onConfirm={() => setConfirmOrderModal(order)}
-            onDispatch={() => setDispatchOrderModal(order)}
             onPress={() => navigation.navigate("OrderDetail", { order })}
             getStatusColor={getStatusColor}
           />
@@ -237,17 +227,6 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
           }}
         />
       )}
-      
-      {dispatchOrderModal && (
-        <SingleOrderDispatchModal
-          order={dispatchOrderModal}
-          onClose={() => setDispatchOrderModal(null)}
-          onAssigned={() => {
-            setDispatchOrderModal(null);
-            refetch();
-          }}
-        />
-      )}
     </AdminScreenContainer>
   );
 }
@@ -255,13 +234,11 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
 const OrderListItem = React.memo(({
   order,
   onConfirm,
-  onDispatch,
   onPress,
   getStatusColor,
 }: {
   order: DailyOrderOut;
   onConfirm: () => void;
-  onDispatch: () => void;
   onPress: () => void;
   getStatusColor: (status: OrderStatus) => any;
 }) => {
@@ -325,16 +302,6 @@ const OrderListItem = React.memo(({
           >
             <Text className="font-label-md text-white font-bold uppercase tracking-wider">Confirm</Text>
             <MaterialIcons name="check-circle" size={18} color="white" />
-          </Pressable>
-        )}
-
-        {order.status === "ACKNOWLEDGED" && (
-          <Pressable
-            className="bg-[#d97706] h-12 px-6 rounded-full flex-row items-center justify-center gap-2 active:scale-95 transition-transform shadow-md shadow-[#d97706]/30"
-            onPress={onDispatch}
-          >
-            <MaterialIcons name="local-shipping" size={18} color="white" />
-            <Text className="font-label-md text-white font-bold uppercase tracking-wider">Dispatch</Text>
           </Pressable>
         )}
       </View>

@@ -6,15 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.domain import (
-    DeliveryRun,
-    DeliveryRunFarmLoad,
-    DeliveryStop,
-    DeliveryStopItem,
+    DeliveryBill,
+    DeliveryBillItem,
     Farm,
     FarmLoad,
     Item,
+    RetailerDailyOrder,
 )
-from app.models.enums import DeliveryRunStatus, DeliveryStopStatus, FarmLoadStatus
+from app.models.enums import FarmLoadStatus
 from app.schemas.inventory import (
     InventoryFarmLoadOut,
     InventoryItemLoadsOut,
@@ -22,36 +21,18 @@ from app.schemas.inventory import (
     InventorySummaryOut,
 )
 
-_ACTIVE_RUN = (DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS)
-
 
 async def get_inventory_summary(db: AsyncSession) -> InventorySummaryOut:
     """
-    Available KG = sum(actual loaded on OPEN|IN_TRANSIT loads)
-                   - sum(allocated on active runs)
-                   - sum(delivered on billed stops from those loads).
+    Available KG = sum(loaded on OPEN|IN_TRANSIT loads) - sum(delivered on billed bills).
     """
-    allocated_subq = (
-        select(
-            DeliveryRunFarmLoad.farm_load_id,
-            func.coalesce(func.sum(DeliveryRunFarmLoad.allocated_kg), Decimal(0)).label("allocated_kg"),
-        )
-        .join(DeliveryRun, DeliveryRun.id == DeliveryRunFarmLoad.delivery_run_id)
-        .where(DeliveryRun.status.in_(_ACTIVE_RUN))
-        .group_by(DeliveryRunFarmLoad.farm_load_id)
-        .subquery()
-    )
-
     delivered_subq = (
         select(
-            DeliveryRunFarmLoad.farm_load_id,
-            func.coalesce(func.sum(DeliveryStopItem.delivered_weight_kg), Decimal(0)).label("delivered_kg"),
+            DeliveryBillItem.item_id,
+            func.coalesce(func.sum(DeliveryBillItem.weight_kg), Decimal(0)).label("delivered_kg"),
         )
-        .join(DeliveryRun, DeliveryRun.id == DeliveryRunFarmLoad.delivery_run_id)
-        .join(DeliveryStop, DeliveryStop.delivery_run_id == DeliveryRun.id)
-        .join(DeliveryStopItem, DeliveryStopItem.delivery_stop_id == DeliveryStop.id)
-        .where(DeliveryStop.status.in_([DeliveryStopStatus.BILLED, DeliveryStopStatus.WEIGHED]))
-        .group_by(DeliveryRunFarmLoad.farm_load_id)
+        .join(DeliveryBill, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
+        .group_by(DeliveryBillItem.item_id)
         .subquery()
     )
 
@@ -59,8 +40,7 @@ async def get_inventory_summary(db: AsyncSession) -> InventorySummaryOut:
         select(
             Item.id,
             Item.name,
-            FarmLoad.loaded_weight_kg,
-            func.coalesce(allocated_subq.c.allocated_kg, Decimal(0)).label("allocated_kg"),
+            func.coalesce(func.sum(FarmLoad.loaded_weight_kg), Decimal(0)).label("loaded_kg"),
             func.coalesce(delivered_subq.c.delivered_kg, Decimal(0)).label("delivered_kg"),
         )
         .select_from(Item)
@@ -69,34 +49,29 @@ async def get_inventory_summary(db: AsyncSession) -> InventorySummaryOut:
             (FarmLoad.item_id == Item.id)
             & FarmLoad.status.in_([FarmLoadStatus.OPEN, FarmLoadStatus.IN_TRANSIT]),
         )
-        .outerjoin(allocated_subq, allocated_subq.c.farm_load_id == FarmLoad.id)
-        .outerjoin(delivered_subq, delivered_subq.c.farm_load_id == FarmLoad.id)
+        .outerjoin(delivered_subq, delivered_subq.c.item_id == Item.id)
         .where(Item.is_active)
+        .group_by(Item.id, Item.name, delivered_subq.c.delivered_kg)
     )
 
     result = await db.execute(stmt)
     rows = result.all()
 
-    item_totals: dict[UUID, dict] = {}
+    items: list[InventorySummaryItem] = []
     for row in rows:
-        item_id = row.id
-        if item_id not in item_totals:
-            item_totals[item_id] = {
-                "item_id": item_id,
-                "item_name": row.name,
-                "total_available_kg": Decimal(0),
-            }
-
-        loaded = row.loaded_weight_kg or Decimal(0)
-        allocated = row.allocated_kg or Decimal(0)
+        loaded = row.loaded_kg or Decimal(0)
         delivered = row.delivered_kg or Decimal(0)
-        available = loaded - allocated - delivered
+        available = loaded - delivered
         if available > 0:
-            item_totals[item_id]["total_available_kg"] += available
+            items.append(
+                InventorySummaryItem(
+                    item_id=row.id,
+                    item_name=row.name,
+                    total_available_kg=available,
+                )
+            )
 
-    items = [InventorySummaryItem(**v) for v in item_totals.values()]
     items.sort(key=lambda x: x.item_name)
-
     return InventorySummaryOut(items=items)
 
 
@@ -120,25 +95,15 @@ async def get_inventory_item_loads(db: AsyncSession, item_id: UUID) -> Inventory
 
     out_loads: list[InventoryFarmLoadOut] = []
     for load in loads:
-        allocated = await db.scalar(
-            select(func.coalesce(func.sum(DeliveryRunFarmLoad.allocated_kg), 0))
-            .join(DeliveryRun, DeliveryRun.id == DeliveryRunFarmLoad.delivery_run_id)
-            .where(
-                DeliveryRunFarmLoad.farm_load_id == load.id,
-                DeliveryRun.status.in_(_ACTIVE_RUN),
-            )
-        )
         delivered = await db.scalar(
-            select(func.coalesce(func.sum(DeliveryStopItem.delivered_weight_kg), 0))
-            .join(DeliveryStop, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
-            .join(DeliveryRun, DeliveryRun.id == DeliveryStop.delivery_run_id)
-            .join(DeliveryRunFarmLoad, DeliveryRunFarmLoad.delivery_run_id == DeliveryRun.id)
-            .where(DeliveryRunFarmLoad.farm_load_id == load.id)
+            select(func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0))
+            .join(DeliveryBill, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
+            .join(RetailerDailyOrder, RetailerDailyOrder.id == DeliveryBill.retailer_daily_order_id)
+            .where(DeliveryBillItem.item_id == load.item_id)
         )
         loaded = load.loaded_weight_kg or Decimal(0)
-        alloc = Decimal(str(allocated or 0))
         deliv = Decimal(str(delivered or 0))
-        available = loaded - alloc - deliv
+        available = loaded - deliv
         row = InventoryFarmLoadOut.model_validate(load, from_attributes=True)
         row.farm_name = farm_names.get(load.farm_id) if load.farm_id else None
         row.delivered_weight_kg = deliv

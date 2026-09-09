@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import { listFarms, listFarmLoads } from "../api/farms";
 import { listTodayOrders } from "../api/orders";
-import { createDeliveryRun } from "../api/delivery";
 
 import type {
   DailyOrderOut,
@@ -93,8 +92,8 @@ export function useAdminDashboard(dateStr: string | null) {
 export function useConfirmOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orderId, expected_delivery_date }: { orderId: string, expected_delivery_date: string }) => {
-      const { data } = await api.post(`/admin/orders/${orderId}/confirm`, { expected_delivery_date });
+    mutationFn: async ({ orderId }: { orderId: string }) => {
+      const { data } = await api.post(`/admin/orders/${orderId}/confirm`, {});
       return data;
     },
     onSuccess: () => {
@@ -102,30 +101,3 @@ export function useConfirmOrder() {
     },
   });
 }
-
-export function useAdminDeliveryUsers() {
-  return useQuery({
-    queryKey: ["admin", "users", "delivery"],
-    queryFn: async () => {
-      const { data } = await api.get<any[]>("/admin/users/delivery");
-      return data;
-    },
-  });
-}
-
-
-export function useCreateDeliveryRun() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: Parameters<typeof createDeliveryRun>[0]) => {
-      return createDeliveryRun(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "dispatch"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
-    },
-  });
-}
-

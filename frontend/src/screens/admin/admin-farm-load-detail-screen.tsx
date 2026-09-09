@@ -174,7 +174,6 @@ export function AdminFarmLoadDetailScreen({ route, navigation }: { route: any; n
             <View className="bg-surface-container-highest/30 rounded-2xl p-1 border border-outline-variant/10">
               <InfoRow label="Date" value={formatIstDate(load.load_date)} icon="calendar-today" isFirst />
               <InfoRow label="Farm ID" value={load.farm_id || "—"} icon="agriculture" />
-              <InfoRow label="Vehicle" value={load.vehicle_number || "—"} icon="local-shipping" />
               <InfoRow label="Driver" value={load.driver_name || "—"} icon="person" />
               
               <View className="h-[1px] bg-outline-variant/20 my-2 mx-3" />

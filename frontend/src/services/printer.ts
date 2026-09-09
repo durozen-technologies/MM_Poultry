@@ -35,24 +35,6 @@ export type PrintPayload = {
   items: PrintLineItem[];
 };
 
-type BillLike = {
-  bill_number: string;
-  bill_date?: string | null;
-  total_amount: string;
-  cash_payment: string;
-  upi_payment: string;
-  balance_amount: string;
-  items?: { item_id: string; weight_kg: string; rate_per_kg: string; amount: string }[];
-};
-
-type StopLike = {
-  retailer_name?: string | null;
-  shop_name?: string | null;
-  route_name?: string | null;
-  sequence?: number;
-  items?: { item_id: string; delivered_boxes?: number | null }[];
-};
-
 export type ReceiptPrintOptions = {
   organizationName?: string | null;
 };
@@ -118,45 +100,6 @@ export function printPayloadToDeliveryReceiptData(payload: PrintPayload): Delive
     total_boxes: parseAmount(payload.totalBoxes),
     total_weight_kg: parseAmount(payload.weightKg),
     closing_balance: 0,
-  };
-}
-
-export function deliveryBillToPrintPayload(
-  bill: BillLike,
-  stop: StopLike,
-  getItemName: (id: string) => string,
-  options?: ReceiptPrintOptions
-): PrintPayload {
-  const boxesByItem = new Map(
-    (stop.items || []).map((it) => [it.item_id, Number(it.delivered_boxes ?? 0)])
-  );
-  const items: PrintLineItem[] = (bill.items || []).map((it) => ({
-    name: getItemName(it.item_id),
-    boxes: String(boxesByItem.get(it.item_id) ?? 0),
-    weightKg: String(it.weight_kg),
-    rate: String(it.rate_per_kg),
-    amount: String(it.amount),
-  }));
-  const totalWeight = items.reduce((sum, it) => sum + Number(it.weightKg || 0), 0);
-  const totalBoxes = items.reduce((sum, it) => sum + Number(it.boxes || 0), 0);
-  const orgName = options?.organizationName || stop.shop_name || stop.retailer_name || "MM Broilers";
-
-  return {
-    organizationName: orgName,
-    shopName: stop.shop_name || stop.retailer_name || "Customer",
-    billNumber: bill.bill_number,
-    billDate: bill.bill_date ? formatIstDate(bill.bill_date) : formatIstDate(todayIstDate()),
-    billTime: formatIstTime(),
-    retailerName: stop.retailer_name || "Retailer",
-    routeName: stop.route_name || undefined,
-    stopSequence: stop.sequence,
-    totalBoxes: String(totalBoxes),
-    weightKg: fmtKg(totalWeight),
-    total: String(bill.total_amount),
-    cash: String(bill.cash_payment || 0),
-    upi: String(bill.upi_payment || 0),
-    balance: String(bill.balance_amount || 0),
-    items,
   };
 }
 

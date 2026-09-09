@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
-from app.schemas.dates import IstDate, IstDateTime
+from app.schemas.dates import IstDate
 
 
 class OpsDashboard(BaseModel):
@@ -27,19 +26,6 @@ class OpsDashboard(BaseModel):
     skipped_deliveries: int
     weight_loss_warn_pct: Decimal
     weight_loss_alert_pct: Decimal
-
-
-class TripWeightLossOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    farm_load_id: UUID
-    delivery_run_id: UUID
-    loaded_kg: Decimal
-    delivered_kg: Decimal
-    loss_kg: Decimal
-    loss_pct: Decimal
-    computed_at: IstDateTime
 
 
 class ReportSummary(BaseModel):

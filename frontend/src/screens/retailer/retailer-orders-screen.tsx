@@ -97,29 +97,11 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
 }
 
 const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPress: () => void }) => {
-  const isDelivered = order.status === "FULFILLED";
-  const isCancelled = order.status === "CANCELLED";
-  
-  let bgClass = "bg-primary-container";
-  let textClass = "text-on-primary-container";
-  if (isDelivered) {
-    bgClass = "bg-[#e8f5e9]";
-    textClass = "text-[#2e7d32]";
-  } else if (isCancelled) {
-    bgClass = "bg-error-container";
-    textClass = "text-on-error-container";
-  }
-
   return (
     <Pressable accessibilityRole="button" accessibilityLabel="Button"
       className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm mb-4 active:opacity-80 relative"
       onPress={onPress}
     >
-      <View className={`absolute right-4 top-4 px-2 py-1 rounded-md ${bgClass}`}>
-        <Text className={`font-bold uppercase tracking-wider text-[10px] ${textClass}`}>
-          {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
-        </Text>
-      </View>
 
       <Text className="font-body-sm text-on-surface-variant mb-2">
         {formatIstDate(order.order_date)}

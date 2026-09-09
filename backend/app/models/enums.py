@@ -25,21 +25,6 @@ class FarmLoadStatus(str, enum.Enum):
     CLOSED = "CLOSED"
 
 
-class DeliveryRunStatus(str, enum.Enum):
-    PLANNED = "PLANNED"
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
-
-
-class DeliveryStopStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    WEIGHED = "WEIGHED"
-    BILLED = "BILLED"
-    SKIPPED = "SKIPPED"
-    FAILED = "FAILED"
-
-
 class PaymentType(str, enum.Enum):
     RECEIVED = "RECEIVED"
     ADJUSTMENT = "ADJUSTMENT"

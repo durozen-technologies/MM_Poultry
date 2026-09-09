@@ -26,16 +26,12 @@ import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
 import { AdminSettingsScreen } from "../screens/admin/admin-settings-screen";
 import { AdminRatesScreen } from "../screens/admin/admin-rates-screen";
-import { AdminDeliveryUsersScreen } from "../screens/admin/admin-delivery-users-screen";
 import { AdminReportsScreen } from "../screens/admin/admin-reports-screen";
 import { AdminExpensesScreen } from "../screens/admin/admin-expenses-screen";
 import { AdminAddExpenseScreen } from "../screens/admin/admin-add-expense-screen";
 import { AdminRetailerPortalAccessScreen } from "../screens/admin/admin-retailer-portal-access-screen";
 import { AdminItemsScreen } from "../screens/admin/admin-items-screen";
 
-import { DeliveryHomeScreen } from "../screens/delivery/delivery-home-screen";
-import { DeliveryWeighingScreen } from "../screens/delivery/delivery-weighing-screen";
-import { DeliveryOrdersScreen } from "../screens/delivery/delivery-orders-screen";
 import { RetailerDashboardScreen } from "../screens/retailer/retailer-dashboard-screen";
 import { RetailerOrdersScreen } from "../screens/retailer/retailer-orders-screen";
 import { RetailerBillsScreen } from "../screens/retailer/retailer-bills-screen";
@@ -56,7 +52,6 @@ const linking = {
     screens: {
       Login: "login",
       AdminTabs: "admin",
-      DeliveryTabs: "delivery",
       RetailerTabs: "retailer",
       SuperAdminHome: "super-admin",
     },
@@ -157,38 +152,6 @@ function RetailerTabNavigator() {
   );
 }
 
-function DeliveryTabNavigator() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ color }) => {
-          let iconName: keyof typeof MaterialIcons.glyphMap = "local-shipping";
-          if (route.name === "Delivery") iconName = "local-shipping";
-          else if (route.name === "Orders") iconName = "receipt-long";
-
-          return <MaterialIcons name={iconName} size={24} color={color} />;
-        },
-        tabBarActiveTintColor: "#012d1d",
-        tabBarInactiveTintColor: "#414844",
-        tabBarStyle: {
-          backgroundColor: "rgba(247, 249, 255, 0.9)",
-          borderTopColor: "rgba(0,0,0,0.04)",
-          elevation: 0,
-        },
-        tabBarLabelStyle: {
-          fontFamily: "System",
-          fontWeight: "600",
-          fontSize: 12,
-        },
-      })}
-    >
-      <Tab.Screen name="Delivery" component={DeliveryHomeScreen} />
-      <Tab.Screen name="Orders" component={DeliveryOrdersScreen} />
-    </Tab.Navigator>
-  );
-}
-
 export function AppNavigator() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const user = useAuthStore((s) => s.user);
@@ -226,7 +189,6 @@ export function AppNavigator() {
               <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
               <Stack.Screen name="Reports" component={AdminReportsScreen} />
               <Stack.Screen name="Rates" component={AdminRatesScreen} />
-              <Stack.Screen name="DeliveryUsers" component={AdminDeliveryUsersScreen} />
               <Stack.Screen name="AdminRetailerUsers" component={AdminRetailerUsersScreen} />
               <Stack.Screen name="Expenses" component={AdminExpensesScreen} />
               <Stack.Screen name="AdminFarmLoadDetail" component={AdminFarmLoadDetailScreen} />
@@ -235,12 +197,6 @@ export function AppNavigator() {
 
               <Stack.Screen name="AddExpense" component={AdminAddExpenseScreen} />
               <Stack.Screen name="RetailerPortalAccess" component={AdminRetailerPortalAccessScreen} />
-            </>
-          ) : user.role === "DELIVERY" ? (
-            <>
-              <Stack.Screen name="DeliveryTabs" component={DeliveryTabNavigator} />
-              <Stack.Screen name="DeliveryWeighing" component={DeliveryWeighingScreen} />
-              <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
             </>
           ) : (
             <>

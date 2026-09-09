@@ -11,8 +11,6 @@ from sqlalchemy.orm import selectinload
 from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
-    DeliveryStop,
-    DeliveryStopItem,
     OrderSequence,
     Retailer,
     RetailerDailyOrder,
@@ -74,7 +72,6 @@ async def upsert_today_order(
             )
         )
     else:
-        # Fallback for older clients: Try to find an existing PLACED order for today
         existing = await db.scalar(
             select(RetailerDailyOrder)
             .options(
@@ -97,7 +94,6 @@ async def upsert_today_order(
             existing.order_number = await _next_order_number(db, day)
         order = existing
 
-        # Clear existing items and replace with new cart payload
         for item in existing.items:
             await db.delete(item)
         existing.items.clear()
@@ -144,7 +140,6 @@ async def upsert_today_order(
     try:
         await db.flush()
     except _IE as e:
-        # Retryable FK or deadlock — surface as 409 so test can retry
         msg = str(getattr(e, "orig", e)).lower()
         if "foreign key" in msg or "item_id" in msg:
             from fastapi import HTTPException, status
@@ -156,7 +151,6 @@ async def upsert_today_order(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Deadlock, please retry") from e
         raise
 
-    # Reload to ensure all relationships are fresh
     reloaded = await db.scalar(
         select(RetailerDailyOrder)
         .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
@@ -229,18 +223,6 @@ async def list_today_orders(
     res = await db.execute(stmt)
     raw_results = res.all()
 
-    fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
-    delivered_weights = {}
-    if fulfilled_ids:
-        stop_stmt = (
-            select(DeliveryStop.daily_order_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
-            .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
-            .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
-        )
-        stop_res = await db.execute(stop_stmt)
-        for ord_id, it_id, del_kg in stop_res:
-            delivered_weights[(ord_id, it_id)] = del_kg
-
     items: list[DailyOrderOut] = []
     total_kg = Decimal("0.000")
     total_bx = 0
@@ -255,7 +237,6 @@ async def list_today_orders(
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name
-            out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
         items.append(out)
         if order.status != OrderStatus.CANCELLED:
             for i in order.items:
@@ -268,9 +249,11 @@ async def list_today_orders(
 
 
 async def confirm_order(
-    db: AsyncSession, order_id: UUID, expected_delivery_date: date
+    db: AsyncSession, order_id: UUID
 ) -> DailyOrderOut:
     from fastapi import HTTPException, status
+    
+    from app.core.timezone import today_ist
 
     try:
         order = await db.scalar(
@@ -288,7 +271,7 @@ async def confirm_order(
             )
 
         order.status = OrderStatus.ACKNOWLEDGED
-        order.expected_delivery_date = expected_delivery_date
+        order.expected_delivery_date = today_ist()
         await db.flush()
 
         retailer = await get_retailer(db, order.retailer_id)
@@ -319,7 +302,6 @@ async def cancel_order(db: AsyncSession, order_id: UUID) -> DailyOrderOut:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Order already cancelled")
         if order.status == OrderStatus.FULFILLED:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot cancel fulfilled order")
-        # Only PLACED or ACKNOWLEDGED can be cancelled
         if order.status not in (OrderStatus.PLACED, OrderStatus.ACKNOWLEDGED, OrderStatus.PARTIAL):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Cannot cancel order in {order.status.name} state")
         order.status = OrderStatus.CANCELLED
@@ -344,21 +326,9 @@ async def list_orders_by_date(db: AsyncSession, target_date: date | None = None)
         )
         if target_date is not None:
             query = query.where(RetailerDailyOrder.order_date == target_date)
-            
+
         res = await db.execute(query.order_by(RetailerDailyOrder.created_at.desc()))
         raw_results = res.all()
-
-        fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
-        delivered_weights = {}
-        if fulfilled_ids:
-            stop_stmt = (
-                select(DeliveryStop.daily_order_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
-                .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
-                .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
-            )
-            stop_res = await db.execute(stop_stmt)
-            for ord_id, it_id, del_kg in stop_res:
-                delivered_weights[(ord_id, it_id)] = del_kg
 
         items: list[DailyOrderOut] = []
         total_kg = Decimal("0.000")
@@ -370,7 +340,6 @@ async def list_orders_by_date(db: AsyncSession, target_date: date | None = None)
             for i, model_item in enumerate(order.items):
                 if model_item.item:
                     out.items[i].item_name = model_item.item.name
-                out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
             items.append(out)
             if order.status != OrderStatus.CANCELLED:
                 for i in order.items:
@@ -388,8 +357,7 @@ async def get_bill_by_order_id(db: AsyncSession, order_id: UUID) -> DeliveryBill
     stmt = (
         select(DeliveryBill)
         .options(selectinload(DeliveryBill.items))
-        .join(DeliveryStop, DeliveryStop.id == DeliveryBill.delivery_stop_id)
-        .where(DeliveryStop.daily_order_id == order_id)
+        .where(DeliveryBill.retailer_daily_order_id == order_id)
     )
     res = await db.scalar(stmt)
     if not res:
