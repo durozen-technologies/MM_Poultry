@@ -32,15 +32,33 @@ def upgrade() -> None:
         )
     )
 
-    # Step 2: Backfill from delivery_stops.daily_order_id via JOIN
+    # Step 2: Backfill from delivery_stops.daily_order_id via JOIN — only on
+    # schemas that still have the delivery-runs era tables/columns (fresh
+    # tenants provisioned from current metadata never had them).
     conn.execute(
         sa.text(
             """
-            UPDATE delivery_bills db
-            SET retailer_daily_order_id = ds.daily_order_id
-            FROM delivery_stops ds
-            WHERE db.delivery_stop_id = ds.id
-              AND db.retailer_daily_order_id IS NULL
+            DO $$
+            BEGIN
+              IF EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = current_schema() AND table_name = 'delivery_stops'
+              ) AND EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'delivery_bills'
+                  AND column_name = 'delivery_stop_id'
+              ) AND EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'delivery_stops'
+                  AND column_name = 'daily_order_id'
+              ) THEN
+                UPDATE delivery_bills db
+                SET retailer_daily_order_id = ds.daily_order_id
+                FROM delivery_stops ds
+                WHERE db.delivery_stop_id = ds.id
+                  AND db.retailer_daily_order_id IS NULL;
+              END IF;
+            END $$;
             """
         )
     )
@@ -48,10 +66,23 @@ def upgrade() -> None:
     # Step 3: For any remaining NULL values, set to a placeholder (shouldn't happen in production)
     # We skip this - if data exists without a daily_order_id, it would need manual resolution
 
-    # Step 4: Add NOT NULL constraint and FK
+    # Step 4: Add NOT NULL constraint (only when fully backfilled) and FK.
+    # Conditional so schemas with orphan rows still get a working nullable
+    # column instead of a failed migration; new writes always set the column.
     conn.execute(
         sa.text(
-            "ALTER TABLE delivery_bills ALTER COLUMN retailer_daily_order_id SET NOT NULL"
+            """
+            DO $$
+            BEGIN
+              IF NOT EXISTS (
+                SELECT 1 FROM delivery_bills WHERE retailer_daily_order_id IS NULL
+              ) THEN
+                ALTER TABLE delivery_bills ALTER COLUMN retailer_daily_order_id SET NOT NULL;
+              ELSE
+                RAISE NOTICE 'delivery_bills has rows without retailer_daily_order_id; leaving column nullable until data is resolved';
+              END IF;
+            END $$;
+            """
         )
     )
     conn.execute(

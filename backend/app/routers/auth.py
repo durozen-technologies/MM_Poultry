@@ -18,6 +18,8 @@ async def login(
     payload: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_platform_db)],
 ) -> LoginResponse:
+    import logging  # ponytail: temp debug, remove after diagnosis
+    logging.getLogger("auth.debug").warning("LOGIN attempt: user=%r org=%r", payload.username, payload.organization_slug)
     return await login_user(db, payload)
 
 

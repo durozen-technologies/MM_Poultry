@@ -1,15 +1,14 @@
-import pytest
-from uuid import UUID, uuid4
-from fastapi.testclient import TestClient
 from collections.abc import AsyncGenerator, Generator
-from datetime import date
+from uuid import UUID, uuid4
 
+import pytest
 from app.auth.dependencies import AuthContext, get_current_auth
+from app.db.tenant_schema import set_search_path
 from app.main import app
 from app.models.enums import UserRole
-from app.models.user import User
 from app.models.organization import Organization
-from app.db.tenant_schema import set_search_path
+from app.models.user import User
+from fastapi.testclient import TestClient
 
 # Shared IDs for testing
 TEST_RETAILER_ID = UUID("00000000-0000-0000-0000-000000000100")
@@ -129,18 +128,6 @@ def test_retailer_upsert_today_order(client: TestClient, mock_retailer_auth: Non
     }
     res2 = client.post("/api/v1/retailer/orders/today", json=payload2)
     assert res2.status_code == 200
-    
-    # Try updating with an invalid ID
-    payload3 = {
-        "order_id": str(uuid4()),
-        "items": []
-    }
-    # It will fallback and possibly fail or create new, but wait, if order_id is given and not found, existing is None, it creates a new one?
-    # Yes, our code creates a new one if `existing` is None.
-    
-    # Let's test the ValueError when updating a confirmed order.
-    # We would need a confirmed order for this, which might be tricky to mock here without DB access.
-    # Instead, we just verify it placed multiple orders.
 
 
 def test_retailer_get_today_orders(client: TestClient, mock_retailer_auth: None):
@@ -177,10 +164,10 @@ def test_retailer_order_not_found(client: TestClient, mock_retailer_auth: None) 
     assert res.status_code == 200
 
 def test_retailer_no_retailer_id(client: TestClient):
+    from app.auth.dependencies import AuthContext, get_current_auth
     from app.main import app
-    from app.auth.dependencies import get_current_auth, AuthContext
-    from app.models.user import User
     from app.models.enums import UserRole
+    from app.models.user import User
     
     async def _mock_no_ret():
         yield AuthContext(
@@ -218,3 +205,31 @@ def test_retailer_profile(client: TestClient, mock_retailer_auth: None):
     data = response.json()
     assert data["username"] == "retailer_test"
     assert data["retailer"]["id"] == str(TEST_RETAILER_ID)
+
+
+def test_retailer_cannot_overwrite_acknowledged_order(client: TestClient, mock_retailer_auth: None):
+    """Retailer must not place a new order when today's order is already ACKNOWLEDGED."""
+    from app.core.timezone import today_ist
+
+    # 1) Place an order as retailer
+    payload = {"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 5, "requested_kg": "100"}]}
+    res = client.post("/api/v1/retailer/orders/today", json=payload)
+    assert res.status_code == 200
+    order_id = res.json()["id"]
+
+    # 2) Admin confirms the order (status -> ACKNOWLEDGED) via admin endpoint
+    from datetime import timedelta
+    confirm_payload = {"expected_delivery_date": (today_ist() + timedelta(days=1)).isoformat()}
+    res_confirm = client.post(f"/api/v1/admin/orders/{order_id}/confirm", json=confirm_payload)
+    assert res_confirm.status_code == 200
+    assert res_confirm.json()["status"] == "ACKNOWLEDGED"
+
+    # 3) Retailer tries to place another order (no order_id) — should NOT overwrite
+    payload2 = {"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 10}]}
+    res2 = client.post("/api/v1/retailer/orders/today", json=payload2)
+    assert res2.status_code == 200
+    data2 = res2.json()
+
+    # The response should be a NEW order (different id), not the acknowledged one
+    assert data2["id"] != order_id, "Retailer should not overwrite an acknowledged order"
+    assert data2["status"] == "PLACED"

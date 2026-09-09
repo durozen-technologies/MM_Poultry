@@ -20,14 +20,14 @@ export function AdminScreenContainer({
       {header}
       
       {noScroll ? (
-        <Animated.View entering={FadeInDown.springify().damping(20).delay(100)} className="flex-1 z-20">
+        <Animated.View entering={FadeInDown.springify().damping(20).delay(100)} className="flex-1">
           {children}
         </Animated.View>
       ) : (
         <KeyboardAwareScrollView 
           enableOnAndroid={true}
           keyboardShouldPersistTaps="handled"
-          className="flex-1 px-4 -mt-4 z-20" 
+          className="flex-1 px-4" 
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}

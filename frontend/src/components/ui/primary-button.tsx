@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -11,7 +12,7 @@ interface PrimaryButtonProps {
   className?: string;
 }
 
-export function PrimaryButton({
+export const PrimaryButton = memo(function PrimaryButton({
   title,
   onPress,
   disabled = false,
@@ -38,20 +39,22 @@ export function PrimaryButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className={`h-14 rounded-full flex-row items-center justify-center px-6 active:scale-[0.98] transition-transform ${bgClass} ${disabled ? "opacity-50" : ""} ${className}`}
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      className={`h-14 min-h-[48px] rounded-full flex-row items-center justify-center px-6 active:opacity-80 ${bgClass} ${disabled ? "opacity-50" : ""} ${className}`}
       onPress={onPress}
       disabled={disabled || loading}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : variant === "error" ? "#ba1a1a" : "#44474e"} />
+        <ActivityIndicator color={variant === "primary" ? "#fff" : variant === "error" ? "#ba1a1a" : "#44474e"} accessibilityLabel="Loading" />
       ) : (
         <View className="flex-row items-center justify-center gap-2">
           {icon && <MaterialIcons name={icon} size={20} className={iconClass} />}
-          <Text className={`${textClass} font-bold text-label-lg uppercase tracking-wider`}>
+          <Text className={`${textClass} font-bold text-label-lg tracking-wider`}>
             {title}
           </Text>
         </View>
       )}
     </Pressable>
   );
-}
+});

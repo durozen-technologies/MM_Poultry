@@ -10,6 +10,7 @@ import { cancelOrder, getOrderBill } from "../../api/orders";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
+import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
 
 import { PrimaryButton } from "../../components/ui/primary-button";
@@ -17,6 +18,7 @@ import { PrimaryButton } from "../../components/ui/primary-button";
 export function AdminOrderDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const [order, setOrder] = useState<DailyOrder>(route.params?.order as DailyOrder);
   const [cancelling, setCancelling] = useState(false);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const user = useAuthStore((s) => s.user);
 
@@ -301,8 +303,33 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
           />
         )}
 
+        {user?.role !== "DELIVERY" && (order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
+          <Pressable
+            className="mb-8 h-14 rounded-full flex-row items-center justify-center px-6 bg-[#d97706] shadow-sm shadow-[#d97706]/30 active:scale-[0.98] transition-transform"
+            onPress={() => setShowDispatchModal(true)}
+          >
+            <View className="flex-row items-center justify-center gap-2">
+              <MaterialIcons name="local-shipping" size={22} color="white" />
+              <Text className="text-white font-bold text-label-lg uppercase tracking-wider">
+                Dispatch Order
+              </Text>
+            </View>
+          </Pressable>
+        )}
       </ScrollView>
-            {showConfirmModal && (
+      
+      {showDispatchModal && (
+        <SingleOrderDispatchModal
+          order={order}
+          onClose={() => setShowDispatchModal(false)}
+          onAssigned={() => {
+            setShowDispatchModal(false);
+            setOrder({ ...order, status: "DISPATCHED" });
+          }}
+        />
+      )}
+
+      {showConfirmModal && (
         <ConfirmOrderModal
           order={order}
           onClose={() => setShowConfirmModal(false)}

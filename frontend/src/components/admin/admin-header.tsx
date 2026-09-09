@@ -17,7 +17,7 @@ export function AdminHeader({
   showBackButton?: boolean;
 }) {
   return (
-    <View className="px-4 pt-2 pb-2 z-10 relative">
+    <View className="px-4 pt-2 pb-2 bg-surface">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
           {showBackButton && onBack && (

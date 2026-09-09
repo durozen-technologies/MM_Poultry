@@ -232,3 +232,76 @@ async def test_bird_size_persisted_on_update(client: AsyncClient) -> None:
     assert body["items"][0]["bird_size"] == "Large"
     assert body["items"][0]["notes"] == "morning"
     assert body["items"][0]["requested_kg"] == "18.000"
+
+
+@pytest.mark.asyncio
+async def test_place_new_order_after_confirmed(client: AsyncClient) -> None:
+    """Retailer with a confirmed order today can still place a new order (no 409)."""
+    _, admin = await create_org_with_admin(client, slug="rneword")
+    item = await create_default_item(client, admin["access_token"])
+    admin_headers = auth_headers(admin["access_token"])
+    _, login = await _create_retailer_user(
+        client, admin["access_token"], slug="rneword", username="rneword_ret"
+    )
+    r_headers = auth_headers(login["access_token"])
+
+    placed = await client.post(
+        "/retailer/orders/today",
+        json={"items": [{"item_id": item["id"], "requested_kg": "20.000", "total_boxes": 2}]},
+        headers=r_headers,
+    )
+    assert placed.status_code == 200
+    confirmed_id = placed.json()["id"]
+
+    confirm = await client.post(
+        f"/admin/orders/{confirmed_id}/confirm",
+        json={"expected_delivery_date": "10/10/2026"},
+        headers=admin_headers,
+    )
+    assert confirm.status_code == 200
+
+    second = await client.post(
+        "/retailer/orders/today",
+        json={"items": [{"item_id": item["id"], "requested_kg": "10.000", "total_boxes": 1}]},
+        headers=r_headers,
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["id"] != confirmed_id
+    assert second.json()["status"] == "PLACED"
+
+    today = await client.get("/retailer/orders/today", headers=r_headers)
+    assert today.status_code == 200
+    assert len(today.json()) == 2
+
+
+@pytest.mark.asyncio
+async def test_cannot_update_confirmed_order_by_id(client: AsyncClient) -> None:
+    _, admin = await create_org_with_admin(client, slug="rnoupdt")
+    item = await create_default_item(client, admin["access_token"])
+    admin_headers = auth_headers(admin["access_token"])
+    _, login = await _create_retailer_user(
+        client, admin["access_token"], slug="rnoupdt", username="rnoupdt_ret"
+    )
+    r_headers = auth_headers(login["access_token"])
+
+    placed = await client.post(
+        "/retailer/orders/today",
+        json={"items": [{"item_id": item["id"], "requested_kg": "20.000", "total_boxes": 2}]},
+        headers=r_headers,
+    )
+    order_id = placed.json()["id"]
+    await client.post(
+        f"/admin/orders/{order_id}/confirm",
+        json={"expected_delivery_date": "10/10/2026"},
+        headers=admin_headers,
+    )
+
+    blocked = await client.post(
+        "/retailer/orders/today",
+        json={
+            "order_id": order_id,
+            "items": [{"item_id": item["id"], "requested_kg": "25.000", "total_boxes": 3}],
+        },
+        headers=r_headers,
+    )
+    assert blocked.status_code == 409

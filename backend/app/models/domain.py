@@ -24,6 +24,8 @@ from app.core.timezone import now_ist
 from app.db.database import Base
 from app.models.base import BaseModelMixin
 from app.models.enums import (
+    DeliveryRunStatus,
+    DeliveryStopStatus,
     FarmLoadStatus,
     OrderStatus,
     PaymentType,
@@ -237,6 +239,110 @@ class FarmLoad(Base, BaseModelMixin):
     )
 
 
+class DeliveryRunFarmLoad(Base):
+    __tablename__ = "delivery_run_farm_loads"
+
+    delivery_run_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    farm_load_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), primary_key=True
+    )
+    allocated_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+
+
+class DeliveryRun(Base, BaseModelMixin):
+    __tablename__ = "delivery_runs"
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    farm_load_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), nullable=True, index=True
+    )
+    route_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("routes.id"), nullable=True, index=True
+    )
+    run_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    status: Mapped[DeliveryRunStatus] = mapped_column(
+        SqlEnum(DeliveryRunStatus, name="delivery_run_status", native_enum=False),
+        nullable=False,
+        default=DeliveryRunStatus.PLANNED,
+    )
+    driver_user_id: Mapped[UUID | None] = mapped_column(UUID_SQL_TYPE, nullable=True)
+    driver_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    planned_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    actual_loaded_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    returned_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    wastage_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    reconciled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reconciliation_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    farm_load_links: Mapped[list["DeliveryRunFarmLoad"]] = relationship(
+        "DeliveryRunFarmLoad",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+
+
+class DeliveryStop(Base, BaseModelMixin):
+    __tablename__ = "delivery_stops"
+    __table_args__ = (
+        UniqueConstraint("delivery_run_id", "retailer_id", name="uq_delivery_stop_run_retailer"),
+    )
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    delivery_run_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_runs.id"), nullable=False, index=True
+    )
+    retailer_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("retailers.id"), nullable=False, index=True
+    )
+    daily_order_id: Mapped[UUID | None] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("retailer_daily_orders.id"), nullable=True
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    status: Mapped[DeliveryStopStatus] = mapped_column(
+        SqlEnum(DeliveryStopStatus, name="delivery_stop_status", native_enum=False),
+        nullable=False,
+        default=DeliveryStopStatus.PENDING,
+    )
+    weighed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    scale_device_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    items: Mapped[list["DeliveryStopItem"]] = relationship(
+        "DeliveryStopItem",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+
+class DeliveryStopItem(Base, BaseModelMixin):
+    __tablename__ = "delivery_stop_items"
+    __table_args__ = (
+        UniqueConstraint("delivery_stop_id", "item_id", name="uq_delivery_stop_item"),
+    )
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    delivery_stop_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_stops.id"), nullable=False, index=True
+    )
+    item_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("items.id"), nullable=False, index=True
+    )
+    ordered_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    remaining_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    delivered_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    delivered_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gross_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    empty_box_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    gross_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    delivered_bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_override_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
 class DeliveryBill(Base, BaseModelMixin):
     __tablename__ = "delivery_bills"
     __table_args__ = (
@@ -247,8 +353,8 @@ class DeliveryBill(Base, BaseModelMixin):
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     bill_number: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     checkout_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    retailer_daily_order_id: Mapped[UUID] = mapped_column(
-        UUID_SQL_TYPE, ForeignKey("retailer_daily_orders.id"), nullable=False, unique=True
+    delivery_stop_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_stops.id"), nullable=False, unique=True
     )
     retailer_id: Mapped[UUID] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("retailers.id"), nullable=False, index=True
@@ -297,8 +403,6 @@ class DeliveryBillItem(Base, BaseModelMixin):
     box_charge: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, server_default=text("0.00")
     )
-
-    item: Mapped["Item"] = relationship("Item", lazy="selectin")
 
 
 class RetailerReturn(Base, BaseModelMixin):
@@ -368,6 +472,28 @@ class StockQuantityEvent(Base):
         DateTime(timezone=True),
         default=now_ist,
         server_default=text("CURRENT_TIMESTAMP"),
+        nullable=False,
+    )
+
+
+class TripWeightLoss(Base, BaseModelMixin):
+    __tablename__ = "trip_weight_losses"
+    __table_args__ = (UniqueConstraint("delivery_run_id", name="uq_trip_weight_loss_run"),)
+
+    id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
+    farm_load_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("farm_loads.id"), nullable=False, index=True
+    )
+    delivery_run_id: Mapped[UUID] = mapped_column(
+        UUID_SQL_TYPE, ForeignKey("delivery_runs.id"), nullable=False
+    )
+    loaded_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    delivered_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    loss_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    loss_pct: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=now_ist,
         nullable=False,
     )
 

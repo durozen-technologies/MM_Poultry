@@ -6,10 +6,18 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.timezone import today_ist
-from app.models.domain import DeliveryBill, Payment, RetailerDailyOrder
-from app.models.enums import OrderStatus, PaymentType
+from app.models.domain import (
+    DeliveryBill,
+    DeliveryRun,
+    DeliveryStop,
+    Payment,
+    RetailerDailyOrder,
+    RetailerDailyOrderItem,
+)
+from app.models.enums import DeliveryRunStatus, OrderStatus, PaymentType
 from app.schemas import (
     DailyOrderOut,
     DeliveryBillOut,
@@ -34,6 +42,8 @@ def _estimated_delivery_date(order_date: date) -> date:
 
 def build_tracking_stages(
     order_status: OrderStatus,
+    *,
+    run_in_progress: bool = False,
 ) -> list[OrderTrackingStage]:
     if order_status == OrderStatus.CANCELLED:
         return [OrderTrackingStage(key="cancelled", label="Cancelled", completed=True, active=True)]
@@ -51,6 +61,9 @@ def build_tracking_stages(
         OrderStatus.PARTIAL: 3,
         OrderStatus.FULFILLED: 3,
     }.get(order_status, 0)
+
+    if run_in_progress and progress >= 1:
+        progress = max(progress, 2)
 
     return [
         OrderTrackingStage(
@@ -123,6 +136,9 @@ async def list_retailer_orders(
     day = today_ist()
     stmt = (
         select(RetailerDailyOrder)
+        .options(
+            selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item)
+        )
         .where(RetailerDailyOrder.retailer_id == retailer_id)
         .order_by(RetailerDailyOrder.order_date.desc(), RetailerDailyOrder.id.desc())
         .limit(limit + 1)
@@ -156,7 +172,11 @@ async def get_retailer_order_detail(
     db: AsyncSession, retailer_id: UUID, order_id: UUID
 ) -> RetailerOrderDetailOut:
     order = await db.scalar(
-        select(RetailerDailyOrder).where(
+        select(RetailerDailyOrder)
+        .options(
+            selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item)
+        )
+        .where(
             RetailerDailyOrder.id == order_id,
             RetailerDailyOrder.retailer_id == retailer_id,
         )
@@ -164,15 +184,26 @@ async def get_retailer_order_detail(
     if order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
+    run_in_progress = False
+    if order.id:
+        stop = await db.scalar(select(DeliveryStop).where(DeliveryStop.daily_order_id == order.id))
+        if stop:
+            run = await db.scalar(select(DeliveryRun).where(DeliveryRun.id == stop.delivery_run_id))
+            if run and run.status == DeliveryRunStatus.IN_PROGRESS:
+                run_in_progress = True
+
     retailer = await get_retailer(db, retailer_id)
     base = DailyOrderOut.model_validate(order, from_attributes=True)
     base.retailer_name = retailer.name
     base.shop_name = retailer.shop_name
+    for i, model_item in enumerate(order.items):
+        if model_item.item:
+            base.items[i].item_name = model_item.item.name
     return RetailerOrderDetailOut(
         **base.model_dump(),
         estimated_delivery_date=order.expected_delivery_date
         or _estimated_delivery_date(order.order_date),
-        tracking_stages=build_tracking_stages(order.status),
+        tracking_stages=build_tracking_stages(order.status, run_in_progress=run_in_progress),
     )
 
 
@@ -230,7 +261,8 @@ async def list_retailer_bills(
 async def get_retailer_bill(db: AsyncSession, retailer_id: UUID, bill_id: UUID) -> DeliveryBillOut:
     stmt = (
         select(DeliveryBill, RetailerDailyOrder.order_number)
-        .outerjoin(RetailerDailyOrder, DeliveryBill.retailer_daily_order_id == RetailerDailyOrder.id)
+        .join(DeliveryStop, DeliveryBill.delivery_stop_id == DeliveryStop.id)
+        .outerjoin(RetailerDailyOrder, DeliveryStop.daily_order_id == RetailerDailyOrder.id)
         .where(
             DeliveryBill.id == bill_id,
             DeliveryBill.retailer_id == retailer_id,

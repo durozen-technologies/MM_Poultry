@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { Alert } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { getRetailerOrder, upsertTodayOrder } from "../api/retailer";
-import { getApiErrorMessage } from "../api/client";
+import { getApiErrorCode, getApiErrorMessage } from "../api/client";
 import { apiItems } from "../api/items";
 import type { OrderItemCreate } from "../types/api";
 
@@ -103,7 +104,17 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
       await upsertTodayOrder({ order_id: orderId, items: payloadItems });
       onSuccess();
     } catch (e) {
-      setMessage(getApiErrorMessage(e));
+      const code = getApiErrorCode(e);
+      const detail = getApiErrorMessage(e);
+      if (code === "CONFLICT") {
+        Alert.alert(
+          "Order Already Completed",
+          detail || "Today's order has already been processed. Contact admin for changes.",
+          [{ text: "OK", onPress: onSuccess }],
+        );
+      } else {
+        setMessage(detail);
+      }
     } finally {
       setBusy(false);
     }

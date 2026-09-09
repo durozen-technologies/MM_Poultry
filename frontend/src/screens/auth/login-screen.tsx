@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -24,29 +24,25 @@ export function LoginScreen() {
   const [showOrgField, setShowOrgField] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onSubmit = useCallback(async () => {
     if (loading) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        await login(username.trim(), password, orgSlug.trim() || undefined);
-        setShowOrgField(false);
-      } catch (e) {
-        if (isHttpStatus(e, 409)) {
-          // Multiple accounts with same username — need org code to disambiguate
-          setShowOrgField(true);
-          setError("Multiple accounts found. Please enter your Organization Code below.");
-        } else {
-          setError(getApiErrorMessage(e));
-        }
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    setError(null);
+    try {
+      await login(username.trim(), password, orgSlug.trim() || undefined);
+      setShowOrgField(false);
+    } catch (e) {
+      if (isHttpStatus(e, 409)) {
+        // Multiple accounts with same username — need org code to disambiguate
+        setShowOrgField(true);
+        setError("More than one account uses this username. Enter your organisation code, then tap Login again.");
+      } else {
+        setError(getApiErrorMessage(e));
       }
-    }, 300);
+    } finally {
+      setLoading(false);
+    }
   }, [loading, login, username, password, orgSlug]);
 
   return (
@@ -63,7 +59,7 @@ export function LoginScreen() {
         enableOnAndroid={true}
         extraScrollHeight={20}
       >
-          <View className="flex-1 justify-center items-center px-6 py-8 min-h-screen" style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}>
+          <View className="flex-1 justify-center items-center px-6 py-8" style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}>
             <View className="w-full max-w-sm justify-center items-center">
               
               <Animated.View entering={FadeInDown.springify().damping(22)} className="flex-col items-center mb-10 w-full mt-8">
@@ -81,15 +77,20 @@ export function LoginScreen() {
 
               <Animated.View entering={FadeInUp.delay(100).springify().damping(22)} className="w-full bg-white rounded-[32px] shadow-sm border border-black/5 elevation-md p-8 flex-col gap-6 mb-8">
                 <View className="flex-col gap-2">
-                  <Text className="text-label-md text-on-surface font-semibold ml-1">USERNAME</Text>
+                  <Text className="text-label-md text-on-surface font-semibold ml-1">Username</Text>
                   <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#012D1D]">
-                    <View className="absolute left-4 z-10">
+                    <View className="absolute left-4 z-10" pointerEvents="none">
                       <MaterialIcons name="person-outline" size={22} className="text-[#012D1D]/70" />
                     </View>
                     <TextInput
                       className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                       placeholder="e.g. admin"
                       autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="username"
+                      accessibilityLabel="Username"
+                      accessibilityHint="Enter the username given by your wholesaler"
+                      returnKeyType="next"
                       value={username}
                       onChangeText={setUsername}
                     />
@@ -97,7 +98,7 @@ export function LoginScreen() {
                 </View>
 
                 <View className="flex-col gap-2">
-                  <Text className="text-label-md text-on-surface font-semibold ml-1">PASSWORD</Text>
+                  <Text className="text-label-md text-on-surface font-semibold ml-1">Password</Text>
                   <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30 focus:border-[#012D1D]">
                     <View className="absolute left-4 z-10">
                       <MaterialIcons name="lock-outline" size={22} className="text-[#012D1D]/70" />
@@ -106,11 +107,16 @@ export function LoginScreen() {
                       className="flex-1 pl-12 pr-12 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                       placeholder="Enter password"
                       secureTextEntry={!showPassword}
+                      autoComplete="password"
+                      accessibilityLabel="Password"
+                      accessibilityHint="Enter your account password"
+                      returnKeyType="done"
+                      onSubmitEditing={onSubmit}
                       value={password}
                       onChangeText={setPassword}
                     />
-                    <Pressable accessibilityRole="button"
-                      className="absolute right-3 p-2 rounded-full z-10 active:opacity-70"
+                    <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-1 w-11 h-11 items-center justify-center rounded-full z-10 active:opacity-70"
                       onPress={() => setShowPassword(!showPassword)}
                     >
                       <MaterialIcons
@@ -124,39 +130,45 @@ export function LoginScreen() {
 
                 {showOrgField ? (
                   <Animated.View entering={FadeInDown} className="flex-col gap-2">
-                    <Text className="text-label-md text-on-surface font-semibold ml-1">ORGANIZATION CODE</Text>
+                    <Text className="text-label-md text-on-surface font-semibold ml-1">Organisation code</Text>
                     <View className="relative flex-row items-center bg-surface-container-low rounded-2xl border border-outline-variant/30">
-                      <View className="absolute left-4 z-10">
+                      <View className="absolute left-4 z-10" pointerEvents="none">
                         <MaterialIcons name="business" size={22} className="text-[#012D1D]/70" />
                       </View>
                       <TextInput
                         className="w-full pl-12 pr-4 py-3 text-body-lg text-on-surface h-14 placeholder:text-outline"
                         placeholder="e.g. demo"
                         autoCapitalize="none"
+                        autoCorrect={false}
+                        accessibilityLabel="Organisation code"
+                        accessibilityHint="Ask your wholesaler for this code if you do not know it"
+                        returnKeyType="done"
+                        onSubmitEditing={onSubmit}
                         value={orgSlug}
                         onChangeText={setOrgSlug}
                       />
                     </View>
+                    <Text className="text-body-sm text-on-surface-variant ml-1">Find this on your last bill or ask your wholesaler.</Text>
                   </Animated.View>
                 ) : null}
 
                 {error ? (
-                  <Animated.View entering={FadeInDown} className="bg-error-container p-3 rounded-xl flex-row items-center">
+                  <Animated.View entering={FadeInDown} accessibilityRole="alert" accessibilityLiveRegion="polite" className="bg-error-container p-3 rounded-xl flex-row items-center">
                     <MaterialIcons name="error-outline" size={18} className="text-on-error-container mr-2" />
                     <Text className="text-on-error-container text-body-sm flex-1">{error}</Text>
                   </Animated.View>
                 ) : null}
 
-                <Pressable accessibilityRole="button"
+                <Pressable accessibilityRole="button" accessibilityLabel="Login" accessibilityHint="Sign in to Trader's Hub" accessibilityState={{ disabled: loading, busy: loading }}
                   className="w-full bg-[#1B4332] h-14 rounded-full flex-row items-center justify-center active:opacity-80 mt-2 shadow-sm"
                   onPress={onSubmit}
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#ffffff" />
+                    <ActivityIndicator color="#ffffff" accessibilityLabel="Signing in" />
                   ) : (
                     <Text className="text-white font-bold text-label-lg tracking-wider">
-                      LOGIN
+                      Login
                     </Text>
                   )}
                 </Pressable>

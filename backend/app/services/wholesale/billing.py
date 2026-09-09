@@ -15,6 +15,8 @@ from app.models.domain import (
     BillSequence,
     DeliveryBill,
     DeliveryBillItem,
+    DeliveryRun,
+    DeliveryStop,
     FarmLoad,
     Payment,
     Retailer,
@@ -22,6 +24,7 @@ from app.models.domain import (
     RetailerDailyOrderItem,
 )
 from app.models.enums import (
+    DeliveryStopStatus,
     OrderStatus,
     PaymentType,
     PrintStatus,
@@ -35,85 +38,115 @@ from app.schemas.billing import (
     DeliveryBillOut,
     PrintStatusUpdate,
 )
+from app.schemas.delivery import DeliveryStopOut, WeighRequest
 from app.schemas.report import OpsDashboard
 from app.services.wholesale.common import ZERO, _get_org_settings, q_kg, q_money
 from app.services.wholesale.retailers import get_retailer
 
 
-async def _order_out(db: AsyncSession, order: RetailerDailyOrder) -> RetailerDailyOrder:
-    """Re-fetch order with items eager-loaded."""
+async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
+    """Re-fetch stop with items eager-loaded and return the Pydantic schema."""
     refreshed = await db.scalar(
-        select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
-        .where(RetailerDailyOrder.id == order.id)
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop.id)
     )
-    return refreshed or order
+    return DeliveryStopOut.model_validate(refreshed or stop)
 
 
-async def weigh_order_items(
+async def weigh_stop(
     db: AsyncSession,
-    order_id: UUID,
-    items_payload: list[dict],
+    stop_id: UUID,
+    payload: WeighRequest,
     *,
     actor_role: UserRole,
-) -> None:
-    """Weigh items for an order (replaces weigh_stop)."""
-    from app.services.wholesale.rates import resolve_rate
-
-    order = await db.scalar(
-        select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
-        .where(RetailerDailyOrder.id == order_id)
+) -> DeliveryStopOut:
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
     )
-    if order is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-
-    if order.status not in (OrderStatus.ACKNOWLEDGED, OrderStatus.DISPATCHED):
+    if stop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
+    if stop.status in {DeliveryStopStatus.SKIPPED, DeliveryStopStatus.FAILED}:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop not weighable")
+    if stop.status == DeliveryStopStatus.BILLED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stop already billed")
+    if payload.weight_override_reason and actor_role != UserRole.ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Order in status {order.status.value} cannot be weighed",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin may override weight with reason",
+        )
+    if not stop.items:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Stop has no items to weigh"
         )
 
-    payload_item_map = {UUID(pi["item_id"]): pi for pi in items_payload}
-
-    for item in order.items:
+    payload_item_map = {pi.item_id: pi for pi in payload.items}
+    # Validate all stop items are present in payload
+    missing = [str(i.item_id) for i in stop.items if i.item_id not in payload_item_map]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Missing weigh data for items: {', '.join(missing)}",
+        )
+    # Validate no extra items
+    unknown = [str(k) for k in payload_item_map if k not in {i.item_id for i in stop.items}]
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown item_ids in payload: {', '.join(unknown)}",
+        )
+    for item in stop.items:
         pi = payload_item_map.get(item.item_id)
         if pi:
-            weight = q_kg(Decimal(str(pi.get("weight_kg", 0))))
-            if weight <= ZERO:
+            if pi.weight_kg <= Decimal("0"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Weight must be > 0 for item {item.item_id}",
                 )
-            boxes = int(pi.get("delivered_boxes", 1))
-            if boxes <= 0:
+            if pi.delivered_boxes <= 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Delivered boxes must be > 0 for item {item.item_id}",
                 )
-            live_rate = await resolve_rate(db, item.item_id, order.retailer_id, today_ist())
-            item.locked_rate_per_kg = live_rate
+            weight = q_kg(pi.weight_kg)
+            if weight > Decimal("10000"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Weight {weight}kg exceeds sanity limit for item {item.item_id}",
+                )
+            item.delivered_weight_kg = weight
+            item.delivered_boxes = pi.delivered_boxes
+            item.delivered_bird_count = pi.delivered_bird_count
+            item.gross_amount = q_money(weight * item.rate_per_kg)
+            item.remaining_kg = q_kg(max(item.ordered_kg - weight, ZERO))
+            if payload.weight_override_reason:
+                item.weight_override_reason = payload.weight_override_reason[:500]
+            if payload.scale_device_id:
+                stop.scale_device_id = payload.scale_device_id[:120]
 
+    stop.status = DeliveryStopStatus.WEIGHED
+    stop.weighed_at = now_ist()
     await db.flush()
+    return await _stop_out(db, stop)
 
 
-def _preview_from_order(order: RetailerDailyOrder, payload: BillPreviewRequest) -> BillPreviewOut:
+def _preview_from_stop(stop: DeliveryStop, payload: BillPreviewRequest) -> BillPreviewOut:
     items_out = []
     total_amount = ZERO
-    for item in order.items:
-        if item.locked_rate_per_kg is None:
+    for item in stop.items:
+        if item.delivered_weight_kg is None or item.gross_amount is None:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Order items not weighed/locked"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Stop items not weighed fully"
             )
-        requested_kg = item.requested_kg or ZERO
-        amount = q_money(requested_kg * item.locked_rate_per_kg)
-        total_amount += amount
+        total_amount += item.gross_amount
         items_out.append(
             BillItemPreviewOut(
                 item_id=item.item_id,
-                weight_kg=requested_kg,
-                rate_per_kg=item.locked_rate_per_kg,
-                amount=amount,
+                weight_kg=item.delivered_weight_kg,
+                rate_per_kg=item.rate_per_kg,
+                amount=item.gross_amount,
             )
         )
 
@@ -126,8 +159,8 @@ def _preview_from_order(order: RetailerDailyOrder, payload: BillPreviewRequest) 
             detail="Payments exceed bill total",
         )
     return BillPreviewOut(
-        stop_id=order.id,
-        retailer_id=order.retailer_id,
+        stop_id=stop.id,
+        retailer_id=stop.retailer_id,
         items=items_out,
         total_amount=total_amount,
         cash_payment=cash,
@@ -137,21 +170,18 @@ def _preview_from_order(order: RetailerDailyOrder, payload: BillPreviewRequest) 
 
 
 async def preview_bill(
-    db: AsyncSession, order_id: UUID, payload: BillPreviewRequest
+    db: AsyncSession, stop_id: UUID, payload: BillPreviewRequest
 ) -> BillPreviewOut:
-    order = await db.scalar(
-        select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
-        .where(RetailerDailyOrder.id == order_id)
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
     )
-    if order is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    if order.status not in (OrderStatus.ACKNOWLEDGED, OrderStatus.DISPATCHED):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Order must be acknowledged before billing",
-        )
-    return _preview_from_order(order, payload)
+    if stop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
+    if stop.status != DeliveryStopStatus.WEIGHED and stop.status != DeliveryStopStatus.BILLED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Stop not weighed")
+    return _preview_from_stop(stop, payload)
 
 
 async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
@@ -168,49 +198,50 @@ async def _next_bill_number(db: AsyncSession, bill_date: date) -> str:
 
 
 async def commit_bill(
-    db: AsyncSession, order_id: UUID, payload: BillCommitRequest
+    db: AsyncSession, stop_id: UUID, payload: BillCommitRequest
 ) -> DeliveryBillOut:
-    order = await db.scalar(
-        select(RetailerDailyOrder)
-        .options(selectinload(RetailerDailyOrder.items))
-        .where(RetailerDailyOrder.id == order_id)
+    stop = await db.scalar(
+        select(DeliveryStop)
+        .options(selectinload(DeliveryStop.items))
+        .where(DeliveryStop.id == stop_id)
     )
-    if order is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if stop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
 
     checkout_id = (payload.checkout_id or "").strip() or str(uuid4())
 
+    # checkout_id scoping: check by checkout_id globally for idempotency, but ensure same stop
     by_checkout = await db.scalar(
         select(DeliveryBill)
         .options(selectinload(DeliveryBill.items))
         .where(DeliveryBill.checkout_id == checkout_id)
     )
     if by_checkout:
-        if by_checkout.retailer_daily_order_id != order_id:
+        if by_checkout.delivery_stop_id != stop_id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="checkout_id already used for different order",
+                detail="checkout_id already used for different stop",
             )
         return DeliveryBillOut.model_validate(by_checkout, from_attributes=True)
 
     existing = await db.scalar(
         select(DeliveryBill)
         .options(selectinload(DeliveryBill.items))
-        .where(DeliveryBill.retailer_daily_order_id == order_id)
+        .where(DeliveryBill.delivery_stop_id == stop_id)
     )
-    if existing and order.status == OrderStatus.FULFILLED:
+    if existing and stop.status == DeliveryStopStatus.BILLED:
         return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
-    if order.status not in (OrderStatus.ACKNOWLEDGED, OrderStatus.DISPATCHED):
+    if stop.status not in {DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Order must be acknowledged before commit",
+            detail="Stop must be weighed before commit",
         )
 
-    preview = _preview_from_order(
-        order, BillPreviewRequest(cash_payment=payload.cash_payment, upi_payment=payload.upi_payment)
+    preview = _preview_from_stop(
+        stop, BillPreviewRequest(cash_payment=payload.cash_payment, upi_payment=payload.upi_payment)
     )
-    retailer = await get_retailer(db, order.retailer_id)
+    retailer = await get_retailer(db, stop.retailer_id)
     settings = await _get_org_settings(db)
     if (
         settings.enforce_credit_limit
@@ -243,7 +274,13 @@ async def commit_bill(
             if bill_item:
                 bill_item.weight_kg = prev_item.weight_kg
                 bill_item.amount = prev_item.amount
-        order.status = OrderStatus.FULFILLED
+        stop.status = DeliveryStopStatus.BILLED
+        if stop.daily_order_id:
+            order = await db.scalar(
+                select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
+            )
+            if order:
+                order.status = OrderStatus.FULFILLED
         await db.flush()
         return DeliveryBillOut.model_validate(existing, from_attributes=True)
 
@@ -254,8 +291,8 @@ async def commit_bill(
     bill = DeliveryBill(
         bill_number=bill_number,
         checkout_id=checkout_id,
-        retailer_daily_order_id=order.id,
-        retailer_id=order.retailer_id,
+        delivery_stop_id=stop.id,
+        retailer_id=stop.retailer_id,
         bill_date=bill_date,
         total_amount=preview.total_amount,
         cash_payment=preview.cash_payment,
@@ -268,12 +305,13 @@ async def commit_bill(
         await db.flush()
     except IntegrityError:
         await db.rollback()
+        # Race on checkout_id or bill_number or delivery_stop_id — fetch existing
         existing_race = await db.scalar(
             select(DeliveryBill)
             .options(selectinload(DeliveryBill.items))
             .where(
                 (DeliveryBill.checkout_id == checkout_id)
-                | (DeliveryBill.retailer_daily_order_id == order_id)
+                | (DeliveryBill.delivery_stop_id == stop_id)
             )
         )
         if existing_race:
@@ -297,8 +335,8 @@ async def commit_bill(
     collected = preview.cash_payment + preview.upi_payment
     if collected > ZERO:
         payment = Payment(
-            retailer_id=order.retailer_id,
-            delivery_bill_id=None,
+            retailer_id=stop.retailer_id,
+            delivery_bill_id=None,  # set after flush
             payment_date=bill_date,
             cash_amount=preview.cash_payment,
             upi_amount=preview.upi_payment,
@@ -308,7 +346,13 @@ async def commit_bill(
         )
         db.add(payment)
 
-    order.status = OrderStatus.FULFILLED
+    stop.status = DeliveryStopStatus.BILLED
+    if stop.daily_order_id:
+        order = await db.scalar(
+            select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
+        )
+        if order:
+            order.status = OrderStatus.FULFILLED
 
     try:
         await db.flush()
@@ -405,7 +449,7 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
                 func.coalesce(func.sum(DeliveryBillItem.weight_kg), 0),
                 func.coalesce(
                     func.sum(DeliveryBill.total_amount), 0
-                ),
+                ),  # Note: this might double count if joined naively, so we separate it.
             )
             .select_from(DeliveryBill)
             .outerjoin(DeliveryBillItem, DeliveryBill.id == DeliveryBillItem.delivery_bill_id)
@@ -449,9 +493,22 @@ async def ops_dashboard(db: AsyncSession, on_date: date | None = None) -> OpsDas
         or 0
     )
 
-    completed = 0
-    skipped = 0
-    pending = 0
+    stops_res = await db.execute(
+        select(DeliveryStop.status, func.count(DeliveryStop.id))
+        .join(DeliveryRun, DeliveryStop.delivery_run_id == DeliveryRun.id)
+        .where(DeliveryRun.run_date == day)
+        .group_by(DeliveryStop.status)
+    )
+
+    stops_counts = {row.status: row.count for row in stops_res.mappings()}
+
+    completed = stops_counts.get(DeliveryStopStatus.BILLED, 0)
+    skipped = stops_counts.get(DeliveryStopStatus.SKIPPED, 0) + stops_counts.get(
+        DeliveryStopStatus.FAILED, 0
+    )
+    pending = stops_counts.get(DeliveryStopStatus.PENDING, 0) + stops_counts.get(
+        DeliveryStopStatus.WEIGHED, 0
+    )
 
     loss_kg = q_kg(max(loaded_kg - delivered_kg, ZERO)) if loaded_kg > ZERO else ZERO
     loss_pct = (

@@ -192,7 +192,7 @@ function buildReceiptImageExportScript() {
                 String(weight) +
                 " " +
                 String(size) +
-                'px "Noto Sans Tamil", "Nirmala UI", "Latha", Arial, Helvetica, sans-serif';
+                'px "Noto Sans Tamil", "Nirmala UI", "Latha", system-ui, -apple-system, sans-serif';
               context.textBaseline = "top";
               context.fillStyle = "#000000";
             }
@@ -1069,7 +1069,7 @@ export function buildReceiptHtmlMarkup(exportPayload: ReceiptExportPayload) {
           }
           html { background: #fff; }
           body {
-            font-family: "Noto Sans Tamil", "Nirmala UI", "Latha", Arial, Helvetica, sans-serif;
+            font-family: "Noto Sans Tamil", "Nirmala UI", "Latha", system-ui, -apple-system, sans-serif;
             color: #000000;
             margin: 0;
             padding: 12px;
@@ -1114,7 +1114,7 @@ export const printPaymentReceipt = async (payment: any, driverName: string) => {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
         <style>
-          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 10px; color: #000; font-size: 14px; line-height: 1.4; }
+          body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; color: #000; font-size: 14px; line-height: 1.4; }
           .header { text-align: center; margin-bottom: 15px; border-bottom: 2px dashed #000; padding-bottom: 10px; }
           .title { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; text-transform: uppercase; }
           .subtitle { font-size: 12px; margin: 0; }

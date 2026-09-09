@@ -86,10 +86,10 @@ export function RetailerLedgerScreen() {
         }
         renderItem={({ item: entry }) => (
           <View className="bg-white rounded-[16px] p-4 border border-black/5 shadow-sm elevation-sm mb-3">
-            <View className="flex-row justify-between mb-2">
+            <View className="flex-row justify-between">
               <View>
-                <Text className={`font-label-sm uppercase font-bold tracking-wider ${entry.entry_type === 'INLET' ? 'text-primary' : 'text-error'}`}>{entry.entry_type}</Text>
-                <Text className="font-label-md text-on-surface-variant mt-1">
+                <Text className="font-headline-sm text-on-surface font-semibold mb-1">{entry.entry_type}</Text>
+                <Text className="font-label-md text-on-surface-variant">
                   {formatIstDate(entry.entry_date)}
                   {entry.reference ? ` · ${entry.reference}` : ""}
                 </Text>
@@ -99,29 +99,13 @@ export function RetailerLedgerScreen() {
                   <Text className="font-headline-sm text-error font-bold">-₹{entry.debit}</Text>
                 ) : null}
                 {Number(entry.credit) > 0 ? (
-                  <Text className="font-headline-sm text-primary font-bold">+₹{entry.credit}</Text>
+                  <Text className="font-headline-sm text-[#0052CC] font-bold">+₹{entry.credit}</Text>
                 ) : null}
                 <Text className="font-label-md text-on-surface-variant mt-1 font-semibold">
                   Bal ₹{entry.balance_after ?? "—"}
                 </Text>
               </View>
             </View>
-            {entry.notes ? (
-              <Text className="font-body-sm text-on-surface-variant italic mb-2">{entry.notes}</Text>
-            ) : null}
-            {entry.bill_items && entry.bill_items.length > 0 ? (
-              <View className="bg-surface-container-low rounded-xl p-3 mt-1 border border-outline-variant/30">
-                {entry.bill_items.map((b, i) => (
-                   <View key={i} className={`flex-row justify-between items-center py-1 ${i !== entry.bill_items!.length - 1 ? 'border-b border-outline-variant/20' : ''}`}>
-                     <Text className="font-label-sm text-on-surface">{b.item_name}</Text>
-                     <View className="flex-row gap-4">
-                       <Text className="font-label-sm text-on-surface-variant">{b.net_kg} kg</Text>
-                       <Text className="font-label-sm font-semibold text-on-surface">₹{b.amount}</Text>
-                     </View>
-                   </View>
-                ))}
-              </View>
-            ) : null}
           </View>
         )}
       />

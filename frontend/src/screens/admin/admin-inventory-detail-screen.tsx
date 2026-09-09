@@ -27,6 +27,7 @@ export function AdminInventoryDetailScreen({ route, navigation }: { route: any, 
     const q = searchQuery.toLowerCase();
     const matchesSearch = !q || 
       (load.farm_name?.toLowerCase().includes(q)) ||
+      (load.vehicle_number?.toLowerCase().includes(q)) ||
       (load.contact_phone?.toLowerCase().includes(q));
     
     let matchesDate = true;

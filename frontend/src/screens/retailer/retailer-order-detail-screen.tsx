@@ -3,9 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
 import { getRetailerOrder } from "../../api/retailer";
-import { apiItems } from "../../api/items";
 import type { RetailerOrderDetail } from "../../types/api";
 import { formatIstDate } from "../../utils/ist-date";
 
@@ -15,13 +13,6 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
   const [order, setOrder] = useState<RetailerOrderDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  const { data: itemsPage } = useQuery({
-    queryKey: ["retailer_items"],
-    queryFn: () => apiItems.list(),
-  });
-  const allItems = itemsPage?.items || [];
-  const getItemName = (id: string) => allItems.find((i: any) => i.id === id)?.name || "Unknown Item";
 
   const refresh = useCallback(async () => {
     if (!orderId) return;
@@ -72,7 +63,7 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
             {order.items?.map((item) => (
               <View key={item.id} className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-3">
                 <Text className="font-body-lg text-on-surface font-semibold mb-2">
-                  {getItemName(item.item_id)}
+                  {item.item_name || "Item"}
                 </Text>
                 <View className="flex-row items-center gap-3 py-1">
                   <MaterialIcons name="scale" size={18} className="text-on-surface-variant" />

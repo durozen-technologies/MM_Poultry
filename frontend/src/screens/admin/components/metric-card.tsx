@@ -13,12 +13,14 @@ export function MetricCard({
   valueColor?: string;
 }) {
   return (
-    <View className="w-[48%] bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/30">
+    <View className="w-[48%] shrink-0 bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/30">
       <View className="flex-row items-center gap-2 mb-2">
-        <MaterialIcons name={icon} size={18} className="text-on-surface" />
-        <Text className="font-label-md text-on-surface-variant">{label}</Text>
+        <View className="shrink-0">
+          <MaterialIcons name={icon} size={18} className="text-on-surface" />
+        </View>
+        <Text className="font-label-md text-on-surface-variant flex-1" numberOfLines={1}>{label}</Text>
       </View>
-      <Text className={`font-display-lg ${valueColor}`}>{value}</Text>
+      <Text className={`font-display-lg ${valueColor}`} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
     </View>
   );
 }

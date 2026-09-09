@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "f85bff95fa2b"
+TENANT_MIGRATION_HEAD = "a1b2c3d40002"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -68,6 +68,11 @@ def _tenant_table_names() -> set[str]:
         "farms",
         "org_settings",
         "farm_loads",
+        "delivery_runs",
+        "delivery_run_farm_loads",
+        "delivery_stops",
+        "delivery_stop_items",
+        "trip_weight_losses",
         "delivery_bills",
         "delivery_bill_items",
         "payments",
@@ -348,6 +353,11 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                 "order_sequences",
                 "items",
                 "retailer_daily_order_items",
+                "delivery_runs",
+                "delivery_run_farm_loads",
+                "delivery_stops",
+                "delivery_stop_items",
+                "trip_weight_losses",
                 "delivery_bill_items",
                 "stock_quantity_events",
             }:
@@ -461,6 +471,46 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
                   ) THEN
                     ALTER TABLE delivery_bills
                       ADD CONSTRAINT uq_delivery_bill_checkout UNIQUE (checkout_id);
+                  END IF;
+                END $$;
+                """
+            )
+        )
+        # Delivery-runs restore (tenant head a1b2c3d40002): the removal was
+        # reverted — ensure delivery tables/columns exist and drop the
+        # interim retailer_daily_order_id linkage (mirrors 40002).
+        await conn.execute(
+            text(
+                "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS delivery_stop_id UUID"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE delivery_bills DROP CONSTRAINT IF EXISTS fk_delivery_bills_order"
+            )
+        )
+        await conn.execute(text("DROP INDEX IF EXISTS uq_delivery_bills_order"))
+        await conn.execute(
+            text(
+                "ALTER TABLE delivery_bills DROP COLUMN IF EXISTS retailer_daily_order_id"
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'fk_delivery_bills_stop'
+                  ) THEN
+                    ALTER TABLE delivery_bills
+                      ADD CONSTRAINT fk_delivery_bills_stop
+                      FOREIGN KEY (delivery_stop_id) REFERENCES delivery_stops(id);
+                  END IF;
+                  IF NOT EXISTS (
+                    SELECT 1 FROM delivery_bills WHERE delivery_stop_id IS NULL
+                  ) THEN
+                    ALTER TABLE delivery_bills ALTER COLUMN delivery_stop_id SET NOT NULL;
                   END IF;
                 END $$;
                 """

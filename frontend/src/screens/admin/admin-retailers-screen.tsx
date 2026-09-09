@@ -130,24 +130,30 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
           <>
             <View className="flex-col gap-4 mb-6 pt-2">
               {/* KPIs */}
-              <View className="flex-row gap-4 mb-2">
-                <View className="w-[48%] bg-primary rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <View className="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-full" />
-                  <Text className="font-label-md text-primary-fixed font-bold mb-1 uppercase tracking-wider">Active Retailers</Text>
-                  <Text className="font-display-md text-white font-bold">{activeCount}</Text>
-                </View>
-                <View className="w-[48%] bg-error-container/80 rounded-2xl p-4 shadow-sm border border-error/20 relative overflow-hidden">
-                  <View className="absolute right-3 top-3 w-8 h-8 bg-error/10 rounded-full items-center justify-center">
-                    <MaterialIcons name="account-balance-wallet" size={16} className="text-error" />
+              <View className="flex-row gap-3 mb-2">
+                <View className="flex-1 min-w-0 bg-primary rounded-2xl p-4 shadow-sm flex-col">
+                  <View className="flex-row justify-between items-start mb-2">
+                    <Text className="font-label-md text-primary-fixed font-bold uppercase tracking-wider flex-1" numberOfLines={1}>Active Retailers</Text>
+                    <View className="w-8 h-8 shrink-0 bg-white/10 rounded-full items-center justify-center ml-1">
+                      <MaterialIcons name="storefront" size={16} className="text-primary-fixed" />
+                    </View>
                   </View>
-                  <Text className="font-label-md text-error font-bold mb-1 uppercase tracking-wider">Total Due</Text>
-                  <Text className="font-headline-sm text-on-error-container font-bold">₹{totalOutstanding.toLocaleString("en-IN")}</Text>
+                  <Text className="font-display-md text-white font-bold" numberOfLines={1} adjustsFontSizeToFit>{activeCount}</Text>
+                </View>
+                <View className="flex-1 min-w-0 bg-error-container/80 rounded-2xl p-4 shadow-sm border border-error/20 flex-col">
+                  <View className="flex-row justify-between items-start mb-2">
+                    <Text className="font-label-md text-error font-bold uppercase tracking-wider flex-1" numberOfLines={1}>Total Due</Text>
+                    <View className="w-8 h-8 shrink-0 bg-error/10 rounded-full items-center justify-center ml-1">
+                      <MaterialIcons name="account-balance-wallet" size={16} className="text-error" />
+                    </View>
+                  </View>
+                  <Text className="font-headline-sm text-on-error-container font-bold" numberOfLines={1} adjustsFontSizeToFit>₹{totalOutstanding.toLocaleString("en-IN")}</Text>
                 </View>
               </View>
 
               {/* Search */}
-              <View className="relative flex-row items-center">
-                <View className="absolute left-4 z-10">
+              <View className="flex-row items-center">
+                <View className="absolute left-4" pointerEvents="none">
                   <MaterialIcons name="search" size={20} className="text-on-surface-variant" />
                 </View>
                 <TextInput
@@ -165,7 +171,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                   <Pressable
                     key={f}
                     onPress={() => setFilter(f)}
-                    className={`h-10 px-5 rounded-full flex items-center justify-center border mr-3 transition-colors ${
+                    className={`h-10 px-5 rounded-full flex items-center justify-center border mr-3 ${
                       filter === f 
                         ? "bg-primary border-primary" 
                         : "bg-surface-container-lowest border-outline-variant/30"
@@ -228,7 +234,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
       {/* Ledger Modal for backwards compatibility until retailer_profile is built */}
       <Modal visible={!!selected} animationType="slide" transparent>
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-surface rounded-t-3xl h-[85%] overflow-hidden shadow-lg border-t border-outline-variant/20">
+          <View className="bg-surface rounded-t-3xl h-[85%] shadow-lg border-t border-outline-variant/20">
             <View className="flex-row justify-between items-center p-6 border-b border-outline-variant/20 bg-surface-container-lowest">
               <View>
                 <Text className="font-title-lg font-bold text-on-surface mb-1">
@@ -262,7 +268,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
               </View>
 
               <Text className="font-title-md font-bold text-on-surface mb-3">Recent Transactions</Text>
-              <View className="flex-1 mb-6 border border-outline-variant/30 rounded-2xl bg-surface-container-lowest overflow-hidden">
+              <View className="flex-1 mb-6 border border-outline-variant/30 rounded-2xl bg-surface-container-lowest">
                 <FlatList
                   data={selected?.entries || []}
                   keyExtractor={(_, idx) => String(idx)}
@@ -327,7 +333,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
                 </View>
                 
                 <Pressable
-                  className="bg-primary h-14 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-sm shadow-primary/30"
+                  className="bg-primary h-14 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:opacity-80 shadow-sm shadow-primary/30"
                   onPress={collect}
                 >
                   <Text className="text-white font-bold text-label-lg">Confirm Payment</Text>
@@ -355,12 +361,10 @@ const RetailerListItem = React.memo(({
   
   return (
     <Pressable
-      className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/20 active:scale-[0.98] transition-transform relative overflow-hidden"
+      className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/20 border-l-4 active:opacity-80"
+      style={{ borderLeftColor: item.is_active ? "#012d1d" : "#c1c9bf" }}
       onPress={onPress}
     >
-      {/* Left border indicator */}
-      <View className={`absolute top-0 left-0 w-1.5 h-full ${item.is_active ? 'bg-primary' : 'bg-surface-variant'}`} />
-
       <View className="flex-row justify-between items-start mb-4 ml-2">
         <View className="flex-col flex-1 pr-4">
           <Text className="font-title-lg text-on-surface font-bold tracking-tight mb-1" numberOfLines={1}>
@@ -410,7 +414,7 @@ const RetailerListItem = React.memo(({
         </View>
       </View>
 
-      <View className="bg-surface-container-highest/30 rounded-2xl p-4 ml-2 border border-outline-variant/10 flex-row justify-between items-center">
+      <View className="pt-4 mt-2 border-t border-outline-variant/20 ml-2 flex-row justify-between items-center">
         <View className="flex-col">
           <Text className="font-label-sm text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Outstanding Balance

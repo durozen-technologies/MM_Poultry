@@ -56,7 +56,7 @@ class DeliveryBillOut(BaseModel):
     bill_number: str
     checkout_id: str
     order_number: str | None = Field(default=None)
-    retailer_daily_order_id: UUID
+    delivery_stop_id: UUID
     retailer_id: UUID
     bill_date: IstDate
     total_amount: Decimal

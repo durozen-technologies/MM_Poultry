@@ -263,7 +263,7 @@ const LoadListItem = React.memo(({ item, onPress }: { item: FarmLoad; onPress: (
           <View className="flex-row items-center gap-1.5 mb-1.5">
             <MaterialIcons name="local-shipping" size={14} className="text-on-surface-variant" />
             <Text className="font-label-sm text-on-surface font-bold uppercase tracking-wider">
-              {item.driver_name || "No driver"}
+              {item.vehicle_number || "No vehicle"}
             </Text>
           </View>
           <View className="flex-row items-end gap-1">

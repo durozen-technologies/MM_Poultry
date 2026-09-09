@@ -28,7 +28,7 @@ export function AdminActionFooter({
       )}
 
       <Pressable
-        className={`w-full bg-primary h-14 rounded-full flex items-center justify-center transition-all shadow-lg shadow-primary/30 ${
+        className={`w-full bg-primary h-14 rounded-full flex items-center justify-center transition-opacity shadow-lg shadow-primary/30 ${
           isPrimaryDisabled ? 'opacity-50' : 'active:opacity-80 active:scale-95'
         }`}
         onPress={onPrimaryPress}

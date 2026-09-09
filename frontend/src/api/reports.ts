@@ -1,10 +1,15 @@
 import { API_BASE_URL, api } from "./client";
-import type { ReportSummary } from "../types/api";
+import type { ReportSummary, TripWeightLoss } from "../types/api";
 
 export async function getReportSummary(period: "daily" | "weekly" | "monthly", onDate?: string) {
   const { data } = await api.get<ReportSummary>("/admin/reports/summary", {
     params: { period, on_date: onDate },
   });
+  return data;
+}
+
+export async function getTripWeightLoss(runId: string) {
+  const { data } = await api.get<TripWeightLoss | null>(`/admin/trips/${runId}/weight-loss`);
   return data;
 }
 

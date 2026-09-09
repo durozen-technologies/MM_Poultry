@@ -16,7 +16,6 @@ def test_admin_inventory_get(client: TestClient, mock_admin_auth: None) -> None:
     load_payload = {
         "farm_id": farm_id,
         "item_id": item_id,
-        "driver_name": "Test Driver",
         "loaded_weight_kg": 2500.0,
         "rate_per_kg": 95.0,
         "status": "OPEN",

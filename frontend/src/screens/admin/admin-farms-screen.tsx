@@ -29,14 +29,14 @@ export function AdminFarmsScreen({ navigation }: { navigation: any }) {
         {/* Action Buttons */}
         <View className="flex-row items-center justify-between gap-4">
           <Pressable
-            className="flex-1 h-14 bg-surface-container-lowest border border-primary/30 rounded-2xl flex-row items-center justify-center active:bg-primary/5 active:scale-[0.98] transition-all shadow-sm"
+            className="flex-1 h-14 bg-surface-container-lowest border border-primary/30 rounded-2xl flex-row items-center justify-center active:bg-primary/5 active:opacity-80 transition-opacity shadow-sm"
             onPress={() => navigation.navigate("FarmPurchase")}
           >
             <MaterialIcons name="add-circle-outline" size={20} className="text-primary mr-2" />
             <Text className="text-primary font-bold text-label-lg">New Load</Text>
           </Pressable>
           <Pressable
-            className="flex-1 h-14 bg-primary rounded-2xl flex-row items-center justify-center active:opacity-90 active:scale-[0.98] transition-all shadow-sm shadow-primary/30"
+            className="flex-1 h-14 bg-primary rounded-2xl flex-row items-center justify-center active:opacity-80 transition-opacity shadow-sm shadow-primary/30"
             onPress={() => navigation.navigate("AdminFarmsInfo")}
           >
             <MaterialIcons name="agriculture" size={20} color="white" className="mr-2" />
