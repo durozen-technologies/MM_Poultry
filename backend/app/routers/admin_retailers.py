@@ -10,15 +10,11 @@ from app.models.enums import UserRole
 from app.schemas import (
     CursorPage,
     LedgerOut,
-    PaymentCreate,
-    PaymentOut,
     RateOut,
     RateUpsert,
     RetailerCreate,
     RetailerOut,
     RetailerPortalUserCreate,
-    RetailerReturnCreate,
-    RetailerReturnOut,
     RetailerUpdate,
     UserOut,
 )
@@ -116,19 +112,3 @@ async def admin_ledger(
     return await svc.get_ledger(auth.db, retailer_id)
 
 
-@router.post("/admin/retailers/{retailer_id}/payments", response_model=PaymentOut)
-async def admin_payment(
-    retailer_id: UUID,
-    payload: PaymentCreate,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
-) -> PaymentOut:
-    return await svc.create_payment(auth.db, retailer_id, payload)
-
-
-@router.post("/admin/retailers/{retailer_id}/returns", response_model=RetailerReturnOut)
-async def admin_return(
-    retailer_id: UUID,
-    payload: RetailerReturnCreate,
-    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
-) -> RetailerReturnOut:
-    return await svc.create_return(auth.db, retailer_id, payload)

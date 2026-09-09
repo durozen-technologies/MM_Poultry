@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.timezone import today_ist
 from app.models.domain import (
     DeliveryBill,
     DeliveryStopItem,
@@ -22,81 +20,10 @@ from app.schemas import (
     LedgerBillItem,
     LedgerEntry,
     LedgerOut,
-    PaymentCreate,
-    PaymentOut,
     RetailerOut,
-    RetailerReturnCreate,
-    RetailerReturnOut,
 )
 from app.services.wholesale.common import ZERO, q_money
 from app.services.wholesale.retailers import get_retailer
-
-
-async def create_payment(db: AsyncSession, retailer_id: UUID, payload: PaymentCreate) -> PaymentOut:
-    retailer = await get_retailer(db, retailer_id)
-    total = q_money(payload.cash_amount + payload.upi_amount)
-    if total <= ZERO:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Payment amount required"
-        )
-    # Ensure total matches sum after quantize
-    if q_money(payload.cash_amount) + q_money(payload.upi_amount) != total:
-        total = q_money(q_money(payload.cash_amount) + q_money(payload.upi_amount))
-    payment = Payment(
-        retailer_id=retailer_id,
-        payment_date=payload.payment_date or today_ist(),
-        cash_amount=q_money(payload.cash_amount),
-        upi_amount=q_money(payload.upi_amount),
-        total_amount=total,
-        type=payload.type,
-        is_credit=payload.is_credit,
-        notes=payload.notes,
-    )
-    db.add(payment)
-    if payload.type == PaymentType.RECEIVED and payload.is_credit:
-        retailer.credit_balance = q_money(retailer.credit_balance - total)
-    await db.flush()
-    return PaymentOut.model_validate(payment, from_attributes=True)
-
-
-async def create_return(
-    db: AsyncSession, retailer_id: UUID, payload: RetailerReturnCreate
-) -> RetailerReturnOut:
-    retailer = await get_retailer(db, retailer_id)
-    if payload.total_amount <= ZERO:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Total amount required")
-    # ownership check for delivery_bill_id
-    if payload.delivery_bill_id is not None:
-        bill = await db.scalar(
-            select(DeliveryBill).where(DeliveryBill.id == payload.delivery_bill_id)
-        )
-        if bill is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Delivery bill not found"
-            )
-        if bill.retailer_id != retailer_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Delivery bill does not belong to this retailer",
-            )
-
-    ret = RetailerReturn(
-        retailer_id=retailer_id,
-        return_date=payload.return_date or today_ist(),
-        delivery_bill_id=payload.delivery_bill_id,
-        weight_kg=payload.weight_kg,
-        bird_count=payload.bird_count,
-        rate_per_kg=payload.rate_per_kg,
-        total_amount=payload.total_amount,
-        reason=payload.reason,
-    )
-    db.add(ret)
-
-    # Credit the retailer's balance
-    retailer.credit_balance = q_money(retailer.credit_balance - payload.total_amount)
-
-    await db.flush()
-    return RetailerReturnOut.model_validate(ret, from_attributes=True)
 
 
 async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:

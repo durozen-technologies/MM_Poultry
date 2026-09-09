@@ -2,7 +2,7 @@ import React, { useCallback, useState, useMemo } from "react";
 import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatList } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { getLedger, recordPayment, createRetailerPortalUser, createReturn } from "../../api/retailers";
+import { getLedger, createRetailerPortalUser } from "../../api/retailers";
 import { listTodayOrders } from "../../api/orders";
 import { apiItems } from "../../api/items";
 import { listRates, upsertRate } from "../../api/rates";
@@ -21,21 +21,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
   const [ledger, setLedger] = useState<LedgerOut | null>(null);
   const [orders, setOrders] = useState<DailyOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cash, setCash] = useState("");
-  const [upi, setUpi] = useState("");
-  const [paymentDate, setPaymentDate] = useState(todayIstDate());
-  const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [activeTab, setActiveTab] = useState("OVERVIEW");
-  const [portalUsername, setPortalUsername] = useState("");
-  const [portalPassword, setPortalPassword] = useState("");
-  const [portalLoading, setPortalLoading] = useState(false);
-  const [portalMessage, setPortalMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  
-  const [actionType, setActionType] = useState<"PAYMENT" | "RETURN" | "ADJUSTMENT">("PAYMENT");
-  const [isCredit, setIsCredit] = useState(true); // for adjustment
-  const [returnWeight, setReturnWeight] = useState("");
-  const [returnRate, setReturnRate] = useState("");
-  const [returnReason, setReturnReason] = useState("");
+
 
   const queryClient = useQueryClient();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -93,74 +79,11 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
     }, [refresh])
   );
 
-  const collect = useCallback(async () => {
-    if (actionType === "PAYMENT" || actionType === "ADJUSTMENT") {
-      if (!cash && !upi) {
-        setMsg({ text: "Please enter an amount.", type: 'error' });
-        setTimeout(() => setMsg(null), 3000);
-        return;
-      }
-      const c = Number(cash || "0");
-      const u = Number(upi || "0");
-      if (!Number.isFinite(c) || !Number.isFinite(u)) {
-        setMsg({ text: "Invalid amount", type: 'error' });
-        setTimeout(() => setMsg(null), 3000);
-        return;
-      }
-    }
-    if (actionType === "RETURN") {
-      if (!returnWeight || !returnRate) {
-        setMsg({ text: "Please enter both weight and rate.", type: 'error' });
-        setTimeout(() => setMsg(null), 3000);
-        return;
-      }
-      const w = Number(returnWeight);
-      const r = Number(returnRate);
-      if (!Number.isFinite(w) || !Number.isFinite(r) || w <= 0 || r <= 0) {
-        setMsg({ text: "Invalid weight or rate", type: 'error' });
-        setTimeout(() => setMsg(null), 3000);
-        return;
-      }
-    }
-    
-    setLoading(true);
-    try {
-      if (actionType === "RETURN") {
-        const w = Number(returnWeight);
-        const r = Number(returnRate);
-        await createReturn(retailerId, {
-          weight_kg: String(w),
-          rate_per_kg: String(r),
-          total_amount: String(w * r),
-          reason: returnReason.trim() || undefined,
-        });
-        setReturnWeight("");
-        setReturnRate("");
-        setReturnReason("");
-        setMsg({ text: "Return recorded successfully", type: 'success' });
-      } else {
-        await recordPayment(retailerId, {
-          cash_amount: cash || "0",
-          upi_amount: upi || "0",
-          payment_date: toApiDate(paymentDate) ?? undefined,
-          type: actionType === "ADJUSTMENT" ? "ADJUSTMENT" : "RECEIVED",
-          is_credit: actionType === "ADJUSTMENT" ? isCredit : true,
-        });
-        setCash("");
-        setUpi("");
-        setMsg({ text: actionType === "ADJUSTMENT" ? "Adjustment recorded" : "Payment recorded", type: 'success' });
-      }
-      setTimeout(() => setMsg(null), 3000);
-      await refresh();
-      queryClient.invalidateQueries({ queryKey: ["admin", "retailers"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
-    } catch (e) {
-      setMsg({ text: getApiErrorMessage(e), type: 'error' });
-      setTimeout(() => setMsg(null), 3000);
-    } finally {
-      setLoading(false);
-    }
-  }, [actionType, cash, upi, paymentDate, returnWeight, returnRate, returnReason, retailerId, isCredit, refresh, queryClient]);
+  const [activeTab, setActiveTab] = useState("OVERVIEW");
+  const [portalUsername, setPortalUsername] = useState("");
+  const [portalPassword, setPortalPassword] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalMessage, setPortalMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const createPortalAccount = useCallback(async () => {
     if (!portalUsername.trim() || !portalPassword.trim()) {
@@ -308,160 +231,11 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
 
       
       <>
-        <View className="px-4 pt-4"><MessageBanner message={msg} /></View>
         {activeTab === "OVERVIEW" && (
           <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 {activeTab === "OVERVIEW" && (
           <View className="flex-col gap-4">
             
-            {/* Payment / Action Form */}
-            <View className="bg-surface-container-lowest rounded-3xl p-5 border border-outline-variant/30 shadow-sm overflow-hidden relative">
-              <View className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500 z-10" />
-              
-              <View className="flex-row items-center gap-2 mb-4 ml-1">
-                <View className="w-8 h-8 rounded-full bg-emerald-500/10 items-center justify-center">
-                  <MaterialIcons name="payments" size={16} className="text-emerald-600" />
-                </View>
-                <Text className="font-title-md text-on-surface font-bold">Record Transaction</Text>
-              </View>
-
-              <View className="flex-row bg-surface-container-highest rounded-xl p-1 mb-5 border border-outline-variant/20 ml-1">
-                <Pressable 
-                  className={`flex-1 py-2.5 rounded-lg items-center transition-colors ${actionType === "PAYMENT" ? "bg-emerald-500 shadow-sm" : ""}`}
-                  onPress={() => setActionType("PAYMENT")}
-                >
-                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${actionType === "PAYMENT" ? "text-white" : "text-on-surface-variant"}`}>Payment</Text>
-                </Pressable>
-                <Pressable 
-                  className={`flex-1 py-2.5 rounded-lg items-center transition-colors ${actionType === "RETURN" ? "bg-emerald-500 shadow-sm" : ""}`}
-                  onPress={() => setActionType("RETURN")}
-                >
-                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${actionType === "RETURN" ? "text-white" : "text-on-surface-variant"}`}>Return</Text>
-                </Pressable>
-                <Pressable 
-                  className={`flex-1 py-2.5 rounded-lg items-center transition-colors ${actionType === "ADJUSTMENT" ? "bg-emerald-500 shadow-sm" : ""}`}
-                  onPress={() => setActionType("ADJUSTMENT")}
-                >
-                  <Text className={`font-label-sm font-bold uppercase tracking-wider ${actionType === "ADJUSTMENT" ? "text-white" : "text-on-surface-variant"}`}>Adjust</Text>
-                </Pressable>
-              </View>
-
-              {actionType === "PAYMENT" && (
-                <View className="ml-1 flex-col gap-4">
-                  <View className="flex-row gap-4">
-                    <View className="flex-1">
-                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Cash (₹)</Text>
-                      <TextInput
-                        className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-title-sm font-bold text-on-surface focus:border-emerald-500"
-                        keyboardType="decimal-pad"
-                        value={cash}
-                        onChangeText={setCash}
-                        placeholder="0.00"
-                        placeholderTextColor="#717973"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">UPI (₹)</Text>
-                      <TextInput
-                        className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-title-sm font-bold text-on-surface focus:border-emerald-500"
-                        keyboardType="decimal-pad"
-                        value={upi}
-                        onChangeText={setUpi}
-                        placeholder="0.00"
-                        placeholderTextColor="#717973"
-                      />
-                    </View>
-                  </View>
-                  <View>
-                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Date</Text>
-                    <DatePickerField 
-                      label="" 
-                      value={paymentDate} 
-                      onChange={setPaymentDate} 
-                      inputStyle="h-12 bg-surface border border-outline-variant/50 rounded-xl px-4" 
-                    />
-                  </View>
-                </View>
-              )}
-
-              {actionType === "RETURN" && (
-                <View className="ml-1 flex-col gap-4">
-                  <View className="flex-row gap-4">
-                    <View className="flex-1">
-                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Weight (KG)</Text>
-                      <TextInput
-                        className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-title-sm font-bold text-on-surface focus:border-emerald-500"
-                        keyboardType="decimal-pad"
-                        value={returnWeight}
-                        onChangeText={setReturnWeight}
-                        placeholder="0.00"
-                        placeholderTextColor="#717973"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Rate / KG (₹)</Text>
-                      <TextInput
-                        className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-title-sm font-bold text-on-surface focus:border-emerald-500"
-                        keyboardType="decimal-pad"
-                        value={returnRate}
-                        onChangeText={setReturnRate}
-                        placeholder="0.00"
-                        placeholderTextColor="#717973"
-                      />
-                    </View>
-                  </View>
-                  <View>
-                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Reason</Text>
-                    <TextInput
-                      className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-body-md text-on-surface focus:border-emerald-500"
-                      value={returnReason}
-                      onChangeText={setReturnReason}
-                      placeholder="Optional remarks"
-                      placeholderTextColor="#717973"
-                    />
-                  </View>
-                </View>
-              )}
-
-              {actionType === "ADJUSTMENT" && (
-                <View className="ml-1 flex-col gap-4">
-                  <View className="flex-row bg-surface-container-highest rounded-xl p-1 border border-outline-variant/20">
-                    <Pressable 
-                      className={`flex-1 py-2.5 rounded-lg items-center transition-colors ${isCredit ? "bg-surface shadow-sm border border-outline-variant/10" : ""}`}
-                      onPress={() => setIsCredit(true)}
-                    >
-                      <Text className={`font-label-sm font-bold uppercase tracking-wider ${isCredit ? "text-emerald-600" : "text-on-surface-variant"}`}>Credit (-Bal)</Text>
-                    </Pressable>
-                    <Pressable 
-                      className={`flex-1 py-2.5 rounded-lg items-center transition-colors ${!isCredit ? "bg-surface shadow-sm border border-outline-variant/10" : ""}`}
-                      onPress={() => setIsCredit(false)}
-                    >
-                      <Text className={`font-label-sm font-bold uppercase tracking-wider ${!isCredit ? "text-error" : "text-on-surface-variant"}`}>Debit (+Bal)</Text>
-                    </Pressable>
-                  </View>
-                  
-                  <View>
-                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Amount (₹)</Text>
-                    <TextInput
-                      className="bg-surface h-12 border border-outline-variant/50 rounded-xl px-4 text-title-sm font-bold text-on-surface focus:border-emerald-500"
-                      keyboardType="decimal-pad"
-                      value={cash}
-                      onChangeText={setCash}
-                      placeholder="0.00"
-                      placeholderTextColor="#717973"
-                    />
-                  </View>
-                </View>
-              )}
-
-              <Pressable 
-                className="h-14 bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2 mt-5 shadow-sm shadow-emerald-500/30 active:scale-[0.98] transition-transform ml-1"
-                onPress={collect}
-              >
-                <MaterialIcons name="done" size={20} color="white" />
-                <Text className="text-white font-bold text-label-lg uppercase tracking-wider">Submit</Text>
-              </Pressable>
-            </View>
 
             <View className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30 flex-col gap-2">
               <View className="flex-row items-center gap-2 mb-2">
