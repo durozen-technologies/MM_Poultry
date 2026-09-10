@@ -264,13 +264,13 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           <ScrollView keyboardShouldPersistTaps="handled" className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 {activeTab === "OVERVIEW" && (
           <View className="flex-col gap-4">
-            <View className="flex-row justify-end mb-2">
+            <View className="mb-2">
               <Pressable
                 onPress={() => setPaymentModalVisible(true)}
-                className="flex-row items-center bg-primary px-4 py-2 rounded-full active:bg-primary/80"
+                className="w-full h-14 bg-primary rounded-2xl flex-row items-center justify-center active:scale-[0.98] transition-transform shadow-sm shadow-primary/30"
               >
-                <MaterialIcons name="payments" size={18} className="text-on-primary mr-2" />
-                <Text className="text-on-primary font-bold">Record Payment</Text>
+                <MaterialIcons name="payments" size={20} className="text-on-primary mr-2" />
+                <Text className="text-on-primary font-bold text-label-lg uppercase tracking-wider">Record Payment</Text>
               </Pressable>
             </View>
             

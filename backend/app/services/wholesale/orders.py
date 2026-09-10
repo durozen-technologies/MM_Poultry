@@ -165,7 +165,6 @@ async def upsert_today_order(
             item_id=item_in.item_id,
             total_boxes=item_in.total_boxes,
             requested_kg=q_kg(item_in.requested_kg) if item_in.requested_kg else None,
-            bird_size=item_in.bird_size,
             notes=item_in.notes,
         )
         db.add(order_item)

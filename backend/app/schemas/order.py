@@ -13,7 +13,6 @@ class OrderItemCreate(BaseModel):
     item_id: UUID
     total_boxes: int = Field(gt=0)
     requested_kg: Decimal | None = None
-    bird_size: str | None = None
     notes: str | None = None
 
 
@@ -32,7 +31,6 @@ class DailyOrderItemOut(BaseModel):
     total_boxes: int | None = None
     requested_kg: Decimal | None = None
     delivered_kg: Decimal | None = None
-    bird_size: str | None = None
     notes: str | None = None
 
 

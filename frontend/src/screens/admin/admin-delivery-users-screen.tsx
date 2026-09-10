@@ -11,10 +11,11 @@ import { AdminCard } from "../../components/admin/admin-card";
 
 export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
   const [users, setUsers] = useState<User[]>([]);
+  const [vehicleName, setVehicleName] = useState("");
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [driverName, setDriverName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [driverName, setDriverName] = useState("");
-  const [vehicleNumber, setVehicleNumber] = useState("");
   
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -39,9 +40,17 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
     }, [refresh])
   );
 
+  const isFormValid = Boolean(
+    vehicleName.trim() &&
+    vehicleNumber.trim() &&
+    driverName.trim() &&
+    username.trim() &&
+    password
+  );
+
   async function onAdd() {
-    if (!username.trim() || !password) {
-      setMsg({ text: "Username and password are required", ok: false });
+    if (!isFormValid) {
+      setMsg({ text: "All fields are required", ok: false });
       return;
     }
     
@@ -51,13 +60,15 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
       await createDeliveryUser({
         username: username.trim(),
         password,
-        full_name: driverName.trim() || null,
+        vehicle_name: vehicleName.trim() || null,
         mobile_number: vehicleNumber.trim() || null,
+        full_name: driverName.trim() || null,
       });
+      setVehicleName("");
+      setVehicleNumber("");
+      setDriverName("");
       setUsername("");
       setPassword("");
-      setDriverName("");
-      setVehicleNumber("");
       setShowForm(false);
       setMsg({ text: "Delivery user created successfully", ok: true });
       setTimeout(() => setMsg(null), 3000);
@@ -161,15 +172,76 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
               {/* Add User Form */}
               {showForm && (
                 <View className="mb-6">
-                  <AdminCard title="New Delivery User" icon="person-add" iconColorClass="text-secondary" iconBgClass="bg-secondary/10" containerClass="relative">
-                    <Pressable 
-                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-variant/30 items-center justify-center z-10"
-                      onPress={() => setShowForm(false)}
-                    >
-                      <MaterialIcons name="close" size={16} className="text-on-surface-variant" />
-                    </Pressable>
-                    
-                    <View className="flex-col gap-4">
+                  <AdminCard 
+                    title="New Delivery User" 
+                    icon="person-add" 
+                    iconColorClass="text-secondary" 
+                    iconBgClass="bg-secondary/10"
+                    rightAction={
+                      <Pressable 
+                        accessibilityRole="button"
+                        className="w-8 h-8 rounded-full bg-surface-variant/40 items-center justify-center active:bg-surface-variant"
+                        onPress={() => setShowForm(false)}
+                      >
+                        <MaterialIcons name="close" size={18} className="text-on-surface-variant" />
+                      </Pressable>
+                    }
+                  >
+                      {/* 1. Vehicle Name */}
+                      <View>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle Name <Text className="text-error">*</Text></Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="local-shipping" size={20} className="text-on-surface-variant" />
+                          </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="e.g. Tata Ace / Bolero" 
+                            value={vehicleName} 
+                            onChangeText={setVehicleName} 
+                            placeholderTextColor="#717973" 
+                          />
+                        </View>
+                      </View>
+
+                      {/* 2. Vehicle Number */}
+                      <View>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle Number <Text className="text-error">*</Text></Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="pin" size={20} className="text-on-surface-variant" />
+                          </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="e.g. TN 01 AB 1234" 
+                            value={vehicleNumber} 
+                            onChangeText={setVehicleNumber} 
+                            autoCapitalize="characters" 
+                            placeholderTextColor="#717973" 
+                          />
+                        </View>
+                      </View>
+
+                      {/* 3. Driver Name */}
+                      <View>
+                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Driver Name <Text className="text-error">*</Text></Text>
+                        <View className="relative flex-row items-center">
+                          <View className="absolute left-4 z-10">
+                            <MaterialIcons name="badge" size={20} className="text-on-surface-variant" />
+                          </View>
+                          <TextInput 
+                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
+                            placeholder="e.g. Ravi Kumar" 
+                            value={driverName} 
+                            onChangeText={setDriverName} 
+                            placeholderTextColor="#717973" 
+                          />
+                        </View>
+                      </View>
+
+                      <View className="h-px bg-outline-variant/30 my-1" />
+
+                      {/* 4. Username */}
                       <View>
                         <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Username <Text className="text-error">*</Text></Text>
                         <View className="relative flex-row items-center">
@@ -187,6 +259,7 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                         </View>
                       </View>
 
+                      {/* 5. Password */}
                       <View>
                         <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Password <Text className="text-error">*</Text></Text>
                         <View className="relative flex-row items-center">
@@ -211,60 +284,24 @@ export function AdminDeliveryUsersScreen({ navigation }: { navigation: any }) {
                         </View>
                       </View>
 
-                      <View className="h-px bg-outline-variant/30 my-1" />
-
-                      <View>
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Driver Name (Optional)</Text>
-                        <View className="relative flex-row items-center">
-                          <View className="absolute left-4 z-10">
-                            <MaterialIcons name="badge" size={20} className="text-on-surface-variant" />
-                          </View>
-                          <TextInput 
-                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
-                            placeholder="e.g. Ravi Kumar" 
-                            value={driverName} 
-                            onChangeText={setDriverName} 
-                            placeholderTextColor="#717973" 
-                          />
-                        </View>
-                      </View>
-
-                      <View>
-                        <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Vehicle Number (Optional)</Text>
-                        <View className="relative flex-row items-center">
-                          <View className="absolute left-4 z-10">
-                            <MaterialIcons name="local-shipping" size={20} className="text-on-surface-variant" />
-                          </View>
-                          <TextInput 
-                            className="w-full bg-surface-container-lowest h-14 rounded-xl border border-outline-variant/50 pl-12 pr-4 font-body-lg text-on-surface focus:border-primary" 
-                            placeholder="e.g. TN 01 AB 1234" 
-                            value={vehicleNumber} 
-                            onChangeText={setVehicleNumber} 
-                            autoCapitalize="characters" 
-                            placeholderTextColor="#717973" 
-                          />
-                        </View>
-                      </View>
-
                       <Pressable 
                         className={`h-14 mt-2 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
-                          !username || !password ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
+                          !isFormValid ? "bg-surface-variant" : "bg-primary shadow-sm shadow-primary/30"
                         }`}
                         onPress={onAdd}
-                        disabled={creating || !username || !password}
+                        disabled={creating || !isFormValid}
                       >
                         {creating ? (
                           <ActivityIndicator color="#ffffff" />
                         ) : (
                           <>
-                            <MaterialIcons name="person-add" size={18} color={!username || !password ? "#717973" : "white"} />
-                            <Text className={`font-bold text-label-lg ${!username || !password ? "text-on-surface-variant" : "text-white"}`}>
+                            <MaterialIcons name="person-add" size={18} color={!isFormValid ? "#717973" : "white"} />
+                            <Text className={`font-bold text-label-lg ${!isFormValid ? "text-on-surface-variant" : "text-white"}`}>
                               Create User
                             </Text>
                           </>
                         )}
                       </Pressable>
-                    </View>
                   </AdminCard>
                 </View>
               )}
@@ -329,17 +366,19 @@ const DeliveryUserCard = React.memo(({ user: u, onRemove }: { user: User; onRemo
         </View>
         
         <View className="flex-1">
-          <Text className="font-title-md text-on-surface font-bold">{u.username}</Text>
-          {u.full_name && (
-            <View className="flex-row items-center gap-1 mt-0.5">
-              <MaterialIcons name="badge" size={13} className="text-on-surface-variant" />
-              <Text className="font-label-sm text-on-surface-variant">{u.full_name}</Text>
-            </View>
-          )}
+          <Text className="font-title-md text-on-surface font-bold">
+            {u.vehicle_name ? `${u.vehicle_name} (${u.username})` : u.username}
+          </Text>
           {u.mobile_number && (
             <View className="flex-row items-center gap-1 mt-0.5">
               <MaterialIcons name="local-shipping" size={13} className="text-on-surface-variant" />
               <Text className="font-label-sm text-on-surface-variant font-bold tracking-wider">{u.mobile_number}</Text>
+            </View>
+          )}
+          {u.full_name && (
+            <View className="flex-row items-center gap-1 mt-0.5">
+              <MaterialIcons name="badge" size={13} className="text-on-surface-variant" />
+              <Text className="font-label-sm text-on-surface-variant">{u.full_name}</Text>
             </View>
           )}
           <View className="flex-row items-center gap-1 mt-0.5">

@@ -11,6 +11,7 @@ export type User = {
   organization_name?: string | null;
   full_name?: string | null;
   mobile_number?: string | null;
+  vehicle_name?: string | null;
   retailer_name?: string | null;
   retailer_shop_name?: string | null;
 };
@@ -68,7 +69,6 @@ export type OrderItem = {
   total_boxes?: number;
   requested_kg?: string | null;
   delivered_kg?: string | null;
-  bird_size?: string | null;
   notes?: string | null;
 };
 
@@ -189,6 +189,7 @@ export type DeliveryUserCreate = {
   password: string;
   full_name?: string | null;
   mobile_number?: string | null;
+  vehicle_name?: string | null;
 };
 
 export type Vehicle = {
@@ -440,7 +441,6 @@ export type OrderItemCreate = {
   item_id: string;
   total_boxes: number;
   requested_kg?: string | null;
-  bird_size?: string | null;
   notes?: string | null;
 };
 

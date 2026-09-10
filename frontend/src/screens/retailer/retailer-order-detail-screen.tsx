@@ -73,10 +73,6 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
                   <MaterialIcons name="inventory-2" size={18} className="text-on-surface-variant" />
                   <Text className="font-body-md text-on-surface">{item.total_boxes || 0} Boxes</Text>
                 </View>
-                <View className="flex-row items-center gap-3 py-1">
-                  <MaterialIcons name="egg" size={18} className="text-on-surface-variant" />
-                  <Text className="font-body-md text-on-surface">{item.bird_size || "Any"}</Text>
-                </View>
                 {item.notes ? (
                   <View className="flex-row items-center gap-3 py-1 mt-1 border-t border-surface-variant/30">
                     <MaterialIcons name="notes" size={18} className="text-on-surface-variant" />

@@ -218,18 +218,86 @@ export function AdminRouteDispatchScreen({
 
 
         <Text className="font-label-lg font-semibold text-on-surface mb-2">Driver</Text>
-        <View className="gap-2 mb-4">
-          {users.map((u) => (
-            <Pressable
-              key={u.id}
-              onPress={() => setDriverId(u.id)}
-              className={`p-3 rounded-xl border ${driverId === u.id ? "border-primary bg-primary-container/20" : "border-outline-variant"}`}
-            >
-              <Text className={driverId === u.id ? "text-primary font-semibold" : "text-on-surface"}>
-                {u.full_name || u.username}
-              </Text>
-            </Pressable>
-          ))}
+        <View className="gap-2.5 mb-4">
+          {users.map((u) => {
+            const isSelected = driverId === u.id;
+            return (
+              <Pressable
+                key={u.id}
+                accessibilityRole="button"
+                onPress={() => setDriverId(u.id)}
+                className={`rounded-2xl p-3.5 border mb-2.5 flex-row items-center justify-between ${
+                  isSelected
+                    ? "border-primary bg-primary/10"
+                    : "border-outline-variant/40 bg-surface-container-lowest active:bg-surface-container-low"
+                }`}
+              >
+                <View className="flex-row items-center gap-3.5 flex-1 pr-2">
+                  {/* Vehicle Avatar Badge */}
+                  <View
+                    className={`w-11 h-11 rounded-xl items-center justify-center ${
+                      isSelected
+                        ? "bg-primary"
+                        : "bg-surface-container-highest"
+                    }`}
+                  >
+                    <MaterialIcons
+                      name="local-shipping"
+                      size={22}
+                      color={isSelected ? "#ffffff" : "#444746"}
+                    />
+                  </View>
+
+                  {/* Info details */}
+                  <View className="flex-1">
+                    {/* Vehicle Name & Number */}
+                    <View className="flex-row items-center gap-2 flex-wrap mb-1">
+                      <Text
+                        className={`font-title-md font-bold tracking-tight ${
+                          isSelected ? "text-primary" : "text-on-surface"
+                        }`}
+                      >
+                        {u.vehicle_name || "Vehicle"}
+                      </Text>
+                      {u.mobile_number ? (
+                        <View className="bg-surface-container-highest border border-outline-variant/40 px-2 py-0.5 rounded-md">
+                          <Text className="font-label-sm font-bold tracking-wider text-on-surface">
+                            {u.mobile_number}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {/* Driver Name & Username */}
+                    <View className="flex-row items-center gap-1.5">
+                      <MaterialIcons name="badge" size={15} color="#717973" />
+                      <Text className="font-body-md text-on-surface font-medium">
+                        {u.full_name || u.username}
+                      </Text>
+                      {u.full_name && (
+                        <Text className="font-body-xs text-on-surface-variant">
+                          (@{u.username})
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Selection Radio / Check Indicator */}
+                <View
+                  className={`w-6 h-6 rounded-full items-center justify-center ${
+                    isSelected
+                      ? "bg-primary"
+                      : "border-2 border-outline-variant"
+                  }`}
+                >
+                  {isSelected && (
+                    <MaterialIcons name="check" size={16} color="#ffffff" />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Text className="font-label-lg font-semibold text-on-surface mb-2 mt-4">Farm loads (Optional)</Text>

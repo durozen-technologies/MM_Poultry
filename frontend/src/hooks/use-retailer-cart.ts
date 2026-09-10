@@ -28,7 +28,6 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
             item_id: it.item_id,
             total_boxes: it.total_boxes || 0,
             requested_kg: it.requested_kg || "",
-            bird_size: it.bird_size,
             notes: it.notes || "",
           };
         }
@@ -91,7 +90,6 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
       .map(it => ({
         ...it,
         requested_kg: it.requested_kg ? it.requested_kg : undefined,
-        bird_size: it.bird_size ? it.bird_size : undefined,
         notes: it.notes ? it.notes : undefined,
       }));
     if (payloadItems.length === 0) {

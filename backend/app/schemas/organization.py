@@ -40,6 +40,7 @@ class DeliveryUserCreate(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
     full_name: str | None = Field(default=None, max_length=120)
     mobile_number: str | None = Field(default=None, max_length=30)
+    vehicle_name: str | None = Field(default=None, max_length=120)
 
 
 class DeliveryUserUpdate(BaseModel):
@@ -47,3 +48,4 @@ class DeliveryUserUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=6, max_length=128)
     full_name: str | None = Field(default=None, max_length=120)
     mobile_number: str | None = Field(default=None, max_length=30)
+    vehicle_name: str | None = Field(default=None, max_length=120)

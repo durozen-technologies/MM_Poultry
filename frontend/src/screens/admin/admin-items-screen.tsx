@@ -137,17 +137,17 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
                     title={editingItem ? "Edit Item" : "New Item"} 
                     icon={editingItem ? "edit" : "add-circle"} 
                     iconColorClass="text-secondary" 
-                    iconBgClass="bg-secondary/10" 
-                    containerClass="relative"
+                    iconBgClass="bg-secondary/10"
+                    rightAction={
+                      <Pressable 
+                        accessibilityRole="button"
+                        className="w-8 h-8 rounded-full bg-surface-variant/40 items-center justify-center active:bg-surface-variant"
+                        onPress={resetForm}
+                      >
+                        <MaterialIcons name="close" size={18} className="text-on-surface-variant" />
+                      </Pressable>
+                    }
                   >
-                    <Pressable 
-                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-variant/30 items-center justify-center z-10"
-                      onPress={resetForm}
-                    >
-                      <MaterialIcons name="close" size={16} className="text-on-surface-variant" />
-                    </Pressable>
-                    
-                    <View className="flex-col gap-4">
                       <View>
                         <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">Item Name <Text className="text-error">*</Text></Text>
                         <View className="relative flex-row items-center">
@@ -213,7 +213,6 @@ export function AdminItemsScreen({ navigation }: { navigation: any }) {
                           </>
                         )}
                       </Pressable>
-                    </View>
                   </AdminCard>
                 </View>
               )}

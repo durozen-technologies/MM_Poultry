@@ -194,6 +194,7 @@ async def create_delivery_user(
             organization_id=org.id,
             full_name=payload.full_name.strip() if payload.full_name else None,
             mobile_number=payload.mobile_number.strip() if payload.mobile_number else None,
+            vehicle_name=payload.vehicle_name.strip() if payload.vehicle_name else None,
         )
         db.add(user)
         try:
@@ -262,6 +263,8 @@ async def update_delivery_user(
             user.full_name = payload.full_name.strip() or None
         if payload.mobile_number is not None:
             user.mobile_number = payload.mobile_number.strip() or None
+        if payload.vehicle_name is not None:
+            user.vehicle_name = payload.vehicle_name.strip() or None
 
         await db.flush()
         return UserOut.model_validate(user, from_attributes=True)

@@ -1,7 +1,7 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Component, type ReactNode } from "react";
 import { useAuthStore } from "../store/auth-store";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -92,8 +92,15 @@ class NavErrorBoundary extends Component<{ children: ReactNode }, { hasError: bo
     if (this.state.hasError) {
       return (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "#fff" }}>
-          <Text style={{ fontWeight: "600", marginBottom: 8 }}>Navigation error</Text>
-          <Text style={{ color: "#666", textAlign: "center" }}>{this.state.error}</Text>
+          <Text style={{ fontWeight: "700", fontSize: 18, marginBottom: 8, color: "#1b1c1d" }}>App error encountered</Text>
+          <Text style={{ color: "#666", textAlign: "center", marginBottom: 20 }}>{this.state.error}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => this.setState({ hasError: false, error: null })}
+            style={{ backgroundColor: "#012d1d", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 15 }}>Retry / Reload</Text>
+          </Pressable>
         </View>
       );
     }
@@ -222,8 +229,8 @@ export function AppNavigator() {
   }
 
   return (
-    <NavErrorBoundary>
-      <NavigationContainer linking={linking} fallback={<ActivityIndicator color="#012d1d" />}>
+    <NavigationContainer linking={linking} fallback={<ActivityIndicator color="#012d1d" />}>
+      <NavErrorBoundary>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!user ? (
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -273,7 +280,7 @@ export function AppNavigator() {
             </>
           )}
         </Stack.Navigator>
-      </NavigationContainer>
-    </NavErrorBoundary>
+      </NavErrorBoundary>
+    </NavigationContainer>
   );
 }

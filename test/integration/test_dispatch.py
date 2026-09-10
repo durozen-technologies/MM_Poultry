@@ -45,7 +45,6 @@ async def _setup_acknowledged_order(
                     "item_id": item_id,
                     "requested_kg": "40.000",
                     "total_boxes": 2,
-                    "bird_size": "MEDIUM",
                 }
             ]
         },

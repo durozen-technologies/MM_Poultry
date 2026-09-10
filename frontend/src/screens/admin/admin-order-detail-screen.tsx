@@ -207,12 +207,6 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
                   <Text className="font-title-sm text-on-surface font-bold mb-1">
                     {getItemName(item.item_id)}
                   </Text>
-                  <View className="flex-row items-center gap-1.5">
-                    <MaterialIcons name="egg" size={14} className="text-on-surface-variant" />
-                    <Text className="font-label-sm font-bold text-on-surface-variant uppercase tracking-wider">
-                      Size: {item.bird_size || "Any"}
-                    </Text>
-                  </View>
                 </View>
                 <View className="flex-row gap-2">
                   <View className="items-end bg-tertiary/10 px-3 py-2 rounded-xl border border-tertiary/20">

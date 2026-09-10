@@ -22,6 +22,7 @@ class User(Base, BaseModelMixin):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     mobile_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    vehicle_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         SqlEnum(UserRole, name="user_role", native_enum=False),
         nullable=False,

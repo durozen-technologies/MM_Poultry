@@ -32,7 +32,6 @@ async def _ack_order(client: AsyncClient, admin_token: str, org_slug: str, item_
                     "item_id": item_id,
                     "requested_kg": "50.000",
                     "total_boxes": 2,
-                    "bird_size": "MEDIUM",
                 }
             ]
         },

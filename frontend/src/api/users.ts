@@ -13,7 +13,7 @@ export async function createDeliveryUser(payload: DeliveryUserCreate) {
 
 export async function updateDeliveryUser(
   userId: string,
-  payload: { is_active?: boolean; password?: string; full_name?: string | null; mobile_number?: string | null }
+  payload: { is_active?: boolean; password?: string; full_name?: string | null; mobile_number?: string | null; vehicle_name?: string | null }
 ) {
   const { data } = await api.patch<User>(`/admin/users/delivery/${userId}`, payload);
   return data;

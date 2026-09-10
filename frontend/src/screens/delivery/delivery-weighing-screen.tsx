@@ -25,7 +25,9 @@ export function DeliveryWeighingScreen() {
   const stop = route.params?.stop as DeliveryStop | undefined;
   const isBilled = stop?.status === "BILLED";
   const isWeighedOnly = stop?.status === "WEIGHED";
-  const isReadOnly = isBilled;
+  
+  const [lastBill, setLastBill] = useState<DeliveryBill | null>(null);
+  const isReadOnly = isBilled || !!lastBill;
   
   const [weights, setWeights] = useState<Record<string, { boxes: string; weight: string }>>({});
   const [cash, setCash] = useState("0");
@@ -35,7 +37,6 @@ export function DeliveryWeighingScreen() {
   const [skipPrint, setSkipPrint] = useState(false);
   const [printerModalVisible, setPrinterModalVisible] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [lastBill, setLastBill] = useState<DeliveryBill | null>(null);
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
@@ -60,10 +61,8 @@ export function DeliveryWeighingScreen() {
       stop.items.forEach((item: any) => {
         const weighed = stop.status === "WEIGHED" || stop.status === "BILLED";
         initialWeights[item.item_id] = {
-          boxes: String(item.delivered_boxes ?? item.original_total_boxes ?? "1"),
-          weight: weighed
-            ? String(item.delivered_weight_kg ?? item.ordered_kg ?? "0")
-            : String(item.ordered_kg || "0"),
+          boxes: weighed ? String(item.delivered_boxes ?? "") : "",
+          weight: weighed ? String(item.delivered_weight_kg ?? "") : "",
         };
       });
       setWeights(initialWeights);
@@ -81,17 +80,17 @@ export function DeliveryWeighingScreen() {
 
   const weighAndBill = async () => {
     setBilling(true);
-    setMsg(null);
+    setMsg("Saving delivery data...");
     const checkoutId = genCheckoutId(stop.id);
     
     try {
       const itemsPayload = (stop.items || []).map((item: any) => {
-        const input = weights[item.item_id] || { boxes: "1", weight: "0" };
+        const input = weights[item.item_id] || { boxes: "", weight: "" };
         const weight = Number(input.weight || "0");
-        const boxes = Number(input.boxes || "1");
+        const boxes = Number(input.boxes || "0");
         
-        if (weight <= 0) throw new Error(`Weight must be > 0 for ${item.item_id.slice(0, 8)}`);
-        if (boxes <= 0) throw new Error(`Boxes must be > 0 for ${item.item_id.slice(0, 8)}`);
+        if (boxes <= 0) throw new Error(`Please enter the boxes given for ${getItemName(item.item_id)}`);
+        if (weight <= 0) throw new Error(`Please enter the delivered weight (kg) for ${getItemName(item.item_id)}`);
         
         return {
           item_id: item.item_id,
@@ -107,7 +106,8 @@ export function DeliveryWeighingScreen() {
         throw new Error("Invalid cash/UPI amount");
       }
 
-      // Step 1: Weigh
+      // STEP 1: Save weigh data to database
+      setMsg("Saving weights to server...");
       let weighDone = false;
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -130,12 +130,10 @@ export function DeliveryWeighingScreen() {
           throw e;
         }
       }
-      if (!weighDone) throw new Error("Weigh failed");
+      if (!weighDone) throw new Error("Failed to save weights");
 
-      const preview = await previewBill(stop.id, { cash_payment: String(cashNum), upi_payment: String(upiNum), notes });
-      if (!preview) throw new Error("Failed to preview bill");
-
-      // Step 2: Commit
+      // STEP 2: Commit & save bill to database first
+      setMsg("Saving bill to server...");
       let bill: any = null;
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -155,39 +153,56 @@ export function DeliveryWeighingScreen() {
           throw e;
         }
       }
-      if (!bill) throw new Error("Commit failed");
+      if (!bill) throw new Error("Failed to commit and save bill");
 
-      // Step 3: Print
-      let printStatus: "PRINTED" | "FAILED" | "SKIPPED" = "FAILED";
-      if (skipPrint) {
-        printStatus = "SKIPPED";
-      } else {
+      // THE DATA IS NOW CONFIRMED AND SAVED IN DATABASE!
+      setLastBill(bill);
+      setMsg(`Saved Bill #${bill.bill_number}`);
+
+      // STEP 3: Print ONLY after data is saved
+      let printStatus: "PRINTED" | "FAILED" | "SKIPPED" = "SKIPPED";
+      if (!skipPrint) {
+        setMsg(`Data saved! Printing receipt for ${bill.bill_number}...`);
         try {
           printStatus = await printThermalReceipt(
             deliveryBillToPrintPayload(bill, stop, getItemName, receiptOpts)
           );
-        } catch {
+        } catch (printErr) {
+          console.warn("Print error after save:", printErr);
           printStatus = "FAILED";
+        }
+
+        try {
+          const backendStatus = printStatus === "PRINTED" ? "PRINTED" : "FAILED";
+          bill = await updatePrintStatus(bill.id, backendStatus);
+          setLastBill(bill);
+        } catch (e) {
+          console.warn("Failed to update print status", e);
         }
       }
 
-      let updated = bill;
-      try {
-        const backendStatus = printStatus === "PRINTED" ? "PRINTED" : printStatus === "SKIPPED" ? "SKIPPED" : "FAILED";
-        updated = await updatePrintStatus(bill.id, backendStatus);
-      } catch (e) {
-        console.warn("Failed to update print status", e);
+      if (printStatus === "PRINTED") {
+        Alert.alert(
+          "Delivery Complete",
+          `Data saved to database and receipt printed!\n\nBill: ${bill.bill_number}`,
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
+      } else if (!skipPrint && printStatus === "FAILED") {
+        Alert.alert(
+          "Data Saved Successfully",
+          `✓ Data is saved in database!\nBill: ${bill.bill_number}\n\nPrinter was not connected or print failed. You can print receipt below or share on WhatsApp.`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Data Saved Successfully",
+          `✓ Data is saved in database!\nBill: ${bill.bill_number}`,
+          [{ text: "OK", onPress: () => navigation.goBack() }]
+        );
       }
-      setLastBill(updated);
-      setMsg(`Billed ${updated.bill_number} → print ${updated.print_status}`);
-      Alert.alert("Success", `Billed ${updated.bill_number}.`, [
-        { text: "OK", onPress: () => {
-          navigation.goBack();
-        }}
-      ]);
     } catch (e) {
       setMsg(getApiErrorMessage(e));
-      Alert.alert("Error", getApiErrorMessage(e));
+      Alert.alert("Save Failed", getApiErrorMessage(e));
     } finally {
       setBilling(false);
     }
@@ -233,11 +248,18 @@ export function DeliveryWeighingScreen() {
     setWeights(prev => ({
       ...prev,
       [itemId]: {
-        ...(prev[itemId] || { boxes: "1", weight: "0" }),
+        ...(prev[itemId] || { boxes: "", weight: "" }),
         [field]: value
       }
     }));
   };
+
+  const totalCalculatedAmount = (stop.items || []).reduce((sum: number, item: any) => {
+    const input = weights[item.item_id] || { boxes: "", weight: "" };
+    const w = Number(input.weight || 0);
+    const r = Number(item.rate_per_kg || 0);
+    return sum + (w * r);
+  }, 0);
 
   return (
     <View className="flex-1 bg-surface-container-lowest" style={{ paddingTop: insets.top }}>
@@ -264,7 +286,14 @@ export function DeliveryWeighingScreen() {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1 p-4" keyboardShouldPersistTaps="handled">
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ 
+          padding: 16, 
+          paddingBottom: Math.max(insets.bottom + 32, 48) 
+        }} 
+        keyboardShouldPersistTaps="handled"
+      >
         {msg ? (
           <View className="bg-primary-container p-3 rounded-lg mb-4">
             <Text className="text-on-primary-container text-sm text-center">{msg}</Text>
@@ -272,7 +301,7 @@ export function DeliveryWeighingScreen() {
         ) : null}
 
         {(stop.items || []).map((item: any) => {
-          const input = weights[item.item_id] || { boxes: "1", weight: "0" };
+          const input = weights[item.item_id] || { boxes: "", weight: "" };
           const rate = Number(item.rate_per_kg || 0);
           const isKgAdjusted = item.original_requested_kg !== null && item.ordered_kg !== null && Number(item.ordered_kg) !== Number(item.original_requested_kg);
           return (
@@ -290,10 +319,15 @@ export function DeliveryWeighingScreen() {
         })}
 
         {lastBill ? (
-          <View className="bg-surface-container-lowest p-4 rounded-xl mb-4 border border-outline-variant/20">
-            <Text className="font-bold text-on-surface mb-2">Bill {lastBill.bill_number}</Text>
-            <Text className="text-on-surface-variant">Total ₹{lastBill.total_amount}</Text>
-            <Text className="text-on-surface-variant text-sm mt-1">
+          <View className="bg-surface-container-lowest p-5 rounded-2xl mb-6 border border-primary/30 shadow-sm">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="font-black text-xl text-primary">✓ Saved: Bill {lastBill.bill_number}</Text>
+              <View className="bg-primary/10 px-2.5 py-1 rounded-lg">
+                <Text className="text-xs font-bold text-primary">{lastBill.print_status || "SAVED"}</Text>
+              </View>
+            </View>
+            <Text className="text-on-surface font-bold text-lg mb-1">Total ₹{lastBill.total_amount}</Text>
+            <Text className="text-on-surface-variant text-sm">
               Cash ₹{lastBill.cash_payment} · UPI ₹{lastBill.upi_payment} · Balance ₹{lastBill.balance_amount}
             </Text>
           </View>
@@ -301,32 +335,63 @@ export function DeliveryWeighingScreen() {
 
         {!isReadOnly ? (
         <>
-        <View className="bg-surface-container-lowest p-4 rounded-xl mb-6 border border-outline-variant/20 shadow-sm">
-          <Text className="font-bold text-lg text-on-surface mb-3">Payment</Text>
-          <View className="flex-row gap-2">
+        <View className="bg-surface-container-lowest p-4 rounded-2xl mb-6 border border-outline-variant/20 shadow-sm">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="font-bold text-lg text-on-surface">Payment</Text>
+            {totalCalculatedAmount > 0 && (
+              <View className="flex-row items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20">
+                <Text className="text-xs text-on-surface-variant font-bold uppercase">Total:</Text>
+                <Text className="text-lg font-black text-primary">
+                  ₹{totalCalculatedAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View className="flex-row gap-3 mb-3">
             <View className="flex-1">
-              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">Cash (₹)</Text>
+              <View className="h-5 flex-row items-center mb-1.5">
+                <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Cash (₹)</Text>
+              </View>
               <TextInput
-                className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+                className="h-12 border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-bold text-base"
+                style={{
+                  paddingVertical: 0,
+                  textAlignVertical: "center",
+                  includeFontPadding: false,
+                }}
                 value={cash}
                 onChangeText={setCash}
                 keyboardType="decimal-pad"
               />
             </View>
             <View className="flex-1">
-              <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">UPI (₹)</Text>
+              <View className="h-5 flex-row items-center mb-1.5">
+                <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">UPI (₹)</Text>
+              </View>
               <TextInput
-                className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+                className="h-12 border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-bold text-base"
+                style={{
+                  paddingVertical: 0,
+                  textAlignVertical: "center",
+                  includeFontPadding: false,
+                }}
                 value={upi}
                 onChangeText={setUpi}
                 keyboardType="decimal-pad"
               />
             </View>
           </View>
-          <View className="mt-3">
-            <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">Notes (Optional)</Text>
+          <View>
+            <View className="h-5 flex-row items-center mb-1.5">
+              <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Notes (Optional)</Text>
+            </View>
             <TextInput
-              className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+              className="h-12 border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-medium text-base"
+              style={{
+                paddingVertical: 0,
+                textAlignVertical: "center",
+                includeFontPadding: false,
+              }}
               value={notes}
               onChangeText={setNotes}
               placeholder="e.g. Paid for previous bills too"
@@ -334,18 +399,18 @@ export function DeliveryWeighingScreen() {
             />
           </View>
           
-          <View className="flex-row items-center gap-2 mt-4 pt-4 border-t border-outline-variant/20">
+          <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-outline-variant/20">
+            <Text className="text-on-surface font-bold text-sm">Print Receipt Automatically</Text>
             <Switch value={!skipPrint} onValueChange={(v) => setSkipPrint(!v)} />
-            <Text className="text-on-surface font-bold">Print Receipt Automatically</Text>
           </View>
         </View>
 
         <PrimaryButton
-          className="mb-6"
+          className="mb-8"
           onPress={weighAndBill}
           loading={billing}
           disabled={billing}
-          title={billing ? "Processing..." : isWeighedOnly ? "Generate bill" : "Complete Delivery"}
+          title={billing ? (msg || "Saving...") : isWeighedOnly ? "Save & Generate Bill" : "Save & Complete Delivery"}
         />
         </>
         ) : null}
@@ -365,6 +430,11 @@ export function DeliveryWeighingScreen() {
               onPress={shareBill} 
               title="Share on WhatsApp" 
               icon="share"
+            />
+            <PrimaryButton 
+              variant="secondary" 
+              onPress={() => navigation.goBack()} 
+              title="Done & Back to Stops" 
             />
           </View>
         ) : isWeighedOnly ? (
@@ -390,44 +460,87 @@ const WeighingRow = React.memo(({ item, input, rate, isKgAdjusted, itemName, onU
   const amount = weightNum * rate;
 
   return (
-    <View className="bg-surface-container-lowest p-4 rounded-xl mb-4 border border-outline-variant/20 shadow-sm">
-      <View className="flex-row justify-between items-center mb-1">
-        <Text className="font-bold text-lg text-on-surface">{itemName}</Text>
-        <View className="items-end">
-          <Text className="text-xs text-on-surface-variant font-bold uppercase">Rate</Text>
-          <Text className="text-sm font-bold text-primary">₹{rate.toLocaleString("en-IN", { maximumFractionDigits: 2 })}/kg</Text>
+    <View className="bg-surface-container-lowest p-4 rounded-2xl mb-4 border border-outline-variant/20 shadow-sm">
+      {/* Item Name & Prominent Rate Badge */}
+      <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-outline-variant/20">
+        <View className="flex-1 pr-3">
+          <Text className="font-bold text-xl text-on-surface" numberOfLines={1}>
+            {itemName}
+          </Text>
+        </View>
+        <View className="bg-primary/10 px-3.5 py-2 rounded-xl border border-primary/20 flex-row items-center gap-1.5">
+          <Text className="text-xs font-black text-primary/80 uppercase tracking-wider">RATE</Text>
+          <Text className="text-xl font-black text-primary">
+            ₹{rate.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+          </Text>
+          <Text className="text-xs font-bold text-primary/70">/kg</Text>
         </View>
       </View>
 
-      <View className="flex-row items-center flex-wrap mb-3 gap-2">
-        <View className="bg-primary-container/30 px-2 py-1 rounded">
-          <Text className="text-xs font-medium text-on-surface">Ordered: {item.original_total_boxes || 0} boxes</Text>
-        </View>
-        <View className="bg-secondary-container/30 px-2 py-1 rounded">
-          {isKgAdjusted ? (
-             <Text className="text-xs font-medium text-on-surface">{item.ordered_kg} kg <Text className="text-error font-bold">(Changed by Traders)</Text></Text>
-          ) : (
-             <Text className="text-xs font-medium text-on-surface">{item.ordered_kg} kg</Text>
-          )}
-        </View>
-      </View>
-
-      <View className="flex-row gap-2 mb-3">
+      {/* Ordered Boxes & Ordered Weight */}
+      <View className="flex-row gap-3 mb-3">
         <View className="flex-1">
-          <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">Boxes</Text>
+          <View className="h-5 flex-row items-center mb-1.5">
+            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Ordered Boxes</Text>
+          </View>
+          <View className="border border-outline-variant rounded-xl px-4 bg-surface-container-high/60 justify-center h-12">
+            <Text className="text-on-surface font-bold text-base" style={{ includeFontPadding: false }}>
+              {item.original_total_boxes || 0}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-1">
+          <View className="h-5 flex-row items-center justify-between mb-1.5">
+            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Ordered Weight</Text>
+            {isKgAdjusted && (
+              <View className="bg-error/10 px-1.5 py-0.5 rounded">
+                <Text className="text-[10px] text-error font-bold uppercase tracking-tight">Adjusted</Text>
+              </View>
+            )}
+          </View>
+          <View className="border border-outline-variant rounded-xl px-4 bg-surface-container-high/60 justify-center h-12">
+            <Text className="text-on-surface font-bold text-base" style={{ includeFontPadding: false }}>
+              {item.ordered_kg || "0"} kg
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Delivered Boxes Given & Weight */}
+      <View className="flex-row gap-3 mb-4">
+        <View className="flex-1">
+          <View className="h-5 flex-row items-center mb-1.5">
+            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Boxes Given</Text>
+          </View>
           <TextInput
-            className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+            className="border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-bold text-base h-12"
+            style={{
+              paddingVertical: 0,
+              textAlignVertical: "center",
+              includeFontPadding: false,
+            }}
             value={input.boxes}
+            placeholder={item.original_total_boxes ? String(item.original_total_boxes) : "0"}
+            placeholderTextColor="#9ca3af"
             onChangeText={(v) => onUpdate(item.item_id, "boxes", v)}
             keyboardType="number-pad"
             editable={!readOnly}
           />
         </View>
         <View className="flex-1">
-          <Text className="text-xs font-bold text-on-surface-variant mb-1 uppercase">Weight (kg)</Text>
+          <View className="h-5 flex-row items-center mb-1.5">
+            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Weight (kg)</Text>
+          </View>
           <TextInput
-            className="border border-outline-variant rounded-lg px-3 py-2 bg-surface text-on-surface"
+            className="border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-bold text-base h-12"
+            style={{
+              paddingVertical: 0,
+              textAlignVertical: "center",
+              includeFontPadding: false,
+            }}
             value={input.weight}
+            placeholder="0.000"
+            placeholderTextColor="#9ca3af"
             onChangeText={(v) => onUpdate(item.item_id, "weight", v)}
             keyboardType="decimal-pad"
             editable={!readOnly}
@@ -435,14 +548,19 @@ const WeighingRow = React.memo(({ item, input, rate, isKgAdjusted, itemName, onU
         </View>
       </View>
 
-      <View className="bg-primary/5 p-3 rounded-lg border border-primary/10 flex-row justify-between items-center">
+      {/* Delivered Weight & Amount Summary Card */}
+      <View className="bg-primary/10 p-4 rounded-2xl border border-primary/20 flex-row justify-between items-center">
         <View>
-          <Text className="text-xs font-bold text-primary uppercase">Weight</Text>
-          <Text className="text-lg font-black text-primary">{weightNum.toLocaleString("en-IN", { maximumFractionDigits: 2 })} kg</Text>
+          <Text className="text-xs font-bold text-primary uppercase tracking-wider mb-0.5">Delivered Weight</Text>
+          <Text className="text-xl font-black text-primary">
+            {weightNum > 0 ? `${weightNum.toLocaleString("en-IN", { maximumFractionDigits: 3 })} kg` : "0.000 kg"}
+          </Text>
         </View>
         <View className="items-end">
-          <Text className="text-xs font-bold text-error uppercase">Amount</Text>
-          <Text className="text-lg font-black text-error">₹{amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+          <Text className="text-xs font-bold text-primary uppercase tracking-wider mb-0.5">Amount</Text>
+          <Text className="text-2xl font-black text-primary">
+            ₹{amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+          </Text>
         </View>
       </View>
     </View>

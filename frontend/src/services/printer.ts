@@ -317,7 +317,11 @@ async function printEscPosFallback(
 export async function printThermalReceipt(payload: PrintPayload): Promise<"PRINTED" | "FAILED" | "SKIPPED"> {
   const printer = usePrinterStore.getState().connectedPrinter;
 
-  if (Platform.OS === "android" && printer) {
+  if (Platform.OS === "android") {
+    if (!printer) {
+      console.warn("printThermalReceipt: No printer connected on Android");
+      return "FAILED";
+    }
     try {
       const receiptData = printPayloadToDeliveryReceiptData(payload);
       await runReceiptImagePrintJob([receiptData], printer);

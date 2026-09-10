@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "a1b2c3d40003"
+TENANT_MIGRATION_HEAD = "a1b2c3d40005"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -196,6 +196,9 @@ async def repair_platform_schema_async() -> None:
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(30)")
         )
         await conn.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle_name VARCHAR(120)")
+        )
+        await conn.execute(
             text(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions_version INTEGER NOT NULL DEFAULT 0"
             )
@@ -333,13 +336,14 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE items ADD COLUMN IF NOT EXISTS default_price NUMERIC(12,2) NOT NULL DEFAULT 0.00",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN requested_kg DROP NOT NULL",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN total_boxes DROP NOT NULL",
-        "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_size DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items DROP COLUMN IF EXISTS bird_size",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN bird_count DROP NOT NULL",
         "ALTER TABLE retailer_daily_order_items ALTER COLUMN notes DROP NOT NULL",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS planned_kg NUMERIC(12,3)",
         "UPDATE farm_loads SET planned_kg = loaded_weight_kg WHERE planned_kg IS NULL",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS overall_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle_name VARCHAR(120)",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))

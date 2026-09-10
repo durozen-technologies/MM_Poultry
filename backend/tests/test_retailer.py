@@ -105,7 +105,6 @@ def test_retailer_upsert_today_order(client: TestClient, mock_retailer_auth: Non
                 "item_id": str(TEST_ITEM_ID),
                 "total_boxes": 2,
                 "requested_kg": "50.5",
-                "bird_size": "MEDIUM",
                 "notes": "morning delivery"
             }
         ]
@@ -134,7 +133,7 @@ def test_retailer_get_today_orders(client: TestClient, mock_retailer_auth: None)
     # Ensure at least one order exists (upsert)
     client.post(
         "/api/v1/retailer/orders/today",
-        json={"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 2, "requested_kg": "50.5", "bird_size": "MEDIUM"}]},
+        json={"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 2, "requested_kg": "50.5"}]},
     )
     response = client.get("/api/v1/retailer/orders/today")
     assert response.status_code == 200

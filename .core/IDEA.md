@@ -85,3 +85,9 @@ Expanded blueprint beyond short proposal. Implementing IDEA MVP-1 slice: ops das
 
 ### [2026-09-07 12:40:08] Idea: Phase 1 Simplified Flow
 - The user established a simplified Phase 1 flow: bypassing complex farm load allocation and strict Bluetooth scale weighing in favor of a 1-to-1 order dispatch and automatic weight inheritance (ordered_kg becomes gross weight). We will add back the scale logic later.
+
+### [2026-09-10 11:22:00] Idea: Delivery Weighing Screen Box Grid Ergonomics
+- The delivery weighing screen layout groups ordered reference quantities and delivered input quantities in a 2x2 grid (`Ordered Boxes` & `Ordered Weight` directly above `Boxes Given` & `Weight kg`).
+- Real-time auto-calculation computes line-item amounts and overall bill totals dynamically as weights are entered.
+- Strict typography and input centering (`paddingVertical: 0`, `textAlignVertical: "center"`, `includeFontPadding: false`) ensures consistent baseline alignment on mobile devices.
+

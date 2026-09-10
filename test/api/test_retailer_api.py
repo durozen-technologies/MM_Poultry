@@ -33,7 +33,7 @@ async def test_retailer_dashboard_after_order(client: AsyncClient) -> None:
 
     placed = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2, "bird_size": "Medium"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 2}]},
         headers=r_headers,
     )
     assert placed.status_code == 200
@@ -206,7 +206,7 @@ async def test_retailer_profile(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_bird_size_persisted_on_update(client: AsyncClient) -> None:
+async def test_order_items_persisted_on_update(client: AsyncClient) -> None:
     _, admin = await create_org_with_admin(client, slug="rsize")
     item = await create_default_item(client, admin["access_token"])
     _, login = await _create_retailer_user(
@@ -216,20 +216,19 @@ async def test_bird_size_persisted_on_update(client: AsyncClient) -> None:
 
     first = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "15.000", "total_boxes": 2, "bird_size": "Small"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "15.000", "total_boxes": 2}]},
         headers=r_headers,
     )
     assert first.status_code == 200
-    assert first.json()["items"][0]["bird_size"] == "Small"
+    assert first.json()["items"][0]["requested_kg"] == "15.000"
 
     second = await client.post(
         "/retailer/orders/today",
-        json={"items": [{"item_id": item["id"], "requested_kg": "18.000", "total_boxes": 2, "bird_size": "Large", "notes": "morning"}]},
+        json={"items": [{"item_id": item["id"], "requested_kg": "18.000", "total_boxes": 2, "notes": "morning"}]},
         headers=r_headers,
     )
     assert second.status_code == 200
     body = second.json()
-    assert body["items"][0]["bird_size"] == "Large"
     assert body["items"][0]["notes"] == "morning"
     assert body["items"][0]["requested_kg"] == "18.000"
 

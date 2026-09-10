@@ -166,7 +166,6 @@ class RetailerDailyOrderItem(Base, BaseModelMixin):
     )
     requested_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     total_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    bird_size: Mapped[str | None] = mapped_column(String(50), nullable=True)
     bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     locked_rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
