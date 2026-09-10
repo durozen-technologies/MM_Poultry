@@ -131,3 +131,4 @@ tasks/
 tmp/
 .marscode/
 erase_db.py
+.agents/mcp_config.json
