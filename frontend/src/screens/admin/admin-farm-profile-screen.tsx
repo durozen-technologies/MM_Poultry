@@ -163,9 +163,7 @@ export function AdminFarmProfileScreen({ route, navigation }: { route: any; navi
                 </View>
 
                 <View className="bg-surface-container-highest/30 rounded-2xl p-1 border border-outline-variant/10 ml-1">
-                  <InfoRow label="Owner" value={farm?.owner_name || "—"} icon="person" isFirst />
-                  <InfoRow label="Location" value={farm?.location || "—"} icon="place" />
-                  <InfoRow label="Address" value={farm?.address || "—"} icon="home" />
+                  <InfoRow label="Location" value={farm?.location || "—"} icon="place" isFirst />
                   <InfoRow label="Phone" value={farm?.contact_phone || "—"} icon="phone" isLast />
                 </View>
               </View>

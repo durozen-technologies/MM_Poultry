@@ -14,8 +14,6 @@ def test_create_and_get_retailer(client: TestClient, mock_admin_auth: None) -> N
     payload = {
         "name": "Test Retailer",
         "phone": "+1234567890",
-        "address": "123 Test St",
-        "region": "North",
     }
     create_resp = client.post("/api/v1/admin/retailers", json=payload)
     assert create_resp.status_code == 200

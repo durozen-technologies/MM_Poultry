@@ -359,7 +359,7 @@ const RetailerListItem = React.memo(({
             {item.name}
           </Text>
           <Text className="font-body-md text-on-surface-variant font-medium">
-            {item.owner_name || "No contact"}
+            {item.shop_name || "No shop name"}
           </Text>
         </View>
         <View

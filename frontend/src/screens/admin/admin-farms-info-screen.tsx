@@ -269,7 +269,7 @@ const FarmInfoListItem = React.memo(({
             <MaterialIcons name="location-on" size={16} className="text-tertiary" />
           </View>
           <Text className="flex-1 text-body-md text-on-surface-variant font-medium leading-relaxed">
-            {farm.address || farm.location || "No address provided"}
+            {farm.location || "No location provided"}
           </Text>
         </View>
       </View>

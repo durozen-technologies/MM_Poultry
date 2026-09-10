@@ -23,7 +23,6 @@ export function AdminFarmEditScreen({ route, navigation }: { route: any; navigat
   
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [address, setAddress] = useState("");
   const [village, setVillage] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +35,6 @@ export function AdminFarmEditScreen({ route, navigation }: { route: any; navigat
       setFarm(data);
       setName(data.name);
       setMobile(data.contact_phone || "");
-      setAddress(data.address || "");
       setVillage(data.location || "");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load farm");
@@ -62,7 +60,6 @@ export function AdminFarmEditScreen({ route, navigation }: { route: any; navigat
       await updateFarm(farmId, {
         name: name.trim(),
         contact_phone: mobile.trim() || null,
-        address: address.trim() || null,
         location: village.trim() || null,
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "farms"] });
@@ -125,20 +122,7 @@ export function AdminFarmEditScreen({ route, navigation }: { route: any; navigat
               onChangeText={setMobile}
             />
           </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Address
-            </Text>
-            <TextInput 
-              className="h-24 border border-outline-variant/50 rounded-xl p-4 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
-              placeholder="Enter full address"
-              placeholderTextColor="#717973"
-              multiline
-              textAlignVertical="top"
-              value={address}
-              onChangeText={setAddress}
-            />
-          </View>
+
           <View>
             <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
               Location (City/Region)

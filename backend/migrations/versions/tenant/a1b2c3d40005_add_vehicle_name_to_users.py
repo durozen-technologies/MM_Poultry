@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
-revision = 'a1b2c3d40004'
-down_revision = 'a1b2c3d40003'
+revision = 'a1b2c3d40005'
+down_revision = 'a1b2c3d40004'
 branch_labels = None
 depends_on = None
 

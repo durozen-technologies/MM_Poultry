@@ -26,21 +26,13 @@ export type Retailer = {
   id: string;
   name: string;
   shop_name: string | null;
-  owner_name?: string | null;
   phone: string | null;
-  alternate_phone?: string | null;
-  whatsapp?: string | null;
-  address?: string | null;
-  area?: string | null;
   route_id?: string | null;
   route_name?: string | null;
   route_area?: string | null;
-  category?: string | null;
-  notes?: string | null;
   opening_balance: string;
   credit_balance: string;
   credit_limit?: string;
-  preferred_delivery_time?: string | null;
   is_active: boolean;
   has_portal_access?: boolean;
 };
@@ -101,9 +93,7 @@ export type TodayOrdersResponse = {
 export type FarmOut = {
   id: string;
   name: string;
-  owner_name?: string | null;
   location: string | null;
-  address?: string | null;
   contact_phone: string | null;
   capacity?: number | null;
   is_active: boolean;
@@ -503,7 +493,6 @@ export type RouteRetailer = {
   name: string;
   shop_name?: string | null;
   phone?: string | null;
-  area?: string | null;
   is_active: boolean;
 };
 
