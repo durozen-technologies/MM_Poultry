@@ -30,9 +30,7 @@ from app.services.wholesale.common import q_kg
 async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
     farm = Farm(
         name=payload.name.strip(),
-        owner_name=payload.owner_name,
         location=payload.location,
-        address=payload.address,
         contact_phone=payload.contact_phone,
         capacity=payload.capacity,
     )

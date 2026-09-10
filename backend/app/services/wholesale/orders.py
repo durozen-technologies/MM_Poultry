@@ -280,7 +280,7 @@ async def list_today_orders(
         out.route_id = retailer.route_id
         out.route_name = route.name if route else retailer.route_name
         out.route_area = route.area if route else None
-        out.retailer_area = retailer.area
+        out.retailer_area = None
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name

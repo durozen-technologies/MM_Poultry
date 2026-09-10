@@ -17,17 +17,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [alternatePhone, setAlternatePhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [address, setAddress] = useState("");
-  const [area, setArea] = useState("");
-  const [category, setCategory] = useState("");
   const [email, setEmail] = useState("");
-  const [notes, setNotes] = useState("");
   const [openingBalance, setOpeningBalance] = useState("");
-  const [preferredDeliveryTime, setPreferredDeliveryTime] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -50,17 +42,9 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
       await api.post("/admin/retailers", {
         name: name.trim(),
         shop_name: shopName.trim() || null,
-        owner_name: ownerName.trim() || null,
         phone: phone.trim() || null,
-        alternate_phone: alternatePhone.trim() || null,
-        whatsapp: whatsapp.trim() || null,
-        address: address.trim() || null,
-        area: area.trim() || null,
-        category: category.trim() || null,
         email: email.trim() || null,
-        notes: notes.trim() || null,
         opening_balance: openingBalance ? (Number.isFinite(parseFloat(openingBalance)) ? parseFloat(openingBalance) : 0) : 0,
-        preferred_delivery_time: preferredDeliveryTime.trim() || null,
         username: username.trim(),
         password: password.trim(),
       });
@@ -117,49 +101,6 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
               onChangeText={setShopName}
             />
           </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Owner Name
-            </Text>
-            <View className="relative flex-row items-center">
-              <View className="absolute left-4 z-10">
-                <MaterialIcons name="person" size={20} className="text-on-surface-variant" />
-              </View>
-              <TextInput
-                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-                placeholder="Enter owner name"
-                placeholderTextColor="#717973"
-                value={ownerName}
-                onChangeText={setOwnerName}
-              />
-            </View>
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Category
-            </Text>
-            <TextInput
-              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-              placeholder="e.g. Wholesale, Retail"
-              placeholderTextColor="#717973"
-              value={category}
-              onChangeText={setCategory}
-            />
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Notes / Remarks
-            </Text>
-            <TextInput
-              className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
-              placeholder="Any additional notes..."
-              placeholderTextColor="#717973"
-              multiline
-              textAlignVertical="top"
-              value={notes}
-              onChangeText={setNotes}
-            />
-          </View>
         </View>
       </AdminCard>
 
@@ -183,86 +124,6 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
                 onChangeText={setPhone}
               />
             </View>
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              WhatsApp
-            </Text>
-            <View className="relative flex-row items-center">
-              <View className="absolute left-4 z-10">
-                <MaterialIcons name="chat" size={20} className="text-on-surface-variant" />
-              </View>
-              <TextInput
-                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-                placeholder="WhatsApp number"
-                placeholderTextColor="#717973"
-                keyboardType="phone-pad"
-                value={whatsapp}
-                onChangeText={setWhatsapp}
-              />
-            </View>
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Alternate Phone
-            </Text>
-            <View className="relative flex-row items-center">
-              <View className="absolute left-4 z-10">
-                <MaterialIcons name="phone" size={20} className="text-on-surface-variant" />
-              </View>
-              <TextInput
-                className="w-full h-14 border border-outline-variant/50 rounded-xl pl-12 pr-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-                placeholder="Other phone number"
-                placeholderTextColor="#717973"
-                keyboardType="phone-pad"
-                value={alternatePhone}
-                onChangeText={setAlternatePhone}
-              />
-            </View>
-          </View>
-        </View>
-      </AdminCard>
-
-      {/* Location & Delivery Card */}
-      <AdminCard title="Location & Delivery" icon="location-on" iconColorClass="text-tertiary" iconBgClass="bg-tertiary/10">
-        <View className="flex-col gap-4">
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Area
-            </Text>
-            <TextInput
-              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-              placeholder="e.g. Downtown"
-              placeholderTextColor="#717973"
-              value={area}
-              onChangeText={setArea}
-            />
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Preferred Delivery Time
-            </Text>
-            <TextInput
-              className="h-14 border border-outline-variant/50 rounded-xl px-4 text-body-lg text-on-surface font-medium bg-surface-container-lowest focus:border-primary"
-              placeholder="e.g. Morning 6 AM"
-              placeholderTextColor="#717973"
-              value={preferredDeliveryTime}
-              onChangeText={setPreferredDeliveryTime}
-            />
-          </View>
-          <View>
-            <Text className="text-on-surface-variant text-label-md font-semibold mb-1.5 ml-1">
-              Full Address
-            </Text>
-            <TextInput
-              className="h-24 border border-outline-variant/50 rounded-xl px-4 py-3 text-body-md text-on-surface bg-surface-container-lowest focus:border-primary"
-              placeholder="Enter complete address"
-              placeholderTextColor="#717973"
-              multiline
-              textAlignVertical="top"
-              value={address}
-              onChangeText={setAddress}
-            />
           </View>
         </View>
       </AdminCard>

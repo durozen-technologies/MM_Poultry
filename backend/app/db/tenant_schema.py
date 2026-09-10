@@ -15,7 +15,7 @@ from app.db.tenant_context_var import (
 )
 
 # Bump when tenant Alembic head advances.
-TENANT_MIGRATION_HEAD = "a1b2c3d40003"
+TENANT_MIGRATION_HEAD = "a1b2c3d40004"
 
 _SCHEMA_SAFE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -305,20 +305,13 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
 
     engine = get_engine()
     alters = [
-        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS owner_name VARCHAR(120)",
-        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS whatsapp VARCHAR(30)",
-        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS area VARCHAR(120)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS route_name VARCHAR(120)",
-        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS category VARCHAR(60)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(12,2) NOT NULL DEFAULT 0.00",
-        "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS preferred_delivery_time VARCHAR(40)",
         "ALTER TABLE retailers ADD COLUMN IF NOT EXISTS route_id UUID",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS rate_per_kg NUMERIC(12,2)",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS total_amount NUMERIC(12,2)",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(12,2)",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)",
-        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS owner_name VARCHAR(120)",
-        "ALTER TABLE farms ADD COLUMN IF NOT EXISTS address VARCHAR(500)",
         "ALTER TABLE farms ADD COLUMN IF NOT EXISTS capacity INTEGER",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS total_boxes INTEGER",
         "ALTER TABLE farm_loads ADD COLUMN IF NOT EXISTS item_id UUID",

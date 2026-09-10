@@ -15,9 +15,7 @@ from app.schemas.dates import IstDate
 
 class FarmCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
-    owner_name: str | None = Field(default=None, max_length=120)
     location: str | None = Field(default=None, max_length=250)
-    address: str | None = Field(default=None, max_length=500)
     contact_phone: str | None = Field(default=None, max_length=30)
     capacity: int | None = None
     is_active: bool = True
@@ -25,9 +23,7 @@ class FarmCreate(BaseModel):
 
 class FarmUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
-    owner_name: str | None = Field(default=None, max_length=120)
     location: str | None = Field(default=None, max_length=250)
-    address: str | None = Field(default=None, max_length=500)
     contact_phone: str | None = Field(default=None, max_length=30)
     capacity: int | None = None
     is_active: bool | None = None
@@ -38,9 +34,7 @@ class FarmOut(BaseModel):
 
     id: UUID
     name: str
-    owner_name: str | None = None
     location: str | None = None
-    address: str | None = None
     contact_phone: str | None = None
     capacity: int | None = None
     is_active: bool

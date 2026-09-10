@@ -41,18 +41,10 @@ async def create_retailer(
     retailer = Retailer(
         name=payload.name.strip(),
         shop_name=payload.shop_name,
-        owner_name=payload.owner_name,
         phone=payload.phone,
-        alternate_phone=payload.alternate_phone,
-        whatsapp=payload.whatsapp,
-        address=payload.address,
-        area=payload.area,
-        category=payload.category,
-        notes=payload.notes,
         opening_balance=q_money(payload.opening_balance),
         credit_balance=q_money(payload.opening_balance),
         credit_limit=q_money(payload.credit_limit),
-        preferred_delivery_time=payload.preferred_delivery_time,
     )
     db.add(retailer)
     await db.flush()

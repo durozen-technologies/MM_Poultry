@@ -75,9 +75,6 @@ class Retailer(Base, BaseModelMixin):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     shop_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    alternate_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )
@@ -87,18 +84,13 @@ class Retailer(Base, BaseModelMixin):
     credit_balance: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, server_default=text("0.00")
     )
-    owner_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    whatsapp: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    area: Mapped[str | None] = mapped_column(String(120), nullable=True)
     route_id: Mapped[UUID | None] = mapped_column(
         UUID_SQL_TYPE, ForeignKey("routes.id", ondelete="SET NULL"), nullable=True, index=True
     )
     route_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    category: Mapped[str | None] = mapped_column(String(60), nullable=True)
     credit_limit: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, server_default=text("0.00")
     )
-    preferred_delivery_time: Mapped[str | None] = mapped_column(String(40), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=now_ist,
@@ -179,9 +171,7 @@ class Farm(Base, BaseModelMixin):
 
     id: Mapped[UUID] = mapped_column(UUID_SQL_TYPE, primary_key=True, default=uuid7)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    owner_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     location: Mapped[str | None] = mapped_column(String(250), nullable=True)
-    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(

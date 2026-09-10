@@ -68,9 +68,6 @@ export function RetailerProfileScreen() {
                   {retailer.shop_name || retailer.name}
                 </Text>
                 <Text className="font-body-md text-white/70 mt-1">@{profile?.username}</Text>
-                {retailer.owner_name ? (
-                  <Text className="font-body-md text-white mt-3 font-semibold">{retailer.owner_name}</Text>
-                ) : null}
               </View>
               <View className="w-16 h-16 rounded-full bg-white/20 items-center justify-center border border-white/30">
                 <MaterialIcons name="store" size={32} className="text-white" />
@@ -84,10 +81,6 @@ export function RetailerProfileScreen() {
 
             <View className="bg-white rounded-[20px] p-5 border border-black/5 shadow-sm elevation-sm flex-col">
               <InfoRow icon="phone" label="Phone" value={retailer.phone || "—"} />
-              <InfoRow icon="chat" label="WhatsApp" value={retailer.whatsapp || "—"} />
-              <InfoRow icon="place" label="Address" value={retailer.address || "—"} />
-
-              <InfoRow icon="map" label="Area" value={retailer.area || "—"} />
             </View>
 
             <Pressable accessibilityRole="button" accessibilityLabel="Button"

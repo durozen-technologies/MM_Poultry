@@ -187,7 +187,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
       header={
         <AdminHeader 
           title="Retailer Profile" 
-          subtitle={retailer.shop_name || retailer.owner_name}
+          subtitle={retailer.shop_name || "—"}
           onBack={() => navigation.goBack()} 
           rightContent={
             <View className="flex-row gap-2">
@@ -221,7 +221,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
           {retailer.name}
         </Text>
         <Text className="font-title-sm text-on-surface-variant font-bold text-center mb-6">
-          {retailer.shop_name || retailer.owner_name || "—"}
+          {retailer.shop_name || "—"}
         </Text>
 
         <View className="w-64 bg-error-container/20 p-5 rounded-3xl border border-error/20 flex-col items-center justify-center shadow-sm">
@@ -282,23 +282,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                 </View>
                 <Text className="font-title-md text-on-surface font-bold">Contact Details</Text>
               </View>
-              <InfoRow label="Primary Phone" value={retailer.phone || "—"} />
-              <InfoRow label="WhatsApp" value={retailer.whatsapp || "—"} />
-              <InfoRow label="Alternate Phone" value={retailer.alternate_phone || "—"} isLast />
-            </View>
-
-            <View className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30 flex-col gap-2">
-              <View className="flex-row items-center gap-2 mb-2">
-                <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center">
-                  <MaterialIcons name="location-on" size={16} className="text-secondary" />
-                </View>
-                <Text className="font-title-md text-on-surface font-bold">Location & Delivery</Text>
-              </View>
-              <InfoRow label="Full Address" value={retailer.address || "—"} />
-              <InfoRow label="Area" value={retailer.area || "—"} />
-
-              <InfoRow label="Locality" value={retailer.area || "—"} />
-              <InfoRow label="Preferred Time" value={retailer.preferred_delivery_time || "—"} isLast />
+              <InfoRow label="Primary Phone" value={retailer.phone || "—"} isLast />
             </View>
 
             <View className="bg-surface-container-lowest rounded-3xl p-5 shadow-sm border border-outline-variant/30 flex-col gap-2">
@@ -308,11 +292,8 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
                 </View>
                 <Text className="font-title-md text-on-surface font-bold">Business Information</Text>
               </View>
-              <InfoRow label="Owner Name" value={retailer.owner_name || "—"} />
               <InfoRow label="Shop Name" value={retailer.shop_name || "—"} />
-              <InfoRow label="Category" value={retailer.category || "—"} />
-              <InfoRow label="Opening Balance" value={`₹${retailer.opening_balance}`} />
-              <InfoRow label="Notes" value={retailer.notes || "—"} isLast />
+              <InfoRow label="Opening Balance" value={`₹${retailer.opening_balance}`} isLast />
             </View>
 
             {!retailer.has_portal_access && (
