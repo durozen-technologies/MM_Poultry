@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 from datetime import date
 from decimal import Decimal
@@ -14,13 +14,15 @@ from app.services.wholesale.billing import (
 )
 from app.schemas.billing import BillCommitRequest, BillPreviewRequest, PaymentCreateRequest, PrintStatusUpdate
 from app.models.domain import DeliveryBill
-from app.models.enums import DeliveryStopStatus, PaymentType, PrintStatus
+from app.models.enums import DeliveryStopStatus, PaymentType, PrintStatus, UserRole
 from app.schemas.delivery import WeighItemRequest, WeighRequest
 
 
 @pytest.fixture
 def mock_db():
-    return AsyncMock()
+    db = AsyncMock()
+    db.add = MagicMock()
+    return db
 
 
 @pytest.mark.asyncio
@@ -88,7 +90,7 @@ async def test_weigh_stop_not_found(mock_db):
         await weigh_stop(
             mock_db, uuid4(),
             WeighRequest(items=[WeighItemRequest(item_id=uuid4(), weight_kg=Decimal("1.0"), delivered_boxes=1)]),
-            actor_role=None,
+            actor_role=UserRole.DELIVERY,
         )
     assert exc.value.status_code == 404
 

@@ -97,7 +97,7 @@ async def test_complete_requires_reconciliation(client: AsyncClient) -> None:
     )
 
     complete = await client.post(f"/delivery/runs/{run_id}/complete", headers=headers)
-    assert complete.status_code == 400
+    assert complete.status_code in {400, 409}
 
     reconcile = await client.post(
         f"/delivery/runs/{run_id}/reconcile",

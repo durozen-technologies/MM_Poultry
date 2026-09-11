@@ -17,7 +17,9 @@ from app.models.enums import OrderStatus
 
 @pytest.fixture
 def mock_db():
-    return AsyncMock()
+    db = AsyncMock()
+    db.add = MagicMock()
+    return db
 
 @pytest.mark.asyncio
 async def test_upsert_order_not_found(mock_db):

@@ -21,13 +21,14 @@ from app.models.organization import Organization
 from app.models.user import User
 from app.models.enums import UserRole
 
-class FakeOrig:
+class FakeOrig(Exception):
     def __str__(self):
         return "user_auth_index unique"
 
 @pytest.fixture
 def mock_db():
     db = AsyncMock()
+    db.add = MagicMock()
     mock_org = Organization(id=uuid4(), name="Test", slug="test", schema_name="tenant_test", is_active=True)
     db.scalar.return_value = mock_org
     db.scalars.return_value = [mock_org]
@@ -54,9 +55,10 @@ async def test_create_organization_conflict(mock_db):
 @pytest.mark.asyncio
 @patch("app.db.tenant_schema.provision_tenant_schema_async", new_callable=AsyncMock)
 async def test_create_organization_race(mock_provision, mock_db):
+    print("mock_db add type:", type(mock_db.add))
     mock_org = Organization(id=uuid4(), name="New", slug="new", schema_name="tenant_new")
     mock_db.scalar.side_effect = [None, mock_org]
-    mock_db.flush.side_effect = IntegrityError("statement", "params", "orig")
+    mock_db.flush.side_effect = IntegrityError("statement", "params", Exception("orig"))
     
     payload = OrganizationCreate(name="New", slug="new")
     with pytest.raises(HTTPException) as exc:

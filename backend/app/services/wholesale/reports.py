@@ -71,6 +71,50 @@ async def _run_adjustment_sum(db: AsyncSession, run_id: UUID) -> Decimal:
     return q_kg(Decimal(str(val or 0)))
 
 
+async def _run_source_loaded_kg(db: AsyncSession, run: DeliveryRun) -> Decimal:
+    load_ids = {link.farm_load_id for link in run.farm_load_links}
+    if run.farm_load_id:
+        load_ids.add(run.farm_load_id)
+    if not load_ids:
+        return ZERO
+
+    val = await db.scalar(
+        select(func.coalesce(func.sum(FarmLoad.loaded_weight_kg), 0)).where(
+            FarmLoad.id.in_(load_ids)
+        )
+    )
+    return q_kg(Decimal(str(val or 0)))
+
+
+async def _infer_actual_loaded_kg(
+    db: AsyncSession,
+    run: DeliveryRun,
+    payload: DeliveryRunReconcile,
+) -> Decimal:
+    if payload.actual_loaded_kg is not None:
+        return q_kg(payload.actual_loaded_kg)
+
+    if run.actual_loaded_kg is not None:
+        actual = q_kg(run.actual_loaded_kg)
+    elif run.farm_load_links:
+        actual = q_kg(sum((link.allocated_kg for link in run.farm_load_links), start=ZERO))
+    else:
+        actual = q_kg(run.planned_kg or ZERO)
+
+    delivered = await _run_delivered_kg(db, run.id)
+    returned = q_kg(payload.returned_kg)
+    wastage = q_kg(payload.wastage_kg)
+    adjustment = await _run_adjustment_sum(db, run.id)
+    accounted = q_kg(delivered + returned + wastage + adjustment)
+    if accounted <= actual:
+        return actual
+
+    source_loaded = await _run_source_loaded_kg(db, run)
+    if source_loaded and accounted > source_loaded:
+        return actual
+    return accounted
+
+
 async def reconcile_delivery_run(
     db: AsyncSession,
     run_id: UUID,
@@ -92,12 +136,7 @@ async def reconcile_delivery_run(
             detail="Run must be active to reconcile",
         )
 
-    actual = payload.actual_loaded_kg
-    if actual is None:
-        if run.farm_load_links:
-            actual = q_kg(sum((link.allocated_kg for link in run.farm_load_links), start=ZERO))
-        else:
-            actual = run.actual_loaded_kg or run.planned_kg or ZERO
+    actual = await _infer_actual_loaded_kg(db, run, payload)
 
     old_returned = run.returned_kg
     old_wastage = run.wastage_kg
@@ -105,7 +144,7 @@ async def reconcile_delivery_run(
 
     run.returned_kg = q_kg(payload.returned_kg)
     run.wastage_kg = q_kg(payload.wastage_kg)
-    run.actual_loaded_kg = q_kg(actual)
+    run.actual_loaded_kg = actual
     run.reconciliation_notes = payload.notes
     run.reconciled_at = now_ist()
 

@@ -17,7 +17,9 @@ from app.models.enums import UserRole
 
 @pytest.fixture
 def mock_db():
-    return AsyncMock()
+    db = AsyncMock()
+    db.add = MagicMock()
+    return db
 
 @pytest.mark.asyncio
 async def test_get_retailer_not_found(mock_db):
@@ -39,7 +41,7 @@ async def test_create_retailer_portal_user_already_exists(mock_db):
 @patch("app.services.auth.upsert_auth_index", new_callable=AsyncMock)
 async def test_create_portal_user_integrity_error(mock_upsert, mock_req, mock_db):
     mock_req.return_value = "username"
-    class FakeOrig:
+    class FakeOrig(Exception):
         def __str__(self): return "user_auth_index"
     mock_db.flush.side_effect = IntegrityError("st", "p", FakeOrig())
     with pytest.raises(HTTPException) as exc:

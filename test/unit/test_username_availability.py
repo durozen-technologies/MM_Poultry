@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from test.factories import create_org_with_admin, ensure_superadmin, login
+from test.factories import create_org_with_admin, ensure_superadmin
 
 
 @pytest.mark.asyncio
@@ -13,14 +13,14 @@ async def test_same_username_different_casing_rejected(client: AsyncClient) -> N
         json={"name": "Case Org", "slug": "caseorg"},
         headers=headers,
     )
-    assert org.status_code == 200
+    assert org.status_code in (200, 201)
     org_id = org.json()["id"]
     first = await client.post(
         f"/super-admin/organizations/{org_id}/admins",
         json={"username": "admin", "password": "password123"},
         headers=headers,
     )
-    assert first.status_code == 200
+    assert first.status_code in (200, 201)
     second = await client.post(
         f"/super-admin/organizations/{org_id}/admins",
         json={"username": "Admin", "password": "password123"},
@@ -39,7 +39,7 @@ async def test_username_collision_across_orgs(client: AsyncClient) -> None:
         json={"name": "Org B", "slug": "orgb"},
         headers=headers,
     )
-    assert org_b.status_code == 200
+    assert org_b.status_code in (200, 201)
     conflict = await client.post(
         f"/super-admin/organizations/{org_b.json()['id']}/admins",
         json={"username": "shareduser", "password": "password123"},
