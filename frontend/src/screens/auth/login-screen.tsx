@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth-store";
@@ -57,16 +58,16 @@ export function LoginScreen() {
       {/* Background Architectural Header in Deep Green */}
       <View className="absolute top-0 left-0 right-0 h-[360px] bg-[#012D1D] rounded-b-[64px] overflow-hidden shadow-sm" />
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "padding"} className="flex-1">
         <ScrollView
           className="flex-1 z-10"
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, 24) + 24 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-        <View className="flex-1 justify-center items-center px-6 py-8" style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}>
-          <View className="w-full max-w-md justify-center items-center">
+        <View className="w-full items-center px-6 pb-8 pt-2 mt-4" style={{ paddingTop: insets.top + 16 }}>
+          <View className="w-full max-w-md items-center">
             
             <Animated.View entering={FadeInDown.springify().damping(22)} className="flex-col items-center mb-8 w-full mt-6">
               <View className="w-28 h-28 mb-5 rounded-[28px] overflow-hidden shadow-2xl border-[3px] border-white/10 bg-white items-center justify-center">
@@ -95,7 +96,7 @@ export function LoginScreen() {
                   </View>
                   <TextInput
                     className="w-full pl-[52px] pr-4 py-3 text-[16px] text-on-surface h-14 placeholder:text-outline"
-                    placeholder="e.g. admin"
+                    placeholder="Enter username"
                     placeholderTextColor="#9CA3AF"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -198,10 +199,31 @@ export function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#ffffff" accessibilityLabel="Signing in" />
                 ) : (
-                  <Text className="text-white font-bold text-[16px] tracking-wide">
-                    Sign In
-                  </Text>
+                  <View className="flex-row items-center w-full justify-center relative">
+                    <Text className="text-white font-bold text-[16px] tracking-wide">
+                      Sign In
+                    </Text>
+                    <View className="absolute right-4">
+                      <MaterialIcons name="arrow-forward" size={24} color="white" />
+                    </View>
+                  </View>
                 )}
+              </Pressable>
+            </Animated.View>
+
+            {/* Footer */}
+            <Animated.View entering={FadeInUp.delay(300).springify().damping(22)} className="mt-4 mb-4 w-full items-center">
+              <Text className="text-[11px] text-on-surface-variant/60 uppercase tracking-[0.2em] font-bold mb-1">
+                Developed By
+              </Text>
+              <Pressable 
+                onPress={() => Linking.openURL("https://www.durozen.in")}
+                className="active:opacity-70"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text className="text-[15px] font-black text-[#012D1D] tracking-tight">
+                  Durozen Technologies
+                </Text>
               </Pressable>
             </Animated.View>
 
