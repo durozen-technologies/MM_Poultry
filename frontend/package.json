@@ -1,7 +1,7 @@
 {
   "name": "mmbroilers-frontend",
   "main": "expo/AppEntry",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "start": "expo start",
     "start:go": "expo start --go",
