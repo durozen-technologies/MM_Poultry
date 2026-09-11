@@ -20,19 +20,11 @@ def now_ist() -> datetime:
     return datetime.now(IST)
 
 
-def today_ist() -> date:
-    return now_ist().date()
-
-
 def to_ist(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         # Naive values are treated as already-IST wall clock (DB session TZ).
         return dt.replace(tzinfo=IST)
     return dt.astimezone(IST)
-
-
-def ensure_ist(dt: datetime | None = None) -> datetime:
-    return to_ist(dt) if dt is not None else now_ist()
 
 
 def format_ist_date(value: date | datetime | None) -> str | None:
@@ -71,10 +63,6 @@ def ist_midnight(day: date) -> datetime:
 def ist_day_bounds(day: date) -> tuple[datetime, datetime]:
     start = ist_midnight(day)
     return start, start + timedelta(days=1)
-
-
-def ist_range_bounds(start_date: date, end_date: date) -> tuple[datetime, datetime]:
-    return ist_midnight(start_date), ist_midnight(end_date) + timedelta(days=1)
 
 
 def ist_month_bounds(day: date) -> tuple[datetime, datetime]:

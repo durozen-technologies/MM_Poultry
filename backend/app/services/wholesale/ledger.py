@@ -30,28 +30,22 @@ from app.services.wholesale.retailers import get_retailer
 
 async def get_ledger(db: AsyncSession, retailer_id: UUID) -> LedgerOut:
     retailer = await get_retailer(db, retailer_id)
-    bills = list(
-        await db.scalars(
+    bills = (await db.scalars(
             select(DeliveryBill)
             .options(selectinload(DeliveryBill.items))
             .where(DeliveryBill.retailer_id == retailer_id)
             .order_by(DeliveryBill.bill_date.asc(), DeliveryBill.created_at.asc())
-        )
-    )
-    payments = list(
-        await db.scalars(
+        )).all()
+    payments = (await db.scalars(
             select(Payment)
             .where(Payment.retailer_id == retailer_id)
             .order_by(Payment.payment_date.asc(), Payment.created_at.asc())
-        )
-    )
-    returns = list(
-        await db.scalars(
+        )).all()
+    returns = (await db.scalars(
             select(RetailerReturn)
             .where(RetailerReturn.retailer_id == retailer_id)
             .order_by(RetailerReturn.return_date.asc(), RetailerReturn.created_at.asc())
-        )
-    )
+        )).all()
     stop_ids = [b.delivery_stop_id for b in bills]
     stop_map = {}
     if stop_ids:

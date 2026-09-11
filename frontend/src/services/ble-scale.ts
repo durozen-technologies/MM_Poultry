@@ -47,9 +47,7 @@ function simulatedReading(deviceId = "SIM-SCALE"): ScaleReading {
   return { kg, deviceId, source: "simulated" };
 }
 
-export function resetSimulatedScale(): void {
-  callCount = 0;
-}
+
 
 // ---------------------------------------------------------------------------
 // GATT frame parsing helpers

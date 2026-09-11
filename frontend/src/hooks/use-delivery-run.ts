@@ -14,6 +14,7 @@ import {
 import { getApiErrorMessage } from "../api/client";
 import { readScaleWeight } from "../services/ble-scale";
 import { printThermalReceipt, shareWhatsAppBill, deliveryBillToPrintPayload } from "../services/printer";
+import { buildWeighPayload, safeWeighStop, safeCommitBill } from "../utils/billing";
 import type { DeliveryBill, DeliveryRun, DeliveryStop } from "../types/api";
 import { getTripWeightLoss } from "../api/reports";
 import { useAuthStore } from "../store/auth-store";
@@ -104,20 +105,7 @@ export function useDeliveryRun() {
     // Idempotent checkout ID — keep stable across retries for same stop
     const checkoutId = genCheckoutId(activeStop.id);
     try {
-      const itemsPayload = (activeStop.items || []).map((item) => {
-        const inputWeight = weights[item.item_id];
-        const weight = Number(inputWeight || item.ordered_kg || "0");
-        const boxes = Number(item.delivered_boxes ?? item.original_total_boxes ?? "1");
-        
-        if (weight <= 0) throw new Error(`Weight must be > 0 for ${item.item_id.slice(0, 8)}`);
-        
-        return {
-          item_id: item.item_id,
-          weight_kg: weight,
-          delivered_boxes: boxes,
-          delivered_bird_count: 0,
-        };
-      });
+      const payload = buildWeighPayload(activeStop, weights, options?.skipScale);
 
       const cashNum = Number(cash);
       const upiNum = Number(upi);
@@ -125,56 +113,20 @@ export function useDeliveryRun() {
         throw new Error("Invalid cash/UPI amount");
       }
 
-      // Step 1: Weigh — retry once on 503/429
-      let weighDone = false;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          await weighStop(activeStop.id, {
-            scale_device_id: options?.skipScale ? "MANUAL" : "BLE-SCALE",
-            items: itemsPayload,
-          });
-          weighDone = true;
-          break;
-        } catch (e: any) {
-          const code = e?.response?.status;
-          if ((code === 503 || code === 429) && attempt === 0) {
-            await new Promise((r) => setTimeout(r, 800));
-            continue;
-          }
-          // 409 means already weighed — treat as success
-          if (code === 409 && String(e?.message || "").includes("WEIGH")) {
-            weighDone = true;
-            break;
-          }
-          throw e;
-        }
-      }
-      if (!weighDone) throw new Error("Weigh failed");
+      await safeWeighStop(weighStop, activeStop.id, payload);
 
       const preview = await previewBill(activeStop.id, { cash_payment: String(cashNum), upi_payment: String(upiNum) });
       if (!preview) {
         throw new Error("Failed to preview bill");
       }
 
-      // Step 2: Commit — idempotent via checkout_id; retry safe
-      let bill: any = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          bill = await commitBill(activeStop.id, {
-            cash_payment: String(cashNum),
-            upi_payment: String(upiNum),
-            print_status: "PENDING",
-            checkout_id: checkoutId,
-          });
-          break;
-        } catch (e: any) {
-          if ((e?.response?.status === 503 || e?.response?.status === 429) && attempt === 0) {
-            await new Promise((r) => setTimeout(r, 800));
-            continue;
-          }
-          throw e;
-        }
-      }
+      const bill = await safeCommitBill(commitBill, activeStop.id, {
+        cash_payment: String(cashNum),
+        upi_payment: String(upiNum),
+        print_status: "PENDING",
+        checkout_id: checkoutId,
+      });
+
       if (!bill) throw new Error("Commit failed");
 
       const totalWeight = bill.items?.reduce((sum: number, it: { weight_kg: string }) => sum + Number(it.weight_kg), 0) || 0;

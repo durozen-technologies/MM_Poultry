@@ -30,7 +30,7 @@ def q_kg(value: Decimal | None) -> Decimal:
     return value.quantize(KG_Q, rounding=ROUND_HALF_UP)
 
 
-async def _get_org_settings(db: AsyncSession) -> OrgSettings:
+async def get_org_settings(db: AsyncSession) -> OrgSettings:
     try:
         settings = await db.scalar(select(OrgSettings).limit(1))
         if settings is None:
@@ -43,14 +43,10 @@ async def _get_org_settings(db: AsyncSession) -> OrgSettings:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get org settings: {str(e)}")
 
 
-async def get_org_settings_out(db: AsyncSession) -> OrgSettings:
-    return await _get_org_settings(db)
-
-
 async def update_org_settings(db: AsyncSession, payload) -> OrgSettings:
     from fastapi import HTTPException, status
     try:
-        settings = await _get_org_settings(db)
+        settings = await get_org_settings(db)
         data = payload.model_dump(exclude_unset=True)
         # Validate warn < alert
         warn = data.get("weight_loss_warn_pct", settings.weight_loss_warn_pct)

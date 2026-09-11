@@ -6,8 +6,10 @@ import {
   TextInput,
   View,
   Image,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuthStore } from "../../store/auth-store";
 import { getApiErrorMessage, isHttpStatus } from "../../api/client";
@@ -55,15 +57,14 @@ export function LoginScreen() {
       {/* Background Architectural Header in Deep Green */}
       <View className="absolute top-0 left-0 right-0 h-[360px] bg-[#012D1D] rounded-b-[64px] overflow-hidden shadow-sm" />
 
-      <KeyboardAwareScrollView
-        className="flex-1 z-10"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        enableOnAndroid={true}
-        extraScrollHeight={20}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        <ScrollView
+          className="flex-1 z-10"
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
         <View className="flex-1 justify-center items-center px-6 py-8" style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}>
           <View className="w-full max-w-md justify-center items-center">
             
@@ -206,7 +207,8 @@ export function LoginScreen() {
 
           </View>
         </View>
-      </KeyboardAwareScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

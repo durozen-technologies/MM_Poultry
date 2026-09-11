@@ -17,10 +17,10 @@ async def test_retailer_ledger_after_payment(client: AsyncClient) -> None:
     rid = retailer.json()["id"]
     payment = await client.post(
         f"/admin/retailers/{rid}/payments",
-        json={"cash_amount": "50.00", "upi_amount": "0"},
+        json={"cash_amount": "50.00", "upi_amount": "0", "payment_date": "10/10/2026"},
         headers=headers,
     )
-    assert payment.status_code == 200
+    assert payment.status_code == 204
     ledger = await client.get(f"/admin/retailers/{rid}/ledger", headers=headers)
     assert ledger.status_code == 200
     assert len(ledger.json()["entries"]) >= 1

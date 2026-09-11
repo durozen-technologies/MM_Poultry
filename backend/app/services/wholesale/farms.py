@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import parse_ist_date, today_ist
+from app.core.timezone import now_ist, parse_ist_date
 from app.models.domain import (
     Farm,
     FarmLoad,
@@ -42,7 +42,7 @@ async def create_farm(db: AsyncSession, payload: FarmCreate) -> FarmOut:
 async def list_farms(db: AsyncSession, limit: int = 100, offset: int = 0) -> list[FarmOut]:
     limit = max(1, min(limit, 200))
     offset = max(0, offset)
-    rows: list[Farm] = list(await db.scalars(select(Farm).order_by(Farm.name).offset(offset).limit(limit)))
+    rows: list[Farm] = list((await db.scalars(select(Farm).order_by(Farm.name).offset(offset).limit(limit))).all())
     return [FarmOut.model_validate(r, from_attributes=True) for r in rows]
 
 
@@ -106,7 +106,7 @@ async def create_farm_load(db: AsyncSession, payload: FarmLoadCreate) -> FarmLoa
         if not item.is_active:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Item is inactive")
     load = FarmLoad(
-        load_date=payload.load_date or today_ist(),
+        load_date=payload.load_date or now_ist().date(),
         farm_id=payload.farm_id,
         item_id=item_id,
         driver_name=driver_name,
@@ -129,14 +129,12 @@ async def list_farm_loads(
 ) -> list[FarmLoadOut]:
     limit = max(1, min(limit, 200))
     offset = max(0, offset)
-    rows: list[FarmLoad] = list(
-        await db.scalars(
+    rows: list[FarmLoad] = list((await db.scalars(
             select(FarmLoad)
             .order_by(FarmLoad.load_date.desc(), FarmLoad.created_at.desc())
             .offset(offset)
             .limit(limit)
-        )
-    )
+        )).all())
     return [FarmLoadOut.model_validate(r, from_attributes=True) for r in rows]
 
 

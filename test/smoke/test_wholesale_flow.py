@@ -6,7 +6,9 @@ from test.factories import auth_headers, create_org_with_admin, create_default_i
 
 @pytest.mark.asyncio
 async def test_wholesale_flow(client: AsyncClient) -> None:
-    _, admin = await create_org_with_admin(client, slug="smokeorg")
+    from uuid import uuid4
+    org_slug = f"smoke{uuid4().hex[:6]}"
+    _, admin = await create_org_with_admin(client, slug=org_slug)
     item = await create_default_item(client, admin["access_token"])
     headers = auth_headers(admin["access_token"])
     await client.put("/admin/rates", json={"rate_per_kg": "180.00", "item_id": item["id"]}, headers=headers)
@@ -17,7 +19,7 @@ async def test_wholesale_flow(client: AsyncClient) -> None:
     )
     login = await client.post(
         "/auth/login",
-        json={"username": "smokeret", "password": "password123", "organization_slug": "smokeorg"},
+        json={"username": "smokeret", "password": "password123", "organization_slug": org_slug},
     )
     r_headers = auth_headers(login.json()["access_token"])
     order = await client.post(

@@ -8,7 +8,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.timezone import now_ist, today_ist
+from app.core.timezone import now_ist
 from app.models.domain import (
     DeliveryRun,
     DeliveryRunFarmLoad,
@@ -31,16 +31,16 @@ from app.schemas.delivery import (
     DeliveryStopOut,
     FarmLoadAllocation,
 )
-from app.services.wholesale.common import q_kg
+from app.services.wholesale.common import ZERO, q_kg
 from app.services.wholesale.rates import resolve_rate
-from app.services.wholesale.retailers import get_retailer
 from app.services.wholesale.stock_audit import log_quantity_change
 
 _ACTIVE_RUN_STATUSES = (DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS)
-_ZERO = Decimal("0")
+
 
 
 async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
+    from app.services.wholesale.retailers import get_retailer
     retailer = await get_retailer(db, stop.retailer_id)
     out = DeliveryStopOut.model_validate(stop, from_attributes=True)
     out.retailer_name = retailer.name
@@ -48,10 +48,10 @@ async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
     out.route_name = retailer.route_name
     
     if stop.daily_order_id:
-        order_items = await db.scalars(
+        order_items = (await db.scalars(
             select(RetailerDailyOrderItem)
             .where(RetailerDailyOrderItem.order_id == stop.daily_order_id)
-        )
+        )).all()
         oi_map = {oi.item_id: oi for oi in order_items}
         for item_out in out.items:
             oi = oi_map.get(item_out.item_id)
@@ -154,13 +154,13 @@ async def create_delivery_run(
         for adj in payload.order_adjustments:
             adj_map[(adj.order_id, adj.item_id)] = adj.requested_kg
 
-    total_ordered_kg = _ZERO
+    total_ordered_kg = ZERO
     for ord in orders:
         for itm in ord.items:
-            req_kg = adj_map.get((ord.id, itm.item_id), itm.requested_kg or _ZERO)
+            req_kg = adj_map.get((ord.id, itm.item_id), itm.requested_kg or ZERO)
             total_ordered_kg += q_kg(req_kg)
     allocations = _resolve_allocations(payload, total_ordered_kg)
-    total_allocated = q_kg(sum((a.allocated_kg for a in allocations), start=_ZERO))
+    total_allocated = q_kg(sum((a.allocated_kg for a in allocations), start=ZERO))
 
     if allocations and total_allocated < total_ordered_kg:
         raise HTTPException(
@@ -194,7 +194,7 @@ async def create_delivery_run(
         run = DeliveryRun(
             farm_load_id=primary_load_id,
             route_id=payload.route_id,
-            run_date=payload.run_date or today_ist(),
+            run_date=payload.run_date or now_ist().date(),
             status=DeliveryRunStatus.PLANNED,
             driver_user_id=payload.driver_user_id,
             driver_name=payload.driver_name,
@@ -238,7 +238,7 @@ async def create_delivery_run(
 
             for item in order.items:
                 rate = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
-                req_kg = adj_map.get((order.id, item.item_id), item.requested_kg or _ZERO)
+                req_kg = adj_map.get((order.id, item.item_id), item.requested_kg or ZERO)
                 ordered = q_kg(req_kg)
                 stop_item = DeliveryStopItem(
                     delivery_stop_id=stop.id,
@@ -276,10 +276,10 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     order_ids = [stop.daily_order_id for stop, _, _, _ in stops_data if stop.daily_order_id]
     oi_map = {}
     if order_ids:
-        order_items = await db.scalars(
+        order_items = (await db.scalars(
             select(RetailerDailyOrderItem)
             .where(RetailerDailyOrderItem.order_id.in_(order_ids))
-        )
+        )).all()
         for oi in order_items:
             oi_map[(oi.order_id, oi.item_id)] = oi
 
@@ -326,11 +326,9 @@ async def list_delivery_runs(
 ) -> list[DeliveryRunOut]:
     limit = max(1, min(limit, 100))
     offset = max(0, offset)
-    runs = list(
-        await db.scalars(
+    runs = (await db.scalars(
             select(DeliveryRun).order_by(DeliveryRun.created_at.desc()).offset(offset).limit(limit)
-        )
-    )
+        )).all()
     result: list[DeliveryRunOut] = []
     for r in runs:
         result.append(await get_delivery_run(db, r.id))
@@ -387,7 +385,7 @@ async def cancel_delivery_run(
             entity_id=run.id,
             field="allocated_kg",
             old_value=link.allocated_kg,
-            new_value=_ZERO,
+            new_value=ZERO,
             reason=reason or "run cancelled",
             actor_user_id=actor_user_id,
             ref_type="farm_load",
@@ -399,7 +397,7 @@ async def cancel_delivery_run(
     )
     
     # Revert all orders to ACKNOWLEDGED
-    stops = await db.scalars(select(DeliveryStop).where(DeliveryStop.delivery_run_id == run.id))
+    stops = (await db.scalars(select(DeliveryStop).where(DeliveryStop.delivery_run_id == run.id))).all()
     for stop in stops:
         if stop.daily_order_id:
             await db.execute(

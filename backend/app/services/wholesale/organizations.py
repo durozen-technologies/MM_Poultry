@@ -21,15 +21,6 @@ from app.schemas import (
     TenantAdminUpdate,
     UserOut,
 )
-from app.services.auth import (
-    require_username_available,
-    reraise_username_conflict,
-    upsert_auth_index,
-)
-
-
-def _bump_permissions(user: User) -> None:
-    user.permissions_version = int(user.permissions_version or 0) + 1
 
 
 async def create_organization(db: AsyncSession, payload: OrganizationCreate) -> OrganizationOut:
@@ -71,7 +62,7 @@ async def list_organizations(
     stmt = select(Organization).order_by(Organization.name)
     if not include_inactive:
         stmt = stmt.where(Organization.is_active.is_(True))
-    rows = list(await db.scalars(stmt))
+    rows = (await db.scalars(stmt)).all()
     return [OrganizationOut.model_validate(r, from_attributes=True) for r in rows]
 
 
@@ -118,11 +109,9 @@ async def list_tenant_admins(db: AsyncSession, org_id: UUID) -> list[UserOut]:
 
     try:
         await set_search_path(db, org.schema_name)
-        rows = list(
-            await db.scalars(
+        rows = (await db.scalars(
                 select(User).where((User.role == UserRole.ADMIN) & (User.organization_id == org_id))
-            )
-        )
+            )).all()
         return [UserOut.model_validate(r, from_attributes=True) for r in rows]
     finally:
         try:
@@ -142,7 +131,8 @@ async def create_tenant_admin(
 
     try:
         await set_search_path(db, None)
-        username = await require_username_available(db, payload.username, org_id)
+        from app.services.auth import require_username_available
+        username = await require_username_available(db, payload.username)
         await set_search_path(db, org.schema_name)
 
         user = User(
@@ -155,9 +145,13 @@ async def create_tenant_admin(
         try:
             await db.flush()
         except IntegrityError as exc:
-            reraise_username_conflict(exc)
+            msg = str(getattr(exc, "orig", exc)).lower()
+            if "username" in msg or "user_auth_index" in msg:
+                raise HTTPException(status_code=409, detail="Username is already taken in this organization") from exc
+            raise exc
 
         await set_search_path(db, None)
+        from app.services.auth import upsert_auth_index
         await upsert_auth_index(
             db,
             username=user.username,
@@ -184,7 +178,8 @@ async def create_delivery_user(
 
     try:
         await set_search_path(db, None)
-        username = await require_username_available(db, payload.username, org_id)
+        from app.services.auth import require_username_available
+        username = await require_username_available(db, payload.username)
         await set_search_path(db, org.schema_name)
 
         user = User(
@@ -200,9 +195,13 @@ async def create_delivery_user(
         try:
             await db.flush()
         except IntegrityError as exc:
-            reraise_username_conflict(exc)
+            msg = str(getattr(exc, "orig", exc)).lower()
+            if "username" in msg or "user_auth_index" in msg:
+                raise HTTPException(status_code=409, detail="Username is already taken in this organization") from exc
+            raise exc
 
         await set_search_path(db, None)
+        from app.services.auth import upsert_auth_index
         await upsert_auth_index(
             db,
             username=user.username,
@@ -227,7 +226,7 @@ async def list_delivery_users(db: AsyncSession, org_id: UUID) -> list[UserOut]:
 
     try:
         await set_search_path(db, org.schema_name)
-        users = list(await db.scalars(select(User).where(User.role == UserRole.DELIVERY)))
+        users = (await db.scalars(select(User).where(User.role == UserRole.DELIVERY))).all()
         return [UserOut.model_validate(u, from_attributes=True) for u in users]
     finally:
         try:
@@ -255,10 +254,10 @@ async def update_delivery_user(
 
         if payload.is_active is not None:
             user.is_active = payload.is_active
-            _bump_permissions(user)
+            user.permissions_version = int(user.permissions_version or 0) + 1
         if payload.password is not None:
             user.password_hash = get_password_hash(payload.password)
-            _bump_permissions(user)
+            user.permissions_version = int(user.permissions_version or 0) + 1
         if payload.full_name is not None:
             user.full_name = payload.full_name.strip() or None
         if payload.mobile_number is not None:
@@ -320,10 +319,10 @@ async def update_tenant_admin(
 
         if payload.is_active is not None:
             user.is_active = payload.is_active
-            _bump_permissions(user)
+            user.permissions_version = int(user.permissions_version or 0) + 1
         if payload.password is not None:
             user.password_hash = get_password_hash(payload.password)
-            _bump_permissions(user)
+            user.permissions_version = int(user.permissions_version or 0) + 1
 
         await db.flush()
         return UserOut.model_validate(user, from_attributes=True)

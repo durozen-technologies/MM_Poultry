@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { getRetailerOrder, upsertTodayOrder } from "../api/retailer";
-import { getApiErrorCode, getApiErrorMessage } from "../api/client";
+import { getApiErrorMessage } from "../api/client";
 import { apiItems } from "../api/items";
 import type { OrderItemCreate } from "../types/api";
 
@@ -102,7 +102,12 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
       await upsertTodayOrder({ order_id: orderId, items: payloadItems });
       onSuccess();
     } catch (e) {
-      const code = getApiErrorCode(e);
+      let code = null;
+      if (typeof e === "object" && e && "response" in e) {
+        const resp = (e as any).response;
+        if (resp?.data?.error?.code) code = resp.data.error.code;
+        else if (resp?.status === 409) code = "CONFLICT";
+      }
       const detail = getApiErrorMessage(e);
       if (code === "CONFLICT") {
         Alert.alert(

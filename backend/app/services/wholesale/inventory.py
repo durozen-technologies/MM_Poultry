@@ -101,21 +101,19 @@ async def get_inventory_summary(db: AsyncSession) -> InventorySummaryOut:
 
 
 async def get_inventory_item_loads(db: AsyncSession, item_id: UUID) -> InventoryItemLoadsOut:
-    loads = list(
-        await db.scalars(
+    loads = (await db.scalars(
             select(FarmLoad)
             .where(
                 FarmLoad.item_id == item_id,
                 FarmLoad.status.in_([FarmLoadStatus.OPEN, FarmLoadStatus.IN_TRANSIT]),
             )
             .order_by(FarmLoad.load_date.desc())
-        )
-    )
+        )).all()
 
     farm_ids = {load.farm_id for load in loads if load.farm_id}
     farm_names: dict[UUID, str] = {}
     if farm_ids:
-        farms = list(await db.scalars(select(Farm).where(Farm.id.in_(farm_ids))))
+        farms = (await db.scalars(select(Farm).where(Farm.id.in_(farm_ids)))).all()
         farm_names = {f.id: f.name for f in farms}
 
     out_loads: list[InventoryFarmLoadOut] = []

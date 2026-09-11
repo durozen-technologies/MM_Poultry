@@ -8,15 +8,15 @@ from sqlalchemy.future import select
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.domain import Item, RetailerItemRate
 from app.models.enums import UserRole
-from app.schemas.common import Page
-from app.schemas.item import ItemCreate, ItemResponse, ItemUpdate
+from app.schemas.common import CursorPage
+from app.schemas.item import ItemBase, ItemResponse, ItemUpdate
 
 router = APIRouter(tags=["admin_items"])
 
 
 @router.post("/admin/items", response_model=ItemResponse)
 async def admin_create_item(
-    payload: ItemCreate,
+    payload: ItemBase,
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> ItemResponse:
     """Create a new item."""
@@ -31,7 +31,7 @@ async def admin_create_item(
     return ItemResponse.model_validate(new_item, from_attributes=True)
 
 
-@router.get("/admin/items", response_model=Page[ItemResponse])
+@router.get("/admin/items", response_model=CursorPage[ItemResponse])
 async def admin_list_items(
     auth: Annotated[
         AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.RETAILER, UserRole.DELIVERY))
@@ -58,14 +58,11 @@ async def admin_list_items(
     if active_only:
         count_stmt = count_stmt.where(Item.is_active)
     total_count = await auth.db.scalar(count_stmt)
-    total_pages = (total_count + size - 1) // size if total_count else 0
 
-    return Page(
+    return CursorPage(
         items=[ItemResponse.model_validate(i, from_attributes=True) for i in items],
-        total=total_count or 0,
-        page=page,
-        size=size,
-        pages=total_pages,
+        has_more=(len(items) == size),
+        total_count=total_count or 0,
     )
 
 

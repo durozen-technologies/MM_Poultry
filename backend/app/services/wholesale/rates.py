@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import today_ist
+from app.core.timezone import now_ist
 from app.models.domain import (
     RetailerItemRate,
 )
@@ -21,7 +21,7 @@ from app.services.wholesale.common import q_money
 async def resolve_rate(
     db: AsyncSession, item_id: UUID, retailer_id: UUID, on_date: date | None = None
 ) -> Decimal:
-    day = on_date or today_ist()
+    day = on_date or now_ist().date()
     retailer_rate = await db.scalar(
         select(RetailerItemRate)
         .where(
@@ -60,7 +60,7 @@ async def resolve_rate(
 
 
 async def upsert_rate(db: AsyncSession, payload: RateUpsert) -> RateOut:
-    day = payload.effective_from or today_ist()
+    day = payload.effective_from or now_ist().date()
     existing = await db.scalar(
         select(RetailerItemRate).where(
             RetailerItemRate.retailer_id == payload.retailer_id,
@@ -86,11 +86,9 @@ async def upsert_rate(db: AsyncSession, payload: RateUpsert) -> RateOut:
 
 
 async def list_rates(db: AsyncSession) -> list[RateOut]:
-    rows = list(
-        await db.scalars(
+    rows = (await db.scalars(
             select(RetailerItemRate)
             .where(RetailerItemRate.item_id.is_not(None))
             .order_by(RetailerItemRate.effective_from.desc())
-        )
-    )
+        )).all()
     return [RateOut.model_validate(r, from_attributes=True) for r in rows]

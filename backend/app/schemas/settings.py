@@ -14,11 +14,7 @@ class OrgSettingsOut(BaseModel):
     weight_loss_alert_pct: Decimal
     enforce_credit_limit: bool
 
-    @classmethod
-    def _validate_warn_alert(cls, warn, alert):
-        if warn is not None and alert is not None and warn >= alert:
-            raise ValueError("warn_pct must be less than alert_pct")
-        return warn, alert
+
 
 
 class OrgSettingsUpdate(BaseModel):

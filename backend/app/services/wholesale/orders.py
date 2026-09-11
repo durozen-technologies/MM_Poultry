@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.timezone import today_ist
+from app.core.timezone import now_ist
 from app.models.domain import (
     DeliveryBill,
     DeliveryStop,
@@ -59,7 +59,7 @@ async def upsert_today_order(
     payload: DailyOrderCreate,
     user_id: UUID | None,
 ) -> DailyOrderOut:
-    day = today_ist()
+    day = now_ist().date()
     existing = None
 
     if payload.order_id:
@@ -93,31 +93,16 @@ async def upsert_today_order(
             .limit(1)
         )
 
-        # If no editable order exists but a non-editable one does, reject.
-        # The unique constraint on (retailer_id, order_date) would block the INSERT anyway.
-        if not existing:
-            from fastapi import HTTPException, status
+        # If no editable order exists, we will create a new one (existing = None)
 
-            has_active = await db.scalar(
-                select(RetailerDailyOrder.id).where(
-                    RetailerDailyOrder.retailer_id == retailer_id,
-                    RetailerDailyOrder.order_date == day,
-                ).limit(1)
-            )
-            if has_active:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Today's order has already been confirmed. Contact admin for changes.",
-                )
-
-    # Block in-transit orders from being modified (safety guard for explicit order_id path)
-    _blocked = (OrderStatus.DISPATCHED, OrderStatus.PARTIAL)
+    # Block non-placed orders from being modified (safety guard for explicit order_id path)
+    _blocked = (OrderStatus.ACKNOWLEDGED, OrderStatus.DISPATCHED, OrderStatus.PARTIAL)
     if existing:
         if existing.status in _blocked:
             from fastapi import HTTPException, status
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Cannot update an order that is currently being delivered.",
+                detail="Cannot update a confirmed or dispatched order. Please place a new order.",
             )
 
         if existing.status != OrderStatus.PLACED:
@@ -149,7 +134,7 @@ async def upsert_today_order(
 
         from app.models.domain import Item
 
-        existing_items = set(await db.scalars(select(Item.id).where(Item.id.in_(item_ids))))
+        existing_items = set((await db.scalars(select(Item.id).where(Item.id.in_(item_ids)))).all())
         missing = set(item_ids) - existing_items
         if missing:
             raise HTTPException(
@@ -205,7 +190,7 @@ async def upsert_today_order(
 
 
 async def get_today_orders_for_retailer(db: AsyncSession, retailer_id: UUID) -> list[DailyOrderOut]:
-    day = today_ist()
+    day = now_ist().date()
     res = await db.execute(
         select(RetailerDailyOrder)
         .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
@@ -239,7 +224,7 @@ async def list_today_orders(
     route_id: UUID | None = None,
     unassigned_only: bool = False,
 ) -> TodayOrdersResponse:
-    day = today_ist()
+    day = now_ist().date()
 
     stmt = (
         select(RetailerDailyOrder, Retailer, Route)

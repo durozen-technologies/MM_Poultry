@@ -10,7 +10,7 @@ import {
   printReceiptImageBase64WithPrinter,
 } from "../utils/printer";
 import { DeliveryReceiptData } from "../utils/printer";
-import { PrinterDevice } from "../types/printer";
+import { PrinterDevice } from "../utils/printer";
 
 type ReceiptPrintJob = {
   id: string;

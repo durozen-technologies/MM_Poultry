@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.timezone import today_ist
+from app.core.timezone import now_ist
 from app.models.domain import (
     DeliveryBill,
     DeliveryRun,
@@ -34,10 +34,6 @@ from app.schemas import (
 from app.services.wholesale.common import ZERO, q_money
 from app.services.wholesale.orders import get_today_orders_for_retailer
 from app.services.wholesale.retailers import get_retailer
-
-
-def _estimated_delivery_date(order_date: date) -> date:
-    return order_date + timedelta(days=1)
 
 
 def build_tracking_stages(
@@ -100,7 +96,7 @@ async def get_retailer_dashboard(db: AsyncSession, retailer_id: UUID) -> Retaile
             method=method,
         )
 
-    month_start = today_ist().replace(day=1)
+    month_start = now_ist().date().replace(day=1)
     month_purchase = await db.scalar(
         select(func.coalesce(func.sum(DeliveryBill.total_amount), 0)).where(
             DeliveryBill.retailer_id == retailer_id,
@@ -133,7 +129,7 @@ async def list_retailer_orders(
     cursor: str | None = None,
     limit: int = 50,
 ) -> RetailerOrdersPage:
-    day = today_ist()
+    day = now_ist().date()
     stmt = (
         select(RetailerDailyOrder)
         .options(
@@ -150,7 +146,7 @@ async def list_retailer_orders(
     if cursor:
         stmt = stmt.where(RetailerDailyOrder.id < UUID(cursor))
 
-    rows = list(await db.scalars(stmt))
+    rows = (await db.scalars(stmt)).all()
     has_more = len(rows) > limit
     rows = rows[:limit]
     retailer = await get_retailer(db, retailer_id)
@@ -202,7 +198,7 @@ async def get_retailer_order_detail(
     return RetailerOrderDetailOut(
         **base.model_dump(),
         estimated_delivery_date=order.expected_delivery_date
-        or _estimated_delivery_date(order.order_date),
+        or (order.order_date + timedelta(days=1)),
         tracking_stages=build_tracking_stages(order.status, run_in_progress=run_in_progress),
     )
 
@@ -247,7 +243,7 @@ async def list_retailer_bills(
     )
     if cursor:
         stmt = stmt.where(DeliveryBill.id < UUID(cursor))
-    rows = list(await db.scalars(stmt))
+    rows = (await db.scalars(stmt)).all()
     has_more = len(rows) > limit
     rows = rows[:limit]
     summary = await _bills_summary(db, retailer_id)

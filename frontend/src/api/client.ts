@@ -87,18 +87,6 @@ export function getApiErrorMessage(error: unknown): string {
   return "Request failed";
 }
 
-export function getApiErrorCode(error: unknown): string | null {
-  if (isAxiosError(error)) {
-    const data = error.response?.data as any;
-    if (data?.error?.code) return data.error.code as string;
-    if (error.response?.status === 401) return "UNAUTHORIZED";
-    if (error.response?.status === 403) return "FORBIDDEN";
-    if (error.response?.status === 404) return "NOT_FOUND";
-    if (error.response?.status === 409) return "CONFLICT";
-    if (error.response?.status === 422) return "VALIDATION_ERROR";
-  }
-  return null;
-}
 
 api.interceptors.request.use((config) => {
   if (authToken) {

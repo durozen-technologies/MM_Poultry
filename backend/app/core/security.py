@@ -45,17 +45,6 @@ def create_access_token(
     if org_id is not None:
         payload["org_id"] = str(org_id)
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
-
-
-def create_access_token_for_user(user: Any) -> str:
-    return create_access_token(
-        user.id,
-        role=user.role,
-        org_id=getattr(user, "organization_id", None),
-        perm_version=getattr(user, "permissions_version", 0),
-    )
-
-
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
         return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])

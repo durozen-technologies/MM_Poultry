@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
-from app.schemas.common import Page
+from app.schemas.common import CursorPage
 from app.schemas.expense import (
     ExpenseCategoryCreate,
     ExpenseCategoryOut,
@@ -39,14 +39,14 @@ async def create_expense_category(
     return ExpenseCategoryOut.model_validate(cat)
 
 
-@router.get("/expenses", response_model=Page[ExpenseOut])
+@router.get("/expenses", response_model=CursorPage[ExpenseOut])
 async def list_expenses(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=100),
     from_date: date | None = None,
     to_date: date | None = None,
-) -> Page[ExpenseOut]:
+) -> CursorPage[ExpenseOut]:
     """List expenses with pagination and optional date filters."""
     return await svc.list_expenses(auth.db, page, size, from_date, to_date)
 

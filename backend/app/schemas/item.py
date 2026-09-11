@@ -12,10 +12,6 @@ class ItemBase(BaseModel):
     default_price: float = Field(default=0.0, ge=0)
 
 
-class ItemCreate(ItemBase):
-    pass
-
-
 class ItemUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None

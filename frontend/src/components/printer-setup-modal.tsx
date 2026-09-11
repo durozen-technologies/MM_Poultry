@@ -3,13 +3,13 @@ import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrinterStore } from "../store/printer-store";
-import { PrinterDevice } from "../types/printer";
 import { DeliveryReceiptData } from "../utils/printer";
-import { runReceiptImagePrintJob } from "../services/receipt-print-registry";
 import {
   getPrinterSupportState,
   loadBluetoothPrinters,
   connectPrinterDevice,
+  printTestReceipt,
+  PrinterDevice,
 } from "../utils/printer";
 
 type PrinterSetupModalProps = {
@@ -23,7 +23,7 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { connectedPrinter, setPrinter, disconnectPrinter } = usePrinterStore();
+  const { connectedPrinter, setPrinter, hydrate, disconnectPrinter, startReceiptJob } = usePrinterStore();
 
   useEffect(() => {
     if (visible) {
@@ -91,7 +91,10 @@ export function PrinterSetupModal({ visible, onClose }: PrinterSetupModalProps) 
         closing_balance: 0,
       };
 
-      await runReceiptImagePrintJob([dummyData], connectedPrinter);
+      if (!startReceiptJob) {
+        throw new Error("Receipt printer is not ready. Restart the app and try again.");
+      }
+      await startReceiptJob([dummyData], connectedPrinter);
       Alert.alert("Success", "Test receipt printed.");
     } catch (e: any) {
       setError(e.message || "Failed to print test receipt");

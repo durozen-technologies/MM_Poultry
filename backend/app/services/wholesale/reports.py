@@ -37,14 +37,14 @@ from app.schemas import (
     StockAdjustmentCreate,
     TripWeightLossOut,
 )
-from app.services.wholesale.common import q_kg, q_money
+from app.services.wholesale.common import ZERO, q_kg, q_money
 from app.services.wholesale.delivery_runs import get_delivery_run
 from app.services.wholesale.stock_audit import log_quantity_change
 
 _RECONCILE_TOLERANCE = Decimal("0.05")
 _ACTIVE_RUN = (DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS)
 _TERMINAL_STOP = (DeliveryStopStatus.BILLED,)
-_ZERO = Decimal("0")
+
 
 
 async def _run_delivered_kg(db: AsyncSession, run_id: UUID) -> Decimal:
@@ -95,9 +95,9 @@ async def reconcile_delivery_run(
     actual = payload.actual_loaded_kg
     if actual is None:
         if run.farm_load_links:
-            actual = q_kg(sum((link.allocated_kg for link in run.farm_load_links), start=_ZERO))
+            actual = q_kg(sum((link.allocated_kg for link in run.farm_load_links), start=ZERO))
         else:
-            actual = run.actual_loaded_kg or run.planned_kg or _ZERO
+            actual = run.actual_loaded_kg or run.planned_kg or ZERO
 
     old_returned = run.returned_kg
     old_wastage = run.wastage_kg
@@ -160,7 +160,7 @@ async def create_stock_adjustment(
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
         field="adjustment_kg",
-        old_value=_ZERO,
+        old_value=ZERO,
         new_value=q_kg(payload.adjustment_kg),
         reason=payload.reason,
         actor_user_id=actor_user_id,
@@ -196,12 +196,12 @@ async def compute_trip_weight_loss(db: AsyncSession, run_id: UUID) -> TripWeight
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farm load not found")
 
     delivered_kg = await _run_delivered_kg(db, run_id)
-    loaded_kg = q_kg(run.actual_loaded_kg or run.planned_kg or _ZERO)
-    returned = q_kg(run.returned_kg or _ZERO)
-    wastage = q_kg(run.wastage_kg or _ZERO)
+    loaded_kg = q_kg(run.actual_loaded_kg or run.planned_kg or ZERO)
+    returned = q_kg(run.returned_kg or ZERO)
+    wastage = q_kg(run.wastage_kg or ZERO)
     raw_loss = loaded_kg - delivered_kg - returned - wastage
-    loss_kg = q_kg(raw_loss if raw_loss > _ZERO else _ZERO)
-    loss_pct = q_money((loss_kg / loaded_kg) * Decimal("100")) if loaded_kg > _ZERO else Decimal("0.00")
+    loss_kg = q_kg(raw_loss if raw_loss > ZERO else ZERO)
+    loss_pct = q_money((loss_kg / loaded_kg) * Decimal("100")) if loaded_kg > ZERO else Decimal("0.00")
 
     existing = await db.scalar(
         select(TripWeightLoss).where(TripWeightLoss.delivery_run_id == run_id)
@@ -262,9 +262,9 @@ async def complete_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOu
         )
 
     delivered = await _run_delivered_kg(db, run_id)
-    returned = q_kg(run.returned_kg or _ZERO)
-    wastage = q_kg(run.wastage_kg or _ZERO)
-    actual = q_kg(run.actual_loaded_kg or _ZERO)
+    returned = q_kg(run.returned_kg or ZERO)
+    wastage = q_kg(run.wastage_kg or ZERO)
+    actual = q_kg(run.actual_loaded_kg or ZERO)
     adjustment = await _run_adjustment_sum(db, run_id)
     expected = q_kg(delivered + returned + wastage + adjustment)
     diff = abs(actual - expected)

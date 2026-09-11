@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
 from app.auth.dependencies import AuthContext, require_roles
-from app.core.timezone import ist_month_bounds, ist_week_bounds, parse_ist_date, today_ist
+from app.core.timezone import ist_month_bounds, ist_week_bounds, now_ist, parse_ist_date
 from app.models.enums import UserRole
 from app.schemas import ReportSummary, TripWeightLossOut
 from app.services import wholesale as svc
@@ -41,7 +41,7 @@ async def admin_report_summary(
     period: str = Query(default="daily", pattern="^(daily|weekly|monthly)$"),
     on_date: str | None = Query(default=None, description="Report day in DD/MM/YYYY (IST)"),
 ) -> ReportSummary:
-    day = parse_ist_date(on_date) if on_date else today_ist()
+    day = parse_ist_date(on_date) if on_date else now_ist().date()
     start, end = _period_bounds(period, day)
     return await svc.report_summary(auth.db, start, end)
 
@@ -52,7 +52,7 @@ async def admin_report_pdf(
     period: str = Query(default="daily", pattern="^(daily|weekly|monthly)$"),
     on_date: str | None = Query(default=None, description="Report day in DD/MM/YYYY (IST)"),
 ) -> Response:
-    day = parse_ist_date(on_date) if on_date else today_ist()
+    day = parse_ist_date(on_date) if on_date else now_ist().date()
     start, end = _period_bounds(period, day)
     summary = await svc.report_summary(auth.db, start, end)
     pdf = svc.build_report_pdf(summary)

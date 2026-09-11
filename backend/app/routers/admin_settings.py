@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
 from app.schemas.settings import OrgSettingsOut, OrgSettingsUpdate
-from app.services.wholesale.common import get_org_settings_out, update_org_settings
+from app.services.wholesale.common import get_org_settings, update_org_settings
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ router = APIRouter()
 async def get_settings(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> OrgSettingsOut:
-    settings = await get_org_settings_out(auth.db)
+    settings = await get_org_settings(auth.db)
     return OrgSettingsOut.model_validate(settings, from_attributes=True)
 
 

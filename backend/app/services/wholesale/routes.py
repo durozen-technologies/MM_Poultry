@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.timezone import today_ist
+from app.core.timezone import now_ist
 from app.models.domain import Retailer, RetailerDailyOrder, Route
 from app.models.enums import OrderStatus
 from app.schemas import (
@@ -53,7 +53,7 @@ async def _retailer_counts(db: AsyncSession) -> dict[UUID, int]:
 
 
 async def _today_order_counts(db: AsyncSession) -> dict[UUID, int]:
-    day = today_ist()
+    day = now_ist().date()
     rows = await db.execute(
         select(Retailer.route_id, func.count(RetailerDailyOrder.id.distinct()))
         .join(RetailerDailyOrder, RetailerDailyOrder.retailer_id == Retailer.id)
@@ -87,23 +87,19 @@ def _route_out(
 
 async def list_routes(db: AsyncSession) -> list[RouteOut]:
     counts = await _retailer_counts(db)
-    routes = list(
-        await db.scalars(
+    routes = (await db.scalars(
             select(Route).order_by(Route.is_active.desc(), Route.sort_order.nulls_last(), Route.name)
-        )
-    )
+        )).all()
     return [_route_out(r, retailer_count=counts.get(r.id, 0)) for r in routes]
 
 
 async def get_route(db: AsyncSession, route_id: UUID) -> RouteDetailOut:
     route = await _get_route_or_404(db, route_id)
-    retailers = list(
-        await db.scalars(
+    retailers = list((await db.scalars(
             select(Retailer)
             .where(Retailer.route_id == route_id)
             .order_by(Retailer.shop_name.nulls_last(), Retailer.name)
-        )
-    )
+        )).all())
     count = len(retailers)
     base = _route_out(route, retailer_count=count)
     return RouteDetailOut(
@@ -139,7 +135,7 @@ async def update_route(db: AsyncSession, route_id: UUID, payload: RouteUpdate) -
         if await _route_name_exists(db, name, exclude_id=route_id):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Route name already exists")
         route.name = name
-        retailers = list(await db.scalars(select(Retailer).where(Retailer.route_id == route_id)))
+        retailers = list((await db.scalars(select(Retailer).where(Retailer.route_id == route_id))).all())
         for retailer in retailers:
             sync_retailer_route_fields(retailer, route)
     if "area" in data:
@@ -160,7 +156,7 @@ async def update_route(db: AsyncSession, route_id: UUID, payload: RouteUpdate) -
 async def deactivate_route(db: AsyncSession, route_id: UUID) -> None:
     route = await _get_route_or_404(db, route_id)
     route.is_active = False
-    retailers = list(await db.scalars(select(Retailer).where(Retailer.route_id == route_id)))
+    retailers = list((await db.scalars(select(Retailer).where(Retailer.route_id == route_id))).all())
     for retailer in retailers:
         sync_retailer_route_fields(retailer, None)
     await db.flush()
@@ -176,7 +172,7 @@ async def replace_route_retailers(
     new_ids = list(dict.fromkeys(payload.retailer_ids))
     retailers_by_id: dict[UUID, Retailer] = {}
     if new_ids:
-        retailers = list(await db.scalars(select(Retailer).where(Retailer.id.in_(new_ids))))
+        retailers = list((await db.scalars(select(Retailer).where(Retailer.id.in_(new_ids)))).all())
         retailers_by_id = {r.id: r for r in retailers}
         missing = set(new_ids) - retailers_by_id.keys()
         if missing:
@@ -190,7 +186,7 @@ async def replace_route_retailers(
         if conflict_route_ids:
             other_routes = {
                 r.id: r
-                for r in await db.scalars(select(Route).where(Route.id.in_(conflict_route_ids)))
+                for r in (await db.scalars(select(Route).where(Route.id.in_(conflict_route_ids)))).all()
             }
             for retailer in retailers:
                 if retailer.route_id is not None and retailer.route_id != route_id:
@@ -202,7 +198,7 @@ async def replace_route_retailers(
                         detail=f"Retailer {label} is already on route {other_name}",
                     )
 
-    current = list(await db.scalars(select(Retailer).where(Retailer.route_id == route_id)))
+    current = (await db.scalars(select(Retailer).where(Retailer.route_id == route_id))).all()
     new_id_set = set(new_ids)
 
     for retailer in current:
@@ -216,15 +212,6 @@ async def replace_route_retailers(
     return await get_route(db, route_id)
 
 
-async def count_unassigned_retailers(db: AsyncSession) -> int:
-    count = await db.scalar(
-        select(func.count())
-        .select_from(Retailer)
-        .where(Retailer.route_id.is_(None), Retailer.is_active.is_(True))
-    )
-    return int(count or 0)
-
-
 async def list_unassigned_retailers(
     db: AsyncSession, *, cursor: str | None = None, limit: int = 50
 ) -> tuple[list[RetailerOut], bool, str | None, int]:
@@ -236,11 +223,19 @@ async def list_unassigned_retailers(
     )
     if cursor:
         stmt = stmt.where(Retailer.id < UUID(cursor))
-    rows = list(await db.scalars(stmt))
+    rows = list((await db.scalars(stmt)).all())
     has_more = len(rows) > limit
     rows = rows[:limit]
     next_cursor = str(rows[-1].id) if has_more and rows else None
-    total = await count_unassigned_retailers(db) if cursor is None else 0
+    if cursor is None:
+        c = await db.scalar(
+            select(func.count())
+            .select_from(Retailer)
+            .where(Retailer.route_id.is_(None), Retailer.is_active.is_(True))
+        )
+        total = int(c or 0)
+    else:
+        total = 0
     return (
         await retailers_to_out(db, rows),
         has_more,
@@ -255,7 +250,7 @@ async def retailers_to_out(db: AsyncSession, retailers: list[Retailer]) -> list[
     if route_ids:
         routes_map = {
             route.id: route
-            for route in await db.scalars(select(Route).where(Route.id.in_(route_ids)))
+            for route in (await db.scalars(select(Route).where(Route.id.in_(route_ids)))).all()
         }
     out_list: list[RetailerOut] = []
     for retailer in retailers:
@@ -264,11 +259,6 @@ async def retailers_to_out(db: AsyncSession, retailers: list[Retailer]) -> list[
         out.route_area = route.area if route else None
         out_list.append(out)
     return out_list
-
-
-async def retailer_to_out(db: AsyncSession, retailer: Retailer) -> RetailerOut:
-    rows = await retailers_to_out(db, [retailer])
-    return rows[0]
 
 
 async def apply_retailer_route_id(
@@ -286,13 +276,11 @@ async def apply_retailer_route_id(
 async def list_delivery_routes(db: AsyncSession) -> list[RouteOut]:
     counts = await _retailer_counts(db)
     order_counts = await _today_order_counts(db)
-    routes = list(
-        await db.scalars(
+    routes = (await db.scalars(
             select(Route)
             .where(Route.is_active.is_(True))
             .order_by(Route.sort_order.nulls_last(), Route.name)
-        )
-    )
+        )).all()
     return [
         _route_out(
             r,

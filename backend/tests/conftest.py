@@ -13,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 # Must set env vars BEFORE importing anything that instantiates settings
 # Legacy suite uses MM_Poultry_test (isolated from ../test's mmbroilers_test) — CI creates both DBs
 os.environ["POSTGRES_DB"] = "MM_Poultry_test"
+# Legacy suite uses mmbroilers_test (same as ../test) to prevent database connection bouncing
+os.environ["POSTGRES_DB"] = "mmbroilers_test"
 os.environ["POSTGRES_USER"] = "postgres"
 os.environ["POSTGRES_PASSWORD"] = "root"
 os.environ["POSTGRES_SERVER"] = "localhost"
@@ -37,10 +39,16 @@ async def setup_test_db() -> AsyncGenerator[None, None]:
         os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
     async def init_db():
+        # Avoid dropping the database if test/conftest.py is also running and has/will prepare it.
+        # We will just unconditionally ensure the platform tables and tenant_test exist.
+        from sqlalchemy import text
+        from app.db.database import get_session_factory
+        
         try:
             await reset_test_database_async()
         except Exception:
             pass
+        
         await create_platform_tables()
         await provision_tenant_schema_async("tenant_test")
 
@@ -67,6 +75,8 @@ async def setup_test_db() -> AsyncGenerator[None, None]:
     await init_db()
     yield
     await teardown_db()
+    # Do NOT reset the database on teardown here, let the process exit or let the other conftest do it,
+    # otherwise it causes 'RuntimeError: Event loop is closed' or clobbers parallel teardowns.
     os.chdir(original_dir)
 
 

@@ -189,5 +189,69 @@ def test_delivery_routes_and_orders(client: TestClient, mock_admin_auth: None) -
         app.dependency_overrides.pop(get_current_auth, None)
 
 
+def test_list_routes(client: TestClient, mock_admin_auth: None) -> None:
+    client.post("/api/v1/admin/routes", json={"name": "List Route"})
+    resp = client.get("/api/v1/admin/routes")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert any(r["name"] == "List Route" for r in data)
+
+
+def test_update_route(client: TestClient, mock_admin_auth: None) -> None:
+    route = client.post("/api/v1/admin/routes", json={"name": "Update Me"}).json()
+    resp = client.patch(
+        f"/api/v1/admin/routes/{route['id']}",
+        json={"name": "Updated Name", "area": "New Area"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "Updated Name"
+    assert data["area"] == "New Area"
+
+
+def test_update_route_not_found(client: TestClient, mock_admin_auth: None) -> None:
+    from uuid import uuid4
+
+    resp = client.patch(
+        f"/api/v1/admin/routes/{uuid4()}",
+        json={"name": "X"},
+    )
+    assert resp.status_code == 404
+
+
+def test_get_route(client: TestClient, mock_admin_auth: None) -> None:
+    route = client.post("/api/v1/admin/routes", json={"name": "Detail Route"}).json()
+    resp = client.get(f"/api/v1/admin/routes/{route['id']}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "Detail Route"
+    assert "retailers" in data
+
+
+def test_get_route_not_found(client: TestClient, mock_admin_auth: None) -> None:
+    from uuid import uuid4
+
+    resp = client.get(f"/api/v1/admin/routes/{uuid4()}")
+    assert resp.status_code == 404
+
+
+def test_delete_route_not_found(client: TestClient, mock_admin_auth: None) -> None:
+    from uuid import uuid4
+
+    resp = client.delete(f"/api/v1/admin/routes/{uuid4()}")
+    assert resp.status_code == 404
+
+
+def test_replace_retailers_not_found(client: TestClient, mock_admin_auth: None) -> None:
+    from uuid import uuid4
+
+    resp = client.put(
+        f"/api/v1/admin/routes/{uuid4()}/retailers",
+        json={"retailer_ids": []},
+    )
+    assert resp.status_code == 404
+
+
 def test_routes_unauthorized(client: TestClient) -> None:
     assert client.get("/api/v1/admin/routes").status_code == 401

@@ -341,25 +341,11 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))
         await conn.execute(text(f'SET search_path TO "{schema_name}", public'))
-        for table in Base.metadata.sorted_tables:
-            if table.name in {
-                "routes",
-                "org_settings",
-                "expense_categories",
-                "expenses",
-                "retailer_returns",
-                "order_sequences",
-                "items",
-                "retailer_daily_order_items",
-                "delivery_runs",
-                "delivery_run_farm_loads",
-                "delivery_stops",
-                "delivery_stop_items",
-                "trip_weight_losses",
-                "delivery_bill_items",
-                "stock_quantity_events",
-            }:
-                await conn.run_sync(table.create, checkfirst=True)
+        tenant_tables = [
+            table for table in Base.metadata.sorted_tables if table.name in _tenant_table_names()
+        ]
+        for table in tenant_tables:
+            await conn.run_sync(table.create, checkfirst=True)
         for stmt in alters:
             await conn.execute(text(stmt))
         # Backfill missing item_id references

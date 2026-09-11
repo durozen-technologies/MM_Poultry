@@ -1,4 +1,3 @@
-import math
 from datetime import date
 from uuid import UUID
 
@@ -8,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.domain import Expense, ExpenseCategory
 from app.models.user import User
-from app.schemas.common import Page
+from app.schemas.common import CursorPage
 from app.schemas.expense import ExpenseCategoryCreate, ExpenseCreate, ExpenseOut
 
 
@@ -34,17 +33,14 @@ async def create_expense_category(
         )
     cat = ExpenseCategory(name=name_stripped, is_active=category_in.is_active)
     db.add(cat)
+    from sqlalchemy.exc import IntegrityError
     try:
         await db.flush()
-    except Exception as exc:
-        from sqlalchemy.exc import IntegrityError
-
-        if isinstance(exc, IntegrityError):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail={"message": "Expense category with this name already exists."},
-            ) from exc
-        raise
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": "Expense category with this name already exists."},
+        ) from exc
     return cat
 
 
@@ -69,7 +65,7 @@ async def list_expenses(
     size: int = 50,
     from_date: date | None = None,
     to_date: date | None = None,
-) -> Page[ExpenseOut]:
+) -> CursorPage[ExpenseOut]:
     stmt = (
         select(Expense, ExpenseCategory, User)
         .outerjoin(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
@@ -105,12 +101,10 @@ async def list_expenses(
         out.created_by_user_name = user.full_name or user.username if user else None
         out_items.append(out)
 
-    return Page[ExpenseOut](
+    return CursorPage[ExpenseOut](
         items=out_items,
-        total=total,
-        page=page,
-        size=size,
-        pages=math.ceil(total / size) if total > 0 else 0,
+        has_more=(len(out_items) == size),
+        total_count=total,
     )
 
 

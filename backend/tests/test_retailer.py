@@ -208,7 +208,7 @@ def test_retailer_profile(client: TestClient, mock_retailer_auth: None):
 
 def test_retailer_cannot_overwrite_acknowledged_order(client: TestClient, mock_retailer_auth: None):
     """Retailer must not place a new order when today's order is already ACKNOWLEDGED."""
-    from app.core.timezone import today_ist
+    from app.core.timezone import now_ist
 
     # 1) Place an order as retailer
     payload = {"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 5, "requested_kg": "100"}]}
@@ -216,12 +216,54 @@ def test_retailer_cannot_overwrite_acknowledged_order(client: TestClient, mock_r
     assert res.status_code == 200
     order_id = res.json()["id"]
 
-    # 2) Admin confirms the order (status -> ACKNOWLEDGED) via admin endpoint
-    from datetime import timedelta
-    confirm_payload = {"expected_delivery_date": (today_ist() + timedelta(days=1)).isoformat()}
-    res_confirm = client.post(f"/api/v1/admin/orders/{order_id}/confirm", json=confirm_payload)
-    assert res_confirm.status_code == 200
-    assert res_confirm.json()["status"] == "ACKNOWLEDGED"
+    from app.main import app
+    from app.auth.dependencies import get_current_auth
+    from app.models.enums import UserRole
+    from app.models.user import User
+    from app.models.organization import Organization
+    from uuid import UUID
+    import collections.abc
+    
+    admin_user = User(
+        id=UUID("00000000-0000-0000-0000-000000000001"),
+        username="admin_test",
+        password_hash="test",
+        role=UserRole.ADMIN,
+        is_active=True,
+        organization_id=UUID("00000000-0000-0000-0000-000000000002"),
+    )
+    async def _mock_admin() -> collections.abc.AsyncGenerator:
+        from app.db.database import get_session_factory
+        from app.db.tenant_schema import set_search_path
+        from app.auth.dependencies import AuthContext
+        session = get_session_factory()()
+        org2 = Organization(
+            id=UUID("00000000-0000-0000-0000-000000000002"),
+            name="Test Org",
+            slug="test_org",
+            schema_name="tenant_test",
+            is_active=True,
+        )
+        try:
+            await set_search_path(session, "tenant_test")
+            yield AuthContext(user=admin_user, organization=org2, schema_name="tenant_test", db=session)
+            await session.commit()
+        finally:
+            await session.close()
+            
+    old_override = app.dependency_overrides.get(get_current_auth)
+    app.dependency_overrides[get_current_auth] = _mock_admin
+    try:
+        from datetime import timedelta
+        confirm_payload = {"expected_delivery_date": (now_ist().date() + timedelta(days=1)).isoformat()}
+        res_confirm = client.post(f"/api/v1/admin/orders/{order_id}/confirm", json=confirm_payload)
+        assert res_confirm.status_code == 200
+        assert res_confirm.json()["status"] == "ACKNOWLEDGED"
+    finally:
+        if old_override:
+            app.dependency_overrides[get_current_auth] = old_override
+        else:
+            app.dependency_overrides.pop(get_current_auth, None)
 
     # 3) Retailer tries to place another order (no order_id) — should NOT overwrite
     payload2 = {"items": [{"item_id": str(TEST_ITEM_ID), "total_boxes": 10}]}

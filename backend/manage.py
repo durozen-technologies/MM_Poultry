@@ -11,7 +11,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.services.auth import (
     require_username_available,
-    reraise_username_conflict,
+
     upsert_auth_index,
 )
 from sqlalchemy.exc import IntegrityError
@@ -48,7 +48,11 @@ async def create_superadmin(username: str, password: str | None = None):
         try:
             await session.flush()
         except IntegrityError as exc:
-            reraise_username_conflict(exc)
+            msg = str(getattr(exc, "orig", exc)).lower()
+            if "username" in msg or "user_auth_index" in msg:
+                print(f"Error: Username '{username}' is already taken.")
+                sys.exit(1)
+            raise exc
         await upsert_auth_index(
             session,
             username=user.username,

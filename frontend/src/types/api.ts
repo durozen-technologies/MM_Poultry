@@ -80,6 +80,7 @@ export type DailyOrder = {
   items: OrderItem[];
 };
 
+
 export type DailyOrderOut = DailyOrder;
 
 export type TodayOrdersResponse = {

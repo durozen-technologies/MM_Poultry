@@ -8,21 +8,9 @@ from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger("app.errors")
-
-
-class APIErrorDetail(BaseModel):
-    code: str
-    message: str
-    details: dict | list | None = None
-
-
-class APIErrorResponse(BaseModel):
-    error: APIErrorDetail
-
 
 _STATUS_DEFAULT_CODES: dict[int, str] = {
     status.HTTP_400_BAD_REQUEST: "BAD_REQUEST",
@@ -46,41 +34,6 @@ _MESSAGE_CODES: dict[str, str] = {
 }
 
 
-def error_code_for_http_exception(exc: HTTPException) -> str:
-    if isinstance(exc.detail, dict):
-        code = exc.detail.get("code")
-        if isinstance(code, str) and code:
-            return code
-    if isinstance(exc.detail, str):
-        return _MESSAGE_CODES.get(
-            exc.detail, _STATUS_DEFAULT_CODES.get(exc.status_code, "HTTP_ERROR")
-        )
-    return _STATUS_DEFAULT_CODES.get(exc.status_code, "HTTP_ERROR")
-
-
-def error_message_for_http_exception(exc: HTTPException) -> str:
-    if isinstance(exc.detail, str):
-        return exc.detail
-    if isinstance(exc.detail, dict):
-        message = exc.detail.get("message")
-        if isinstance(message, str) and message:
-            return message
-        return str(exc.detail)
-    return "Request failed"
-
-
-def error_details_for_http_exception(exc: HTTPException) -> dict | list | None:
-    if isinstance(exc.detail, dict):
-        details = exc.detail.get("details")
-        if details is not None:
-            return details
-        filtered = exc.detail.copy()
-        filtered.pop("code", None)
-        filtered.pop("message", None)
-        return filtered or None
-    return None
-
-
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     request_id = getattr(request.state, "request_id", str(uuid.uuid4())[:8])
     if exc.status_code >= 500:
@@ -92,16 +45,31 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
             exc.status_code,
             exc.detail,
         )
-    body = APIErrorResponse(
-        error=APIErrorDetail(
-            code=error_code_for_http_exception(exc),
-            message=error_message_for_http_exception(exc),
-            details=error_details_for_http_exception(exc),
-        )
-    )
+
+    code = _STATUS_DEFAULT_CODES.get(exc.status_code, "HTTP_ERROR")
+    message = "Request failed"
+    details = None
+
+    if isinstance(exc.detail, dict):
+        code = exc.detail.get("code") or code
+        message = exc.detail.get("message") or str(exc.detail)
+        details = exc.detail.get("details")
+        if details is None:
+            filtered = exc.detail.copy()
+            filtered.pop("code", None)
+            filtered.pop("message", None)
+            details = filtered or None
+    elif isinstance(exc.detail, str):
+        message = exc.detail
+        code = _MESSAGE_CODES.get(exc.detail, code)
+
+    body = {"error": {"code": code, "message": message}}
+    if details is not None:
+        body["error"]["details"] = details
+
     return JSONResponse(
         status_code=exc.status_code,
-        content=body.model_dump(exclude_none=True),
+        content=body,
         headers=exc.headers,
     )
 
@@ -115,17 +83,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         request_id,
         exc.errors(),
     )
-    details = exc.errors()
-    body = APIErrorResponse(
-        error=APIErrorDetail(
-            code="VALIDATION_ERROR",
-            message="Validation failed",
-            details=details,  # type: ignore[arg-type]
-        )
-    )
+    body = {
+        "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "details": exc.errors(),
+        }
+    }
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        content=jsonable_encoder(body.model_dump(exclude_none=True))
+        content=jsonable_encoder(body)
     )
 
 
@@ -141,13 +108,9 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
             request_id,
             str(exc),
         )
-        body = APIErrorResponse(
-            error=APIErrorDetail(
-                code="CONFLICT",
-                message="Concurrent update conflict, please retry",
-            )
-        )
-        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=body.model_dump(exclude_none=True))
+        body = {"error": {"code": "CONFLICT", "message": "Concurrent update conflict, please retry"}}
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=body)
+        
     logger.error(
         "Database error %s %s [%s]: %s\n%s",
         request.method,
@@ -156,13 +119,8 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError) -
         str(exc),
         traceback.format_exc(),
     )
-    body = APIErrorResponse(
-        error=APIErrorDetail(
-            code="DATABASE_ERROR",
-            message="A database error occurred. Please try again.",
-        )
-    )
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=body.model_dump(exclude_none=True))
+    body = {"error": {"code": "DATABASE_ERROR", "message": "A database error occurred. Please try again."}}
+    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=body)
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -175,10 +133,5 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         str(exc),
         traceback.format_exc(),
     )
-    body = APIErrorResponse(
-        error=APIErrorDetail(
-            code="INTERNAL_ERROR",
-            message="An unexpected error occurred. Please try again.",
-        )
-    )
-    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=body.model_dump(exclude_none=True))
+    body = {"error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred. Please try again."}}
+    return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=body)

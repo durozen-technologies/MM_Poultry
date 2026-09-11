@@ -18,8 +18,6 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
   const [name, setName] = useState("");
   const [shopName, setShopName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -43,8 +41,6 @@ export function AdminAddRetailerScreen({ navigation }: { navigation: any }) {
         name: name.trim(),
         shop_name: shopName.trim() || null,
         phone: phone.trim() || null,
-        email: email.trim() || null,
-        opening_balance: openingBalance ? (Number.isFinite(parseFloat(openingBalance)) ? parseFloat(openingBalance) : 0) : 0,
         username: username.trim(),
         password: password.trim(),
       });

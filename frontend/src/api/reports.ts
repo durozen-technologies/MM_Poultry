@@ -13,11 +13,6 @@ export async function getTripWeightLoss(runId: string) {
   return data;
 }
 
-export function reportPdfUrl(period: string, onDate: string | undefined) {
-  const params = new URLSearchParams({ period });
-  if (onDate) params.set("on_date", onDate);
-  return `${API_BASE_URL}/api/v1/admin/reports/summary.pdf?${params.toString()}`;
-}
 
 export async function downloadReportPdf(
   period: "daily" | "weekly" | "monthly",

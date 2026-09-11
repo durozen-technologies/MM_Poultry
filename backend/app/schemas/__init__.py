@@ -11,7 +11,7 @@ from app.schemas.billing import (
     DeliveryBillOut,
     PrintStatusUpdate,
 )
-from app.schemas.common import CursorPage, Page
+from app.schemas.common import CursorPage
 from app.schemas.delivery import (
     DeliveryRunCancel,
     DeliveryRunCreate,
@@ -36,7 +36,7 @@ from app.schemas.inventory import (
     InventorySummaryOut,
 )
 from app.schemas.item import (
-    ItemCreate,
+    ItemBase,
     ItemResponse,
     ItemUpdate,
 )
@@ -145,7 +145,6 @@ __all__ = [
     "ReportSummary",
     "TripWeightLossOut",
     "OrderTrackingStage",
-    "Page",
     "CursorPage",
     "RetailerBillsPage",
     "RetailerBillsSummary",
@@ -154,7 +153,7 @@ __all__ = [
     "RetailerOrderDetailOut",
     "RetailerOrdersPage",
     "RetailerProfileOut",
-    "ItemCreate",
+    "ItemBase",
     "ItemUpdate",
     "ItemResponse",
     "OrgSettingsOut",

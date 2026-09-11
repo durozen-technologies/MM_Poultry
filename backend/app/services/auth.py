@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token_for_user, verify_password
+from app.core.security import create_access_token, verify_password
 from app.core.timezone import now_ist
 from app.db.tenant_schema import tenant_schema_scope
 from app.models.enums import UserRole
@@ -13,24 +12,9 @@ from app.models.organization import Organization, UserAuthIndex
 from app.models.user import User
 from app.schemas.auth import LoginRequest, LoginResponse, UserOut
 
-USERNAME_TAKEN = "Username is already taken in this organization"
-
 
 def normalize_username(username: str) -> str:
     return username.strip().lower()
-
-
-def raise_username_taken(exc: Exception | None = None) -> None:
-    if exc is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=USERNAME_TAKEN) from exc
-    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=USERNAME_TAKEN)
-
-
-def reraise_username_conflict(exc: IntegrityError) -> None:
-    msg = str(getattr(exc, "orig", exc)).lower()
-    if "username" in msg or "user_auth_index" in msg:
-        raise_username_taken(exc)
-    raise exc
 
 
 async def check_username_available(db: AsyncSession, username: str) -> bool:
@@ -55,14 +39,14 @@ async def check_username_available(db: AsyncSession, username: str) -> bool:
     return existing_sa is None
 
 
-async def require_username_available(db: AsyncSession, username: str, organization_id=None) -> str:
+async def require_username_available(db: AsyncSession, username: str) -> str:
     username_lower = normalize_username(username)
     if not username_lower:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Username is required"
         )
     if not await check_username_available(db, username_lower):
-        raise_username_taken()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username is already taken in this organization")
     return username_lower
 
 
@@ -87,7 +71,12 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="User account is inactive"
             )
         super_admin.last_login_at = now_ist()
-        token = create_access_token_for_user(super_admin)
+        token = create_access_token(
+            super_admin.id,
+            role=super_admin.role,
+            org_id=getattr(super_admin, "organization_id", None),
+            perm_version=getattr(super_admin, "permissions_version", 0),
+        )
         return LoginResponse(
             access_token=token,
             user=UserOut.model_validate(super_admin, from_attributes=True),
@@ -102,7 +91,7 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
         if org_row:
             stmt = stmt.where(UserAuthIndex.organization_id == org_row.id)
 
-    matches = list(await db.scalars(stmt))
+    matches = (await db.scalars(stmt)).all()
     if len(matches) == 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -121,7 +110,12 @@ async def login_user(db: AsyncSession, payload: LoginRequest) -> LoginResponse:
             if org is None or not org.is_active:
                 return None
             user.last_login_at = now_ist()
-            token = create_access_token_for_user(user)
+            token = create_access_token(
+                user.id,
+                role=user.role,
+                org_id=getattr(user, "organization_id", None),
+                perm_version=getattr(user, "permissions_version", 0),
+            )
             return LoginResponse(
                 access_token=token,
                 user=UserOut(
@@ -177,7 +171,7 @@ async def upsert_auth_index(
         if existing.user_id == user_id:
             existing.schema_name = schema_name
             return
-        raise_username_taken()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username is already taken in this organization")
     db.add(
         UserAuthIndex(
             username_lower=username_lower,

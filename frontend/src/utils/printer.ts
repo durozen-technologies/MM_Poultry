@@ -6,11 +6,26 @@ import {
   type PrinterOptions as NativePrinterOptions,
 } from "@haroldtran/react-native-thermal-printer";
 
-import {
-  PrinterDevice,
-  PrinterSupportState,
-  PrinterTransport,
-} from "../types/printer";
+export type PrinterTransport = "bluetooth" | "usb";
+
+export type PrinterDevice = {
+  id: string;
+  transport: PrinterTransport;
+  name: string;
+  address?: string;
+  vendorId?: string;
+  productId?: string;
+  deviceName?: string;
+  manufacturerName?: string;
+  productName?: string;
+};
+
+export type PrinterSupportState = {
+  supported: boolean;
+  bluetooth: boolean;
+  usb: boolean;
+  reason?: string;
+};
 
 type PrinterOptions = {
   beep?: boolean;
@@ -67,11 +82,15 @@ export type DeliveryReceiptData = {
   total_weight_kg?: number;
 
   closing_balance: number;
-  cylinder_balances?: { name: string; count: number; given?: number; taken?: number }[];
 };
 
+export const INRCurrency = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+});
+
 export function formatCurrency(amount: number) {
-  return `Rs. ${amount.toFixed(2)}`;
+  return INRCurrency.format(amount);
 }
 
 function hasBluetoothModule() {
@@ -272,10 +291,6 @@ async function ensureBluetoothPrinterReady() {
   return runtime;
 }
 
-async function getPrinterRuntime(device: PrinterDevice) {
-  return ensureBluetoothPrinterReady();
-}
-
 async function closePrinterConnection(printer: PrinterRuntime) {
   try {
     await printer.closeConn();
@@ -376,7 +391,7 @@ async function getOrCreatePrinterSession(device: PrinterDevice): Promise<Printer
   }
 
   if (!activePrinterSession) {
-    const runtime = await getPrinterRuntime(device);
+    const runtime = await ensureBluetoothPrinterReady();
     await closePrinterConnection(runtime);
     await connectWithRetry(runtime, device);
     activePrinterSession = { device, runtime };

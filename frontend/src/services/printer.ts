@@ -4,7 +4,6 @@ import * as Sharing from "expo-sharing";
 import { formatReceipt } from "./ble-scale";
 import { formatIstDate, formatIstTime, parseIstDate, todayIstDate } from "../utils/ist-date";
 import { usePrinterStore } from "../store/printer-store";
-import { runReceiptImagePrintJob } from "./receipt-print-registry";
 import type { DeliveryReceiptData } from "../utils/printer";
 import { getCommandText, printText } from "../utils/printer";
 import { buildReceiptExportPayload } from "../utils/printer-html";
@@ -57,6 +56,9 @@ export type ReceiptPrintOptions = {
   organizationName?: string | null;
 };
 
+const decimal0To2 = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const decimal3 = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
 function parseAmount(value: string | number): number {
   if (typeof value === "number") return value;
   const n = Number(String(value).replace(/,/g, ""));
@@ -66,13 +68,13 @@ function parseAmount(value: string | number): number {
 function fmtMoney(value: string | number): string {
   const n = parseAmount(value);
   if (!Number.isFinite(n)) return String(value);
-  return n.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return decimal0To2.format(n);
 }
 
 function fmtKg(value: string | number): string {
   const n = parseAmount(value);
   if (!Number.isFinite(n)) return String(value);
-  return n.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  return decimal3.format(n);
 }
 
 function payloadToReceiptDate(payload: PrintPayload): string {
@@ -308,7 +310,7 @@ function buildEscPosFallback(payload: PrintPayload): string {
 }
 
 async function printEscPosFallback(
-  device: import("../types/printer").PrinterDevice,
+  device: import("../utils/printer").PrinterDevice,
   payload: PrintPayload
 ): Promise<void> {
   await printText(device, buildEscPosFallback(payload));
@@ -324,7 +326,11 @@ export async function printThermalReceipt(payload: PrintPayload): Promise<"PRINT
     }
     try {
       const receiptData = printPayloadToDeliveryReceiptData(payload);
-      await runReceiptImagePrintJob([receiptData], printer);
+      const { startReceiptJob } = usePrinterStore.getState();
+      if (!startReceiptJob) {
+        throw new Error("Receipt printer is not ready. Restart the app and try again.");
+      }
+      await startReceiptJob([receiptData], printer);
       return "PRINTED";
     } catch (e) {
       console.warn("Image receipt print failed, trying text fallback:", (e as Error)?.message);

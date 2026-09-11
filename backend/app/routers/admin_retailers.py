@@ -55,7 +55,7 @@ async def admin_get_retailer(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> RetailerOut:
     retailer = await svc.get_retailer(auth.db, retailer_id)
-    return await svc.retailer_to_out(auth.db, retailer)
+    return (await svc.retailers_to_out(auth.db, [retailer]))[0]
 
 
 @router.patch("/admin/retailers/{retailer_id}", response_model=RetailerOut)

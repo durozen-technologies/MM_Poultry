@@ -70,7 +70,4 @@ class RateOut(BaseModel):
     effective_to: IstDateOptional = None
 
 
-class CursorPage(BaseModel):
-    items: list
-    has_more: bool = False
-    next_cursor: str | None = None
+

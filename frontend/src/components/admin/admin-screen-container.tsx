@@ -1,6 +1,5 @@
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { ScrollView, KeyboardAvoidingView, Platform, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 export function AdminScreenContainer({
@@ -24,18 +23,19 @@ export function AdminScreenContainer({
           {children}
         </Animated.View>
       ) : (
-        <KeyboardAwareScrollView 
-          enableOnAndroid={true}
-          keyboardShouldPersistTaps="handled"
-          className="flex-1 px-4" 
-          contentContainerStyle={{ paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
-        >
-          <Animated.View entering={FadeInDown.springify().damping(20).delay(100)} className="flex-col gap-5 pt-4">
-            {children}
-          </Animated.View>
-        </KeyboardAwareScrollView>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+          <ScrollView 
+            keyboardShouldPersistTaps="handled"
+            className="flex-1 px-4" 
+            contentContainerStyle={{ paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          >
+            <Animated.View entering={FadeInDown.springify().damping(20).delay(100)} className="flex-col gap-5 pt-4">
+              {children}
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </View>
   );

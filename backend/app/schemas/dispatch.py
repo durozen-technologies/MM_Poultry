@@ -12,13 +12,11 @@ class DispatchOrderItemLine(BaseModel):
     total_boxes: int | None = None
     requested_kg: Decimal | None = None
 
-
 class DispatchItemSummary(BaseModel):
     item_id: UUID
     item_name: str | None = None
     total_boxes: int = 0
     total_kg: Decimal = Decimal("0")
-
 
 class DispatchOrderLine(BaseModel):
     order_id: UUID
@@ -28,14 +26,12 @@ class DispatchOrderLine(BaseModel):
     dispatch_status: str
     items: list[DispatchOrderItemLine] = []
 
-
 class DispatchRunSummary(BaseModel):
     id: UUID
     status: str
     driver_name: str | None = None
     planned_kg: Decimal | None = None
     actual_loaded_kg: Decimal | None = None
-
 
 class DispatchRouteBucket(BaseModel):
     route_id: UUID | None = None
@@ -50,7 +46,6 @@ class DispatchRouteBucket(BaseModel):
     unassigned_items: list[DispatchItemSummary] = []
     runs: list[DispatchRunSummary] = []
     orders: list[DispatchOrderLine] = []
-
 
 class DispatchTodayOut(BaseModel):
     available_stock_kg: Decimal

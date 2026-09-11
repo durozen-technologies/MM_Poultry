@@ -22,13 +22,8 @@ from app.schemas import (
     RetailerUpdate,
     UserOut,
 )
-from app.services.auth import (
-    require_username_available,
-    reraise_username_conflict,
-    upsert_auth_index,
-)
 from app.services.wholesale.common import q_money
-from app.services.wholesale.routes import apply_retailer_route_id, retailer_to_out, retailers_to_out
+from app.services.wholesale.routes import apply_retailer_route_id, retailers_to_out
 
 
 async def create_retailer(
@@ -60,7 +55,7 @@ async def create_retailer(
             organization_id=organization_id,
             schema_name=schema_name,
         )
-    return await retailer_to_out(db, retailer)
+    return (await retailers_to_out(db, [retailer]))[0]
 
 
 async def list_retailers(
@@ -71,7 +66,7 @@ async def list_retailers(
     )
     if cursor:
         stmt = stmt.where(Retailer.id < UUID(cursor))
-    rows = list(await db.scalars(stmt))
+    rows = list((await db.scalars(stmt)).all())
     has_more = len(rows) > limit
     rows = rows[:limit]
     next_cursor = str(rows[-1].id) if has_more and rows else None
@@ -105,7 +100,7 @@ async def update_retailer(
     for key, value in data.items():
         setattr(retailer, key, value)
     await db.flush()
-    return await retailer_to_out(db, retailer)
+    return (await retailers_to_out(db, [retailer]))[0]
 
 
 async def deactivate_retailer(db: AsyncSession, retailer_id: UUID) -> None:
@@ -147,10 +142,11 @@ async def _create_portal_user(
     schema_name: str,
 ) -> User:
     from app.db.tenant_schema import set_search_path
+    from app.services.auth import require_username_available, upsert_auth_index
 
     try:
         await set_search_path(db, None)
-        normalized = await require_username_available(db, username, organization_id)
+        normalized = await require_username_available(db, username)
         await set_search_path(db, schema_name)
         user = User(
             username=normalized,
@@ -163,7 +159,10 @@ async def _create_portal_user(
         try:
             await db.flush()
         except IntegrityError as exc:
-            reraise_username_conflict(exc)
+            msg = str(getattr(exc, "orig", exc)).lower()
+            if "username" in msg or "user_auth_index" in msg:
+                raise HTTPException(status_code=409, detail="Username is already taken in this organization") from exc
+            raise exc
         await set_search_path(db, None)
         await upsert_auth_index(
             db,

@@ -1,10 +1,10 @@
 import "react-native-gesture-handler";
 import "./global.css";
 import { useEffect } from "react";
-import { StatusBar } from "expo-status-bar";
+
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "./src/query-client";
+import { queryClient } from "./src/lib/query-client";
 import { ReceiptPrintProvider } from "./src/components/receipt-print-provider";
 import { AppNavigator } from "./src/navigation/app-navigator";
 import { useAuthStore } from "./src/store/auth-store";
@@ -12,7 +12,7 @@ import { usePrinterStore } from "./src/store/printer-store";
 import { cssInterop } from "nativewind";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { Platform, LogBox } from "react-native";
+import { Platform, LogBox, StatusBar } from "react-native";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
 
 LogBox.ignoreLogs([
@@ -54,7 +54,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar barStyle="dark-content" />
         <ReceiptPrintProvider>
           <AppNavigator />
         </ReceiptPrintProvider>
