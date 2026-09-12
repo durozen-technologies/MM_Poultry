@@ -30,9 +30,17 @@ async def admin_today_orders(
 async def admin_orders_by_date(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN, UserRole.DELIVERY))],
     date: IstDate | None = None,
+    start_date: IstDate | None = None,
+    end_date: IstDate | None = None,
     retailer_id: UUID | None = None,
 ) -> TodayOrdersResponse:
-    return await svc.list_orders_by_date(auth.db, target_date=date, retailer_id=retailer_id)
+    return await svc.list_orders_by_date(
+        auth.db,
+        target_date=date,
+        start_date=start_date,
+        end_date=end_date,
+        retailer_id=retailer_id,
+    )
 
 
 @router.post("/admin/orders/{order_id}/confirm", response_model=DailyOrderOut)

@@ -121,9 +121,19 @@ const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPre
         </Text>
       </View>
 
-      <Text className="font-body-sm text-on-surface-variant mb-2">
-        {formatIstDate(order.order_date)}
-      </Text>
+      <View className="flex-row items-center gap-2 mb-2">
+        <Text className="font-body-sm text-on-surface-variant">
+          Order: {formatIstDate(order.order_date)}
+        </Text>
+        {order.expected_delivery_date && (
+          <>
+            <Text className="font-body-sm text-on-surface-variant">•</Text>
+            <Text className="font-body-sm text-[#2e7d32] font-semibold">
+              Delivery: {formatIstDate(order.expected_delivery_date)}
+            </Text>
+          </>
+        )}
+      </View>
 
       <View className="flex-col gap-2 mt-1 mb-3">
         {order.items?.map(it => (

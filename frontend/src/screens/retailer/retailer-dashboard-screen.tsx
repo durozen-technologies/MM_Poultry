@@ -110,6 +110,14 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
                           <Text className="text-on-primary-container text-[10px] font-bold uppercase">{order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}</Text>
                         </View>
                         
+                        {order.expected_delivery_date && (
+                          <View className="mb-2">
+                            <Text className="font-body-sm text-[#2e7d32] font-semibold">
+                              Delivery: {formatIstDate(order.expected_delivery_date)}
+                            </Text>
+                          </View>
+                        )}
+
                         <View className="flex-col gap-2 mt-1">
                           {order.items?.map(it => (
                             <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">

@@ -12,10 +12,17 @@ export async function listTodayOrders() {
   return data;
 }
 
-export async function listOrdersByDate(date?: string, retailer_id?: string) {
+export async function listOrdersByDate(options?: {
+  date?: string;
+  start_date?: string;
+  end_date?: string;
+  retailer_id?: string;
+}) {
   const params: Record<string, string> = {};
-  if (date) params.date = date;
-  if (retailer_id) params.retailer_id = retailer_id;
+  if (options?.date) params.date = options.date;
+  if (options?.start_date) params.start_date = options.start_date;
+  if (options?.end_date) params.end_date = options.end_date;
+  if (options?.retailer_id) params.retailer_id = options.retailer_id;
   const { data } = await api.get<{
     items: DailyOrder[];
     total_requested_kg: string;

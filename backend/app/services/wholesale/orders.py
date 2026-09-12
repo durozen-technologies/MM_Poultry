@@ -348,15 +348,24 @@ async def cancel_order(db: AsyncSession, order_id: UUID) -> DailyOrderOut:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to cancel order: {str(e)}")
 
 
-async def list_orders_by_date(db: AsyncSession, target_date: date | None = None, retailer_id: UUID | None = None) -> TodayOrdersResponse:
+async def list_orders_by_date(
+    db: AsyncSession, 
+    target_date: date | None = None, 
+    start_date: date | None = None,
+    end_date: date | None = None,
+    retailer_id: UUID | None = None
+) -> TodayOrdersResponse:
     try:
         query = (
             select(RetailerDailyOrder, Retailer.name, Retailer.shop_name)
             .options(selectinload(RetailerDailyOrder.items).selectinload(RetailerDailyOrderItem.item))
             .join(Retailer, Retailer.id == RetailerDailyOrder.retailer_id)
         )
-        if target_date is not None:
+        if start_date is not None and end_date is not None:
+            query = query.where(RetailerDailyOrder.order_date.between(start_date, end_date))
+        elif target_date is not None:
             query = query.where(RetailerDailyOrder.order_date == target_date)
+            
         if retailer_id is not None:
             query = query.where(RetailerDailyOrder.retailer_id == retailer_id)
             
