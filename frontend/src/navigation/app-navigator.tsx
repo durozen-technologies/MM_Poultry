@@ -25,6 +25,7 @@ import { AdminFarmPurchaseScreen } from "../screens/admin/admin-farm-purchase-sc
 import { AdminInventoryDetailScreen } from "../screens/admin/admin-inventory-detail-screen";
 import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
+import { AdminNewOrderScreen } from "../screens/admin/admin-new-order-screen";
 import { AdminSettingsScreen } from "../screens/admin/admin-settings-screen";
 import { AdminRatesScreen } from "../screens/admin/admin-rates-screen";
 import { AdminDeliveryRunsScreen } from "../screens/admin/admin-delivery-runs-screen";
@@ -251,6 +252,7 @@ export function AppNavigator() {
               <Stack.Screen name="AdminEditFarm" component={AdminFarmEditScreen} />
               <Stack.Screen name="FarmPurchase" component={AdminFarmPurchaseScreen} />
               <Stack.Screen name="OrderDetail" component={AdminOrderDetailScreen} />
+              <Stack.Screen name="AdminNewOrder" component={AdminNewOrderScreen} />
               <Stack.Screen name="DeliveryRuns" component={AdminDeliveryRunsScreen} />
               <Stack.Screen name="RouteDispatch" component={AdminRouteDispatchScreen} />
               <Stack.Screen name="Reports" component={AdminReportsScreen} />

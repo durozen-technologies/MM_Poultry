@@ -1,49 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { getRetailerOrder, upsertTodayOrder } from "../api/retailer";
+import { createOrderAsAdmin, confirmOrder } from "../api/orders";
 import { getApiErrorMessage } from "../api/client";
 import { apiItems } from "../api/items";
 import type { OrderItemCreate } from "../types/api";
+import { todayIstDate, toApiDate } from "../utils/ist-date";
 
-export function useRetailerCart(onSuccess: () => void, orderId?: string) {
+export function useAdminCart(retailerId: string | null, onSuccess: () => void) {
   const [cart, setCart] = useState<Record<string, OrderItemCreate>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [orderNotes, setOrderNotes] = useState<string>("");
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState<Date | null>(todayIstDate());
 
   const { data: itemsPage, isLoading: loadingItems } = useQuery({
     queryKey: ["retailer_items", { activeOnly: true }],
     queryFn: () => apiItems.list(true),
   });
   const items = itemsPage?.items || [];
-
-  const loadExisting = useCallback(async () => {
-    if (!orderId) return;
-    try {
-      const order = await getRetailerOrder(orderId);
-      if (order && order.items) {
-        const existingCart: Record<string, OrderItemCreate> = {};
-        for (const it of order.items) {
-          existingCart[it.item_id] = {
-            item_id: it.item_id,
-            total_boxes: it.total_boxes || 0,
-            requested_kg: it.requested_kg || "",
-          };
-        }
-        setCart(existingCart);
-        if (order.notes) {
-          setOrderNotes(order.notes);
-        }
-      }
-    } catch {
-      // ignore preload errors
-    }
-  }, [orderId]);
-
-  useEffect(() => {
-    void loadExisting();
-  }, [loadExisting, orderId]);
 
   const updateCartItem = (itemId: string, field: keyof OrderItemCreate, value: unknown) => {
     setCart((prev) => {
@@ -88,6 +63,10 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
   };
 
   async function onSubmit() {
+    if (!retailerId) {
+      setMessage("Please select a retailer first");
+      return;
+    }
     const payloadItems = Object.values(cart)
       .filter((it) => (it.total_boxes || 0) > 0)
       .map(it => ({
@@ -102,11 +81,15 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
     setBusy(true);
     setMessage(null);
     try {
-      await upsertTodayOrder({ 
-        order_id: orderId, 
+      const order = await createOrderAsAdmin(retailerId, { 
         items: payloadItems,
         notes: orderNotes.trim() || undefined
       });
+      
+      const apiDate = expectedDeliveryDate ? toApiDate(expectedDeliveryDate) : toApiDate(todayIstDate());
+      if (apiDate) {
+        await confirmOrder(order.id, { expected_delivery_date: apiDate });
+      }
       onSuccess();
     } catch (e) {
       let code = null;
@@ -119,7 +102,7 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
       if (code === "CONFLICT") {
         Alert.alert(
           "Order Already Completed",
-          detail || "Today's order has already been processed. Contact admin for changes.",
+          detail || "Today's order has already been processed for this retailer.",
           [{ text: "OK", onPress: onSuccess }],
         );
       } else {
@@ -149,6 +132,8 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
     totalKg,
     orderNotes,
     setOrderNotes,
+    expectedDeliveryDate,
+    setExpectedDeliveryDate,
     updateCartItem,
     adjustBoxes,
     onSubmit,

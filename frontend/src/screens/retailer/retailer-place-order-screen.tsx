@@ -1,5 +1,5 @@
-import React, { useCallback } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, FlatList } from "react-native";
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, FlatList, Modal } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRetailerCart } from "../../hooks/use-retailer-cart";
@@ -19,7 +19,6 @@ const OrderItemRow = React.memo(({ item, cartItem, onAdjust, onUpdate }: any) =>
     onUpdate(item.id, "total_boxes", isNaN(num) ? 0 : num);
   }, [item.id, onUpdate]);
   const handleKgChange = useCallback((v: string) => onUpdate(item.id, "requested_kg", v), [item.id, onUpdate]);
-  const handleNotesChange = useCallback((v: string) => onUpdate(item.id, "notes", v), [item.id, onUpdate]);
 
   return (
     <View className={`bg-white rounded-2xl p-5 mb-4 shadow-sm elevation-sm border ${isSelected ? "border-[#003E99] border-[2px]" : "border-black/5"}`}>
@@ -52,19 +51,11 @@ const OrderItemRow = React.memo(({ item, cartItem, onAdjust, onUpdate }: any) =>
         <>
           <Text className="font-label-md text-on-surface-variant mb-2">Expected Kg (Optional)</Text>
           <TextInput
-            className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl px-4 py-3 text-body-lg text-[#003E99] font-bold mb-4"
+            className="bg-surface-container-lowest border border-outline-variant/50 rounded-xl px-4 py-3 text-body-lg text-[#003E99] font-bold"
             value={expectedKg || ""}
             onChangeText={handleKgChange}
             keyboardType="decimal-pad"
             placeholder="e.g. 50"
-          />
-
-          <Text className="font-label-md text-on-surface-variant mb-2">Notes (optional)</Text>
-          <TextInput
-            className="bg-surface border border-outline-variant rounded-xl px-3 py-3 text-body-md text-on-surface min-h-[60px] placeholder:text-on-surface-variant"
-            value={cartItem?.notes || ""}
-            onChangeText={handleNotesChange}
-            placeholder="Delivery instructions, cut preference, etc."
           />
         </>
       )}
@@ -84,10 +75,14 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
     items,
     loadingItems,
     totalBoxes,
+    orderNotes,
+    setOrderNotes,
     updateCartItem,
     adjustBoxes,
     onSubmit,
   } = useRetailerCart(handleGoBack, orderId);
+
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
 
 
   return (
@@ -132,20 +127,50 @@ export function RetailerPlaceOrderScreen({ navigation, route }: { navigation: an
       <View className="absolute bottom-4 left-4 right-4 max-w-3xl mx-auto">
         <Pressable accessibilityRole="button"
           className="bg-primary h-14 rounded-full flex-row items-center justify-between px-6 shadow-sm shadow-primary/30 active:scale-[0.98] transition-transform"
-          onPress={onSubmit}
+          onPress={() => setIsConfirmModalVisible(true)}
           disabled={busy || totalBoxes === 0}
         >
           <View className="flex-row items-center gap-2">
             <MaterialIcons name="shopping-cart" size={20} color="white" />
             <Text className="text-on-primary font-semibold text-lg">{totalBoxes} Boxes Total</Text>
           </View>
-          {busy ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-on-primary font-bold text-lg">Confirm Order</Text>
-          )}
+          <Text className="text-on-primary font-bold text-lg">Confirm Order</Text>
         </Pressable>
       </View>
+
+      <Modal visible={isConfirmModalVisible} transparent animationType="slide">
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-3xl p-6" style={{ paddingBottom: Math.max(insets.bottom + 24, 24) }}>
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="font-headline-sm text-on-surface font-bold">Confirm Order</Text>
+              <Pressable onPress={() => setIsConfirmModalVisible(false)} className="p-2 -mr-2">
+                <MaterialIcons name="close" size={24} className="text-on-surface-variant" />
+              </Pressable>
+            </View>
+
+            <Text className="font-label-md text-on-surface-variant mb-2">Order Notes (Optional)</Text>
+            <TextInput
+              className="bg-surface border border-outline-variant rounded-xl px-4 py-3 text-body-lg text-on-surface min-h-[100px] mb-6 placeholder:text-on-surface-variant"
+              value={orderNotes}
+              onChangeText={setOrderNotes}
+              placeholder="Add any delivery instructions or cut preferences..."
+              multiline
+              textAlignVertical="top"
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              className="bg-[#003E99] h-14 rounded-xl flex-row items-center justify-center shadow-sm active:opacity-80"
+              onPress={() => {
+                setIsConfirmModalVisible(false);
+                onSubmit();
+              }}
+            >
+              <Text className="text-white font-bold text-lg">Place Order</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -62,6 +62,7 @@ export type OrderItem = {
   requested_kg?: string | null;
   delivered_kg?: string | null;
   notes?: string | null;
+  locked_rate_per_kg?: string | null;
 };
 
 export type DailyOrder = {
@@ -77,6 +78,8 @@ export type DailyOrder = {
   route_name?: string | null;
   route_area?: string | null;
   retailer_area?: string | null;
+  notes?: string | null;
+  is_billed?: boolean;
   items: OrderItem[];
 };
 
@@ -202,8 +205,8 @@ export type DeliveryStopItem = {
   delivered_boxes?: number | null;
   gross_weight_kg?: string | null;
   empty_box_weight_kg?: string | null;
-  rate_per_kg: string;
-  gross_amount: string | null;
+  rate_per_kg?: string | null;
+  gross_amount?: string | null;
   delivered_bird_count?: number | null;
   original_requested_kg?: string | null;
   original_total_boxes?: number | null;
@@ -238,6 +241,7 @@ export type DeliveryRun = {
   driver_user_id?: string | null;
   driver_name?: string | null;
   vehicle_id?: string | null;
+  vehicle_name?: string | null;
   vehicle_number?: string | null;
   planned_kg?: string | null;
   actual_loaded_kg?: string | null;
@@ -313,8 +317,8 @@ export type DeliveryBillItem = {
   delivery_bill_id: string;
   item_id: string;
   weight_kg: string;
-  rate_per_kg: string;
-  amount: string;
+  rate_per_kg?: string | null;
+  amount?: string | null;
 };
 
 export type DeliveryBill = {
@@ -437,6 +441,7 @@ export type OrderItemCreate = {
 
 export type DailyOrderCreate = {
   order_id?: string | null;
+  notes?: string | null;
   items: OrderItemCreate[];
 };
 

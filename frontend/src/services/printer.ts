@@ -41,7 +41,7 @@ type BillLike = {
   cash_payment: string;
   upi_payment: string;
   balance_amount: string;
-  items?: { item_id: string; weight_kg: string; rate_per_kg: string; amount: string }[];
+  items?: { item_id: string; weight_kg: string; rate_per_kg?: string | null; amount?: string | null }[];
 };
 
 type StopLike = {
@@ -109,12 +109,12 @@ export function printPayloadToDeliveryReceiptData(payload: PrintPayload): Delive
     items: payload.items.map((it) => ({
       name: it.name,
       quantity: Number(it.boxes) || 0,
-      price: Number(it.rate) || 0,
-      total: Number(it.amount) || 0,
+      price: it.rate ? Number(it.rate) : 0,
+      total: it.amount ? Number(it.amount) : 0,
       quantity_display: `${it.boxes} / ${fmtKg(it.weightKg)}`,
-      rate_line: `₹${fmtMoney(it.rate)}/kg`,
+      rate_line: it.rate ? `₹${fmtMoney(it.rate)}/kg` : "",
     })),
-    total_bill: parseAmount(payload.total),
+    total_bill: payload.total ? parseAmount(payload.total) : 0,
     cash_collected: parseAmount(payload.cash),
     upi_collected: parseAmount(payload.upi),
     total_boxes: parseAmount(payload.totalBoxes),
@@ -136,8 +136,8 @@ export function deliveryBillToPrintPayload(
     name: getItemName(it.item_id),
     boxes: String(boxesByItem.get(it.item_id) ?? 0),
     weightKg: String(it.weight_kg),
-    rate: String(it.rate_per_kg),
-    amount: String(it.amount),
+    rate: it.rate_per_kg != null ? String(it.rate_per_kg) : "",
+    amount: it.amount != null ? String(it.amount) : "",
   }));
   const totalWeight = items.reduce((sum, it) => sum + Number(it.weightKg || 0), 0);
   const totalBoxes = items.reduce((sum, it) => sum + Number(it.boxes || 0), 0);
@@ -154,10 +154,10 @@ export function deliveryBillToPrintPayload(
     stopSequence: stop.sequence,
     totalBoxes: String(totalBoxes),
     weightKg: fmtKg(totalWeight),
-    total: String(bill.total_amount),
+    total: bill.total_amount != null ? String(bill.total_amount) : "",
     cash: String(bill.cash_payment || 0),
     upi: String(bill.upi_payment || 0),
-    balance: String(bill.balance_amount || 0),
+    balance: bill.balance_amount != null ? String(bill.balance_amount) : "",
     items,
   };
 }

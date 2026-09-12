@@ -30,8 +30,9 @@ async def admin_list_retailers(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
     cursor: str | None = None,
     limit: int = Query(default=50, ge=1, le=200),
+    search: str | None = None,
 ) -> CursorPage:
-    items, has_more, next_cursor = await svc.list_retailers(auth.db, cursor=cursor, limit=limit)
+    items, has_more, next_cursor = await svc.list_retailers(auth.db, cursor=cursor, limit=limit, search=search)
     return CursorPage(items=items, has_more=has_more, next_cursor=next_cursor)
 
 

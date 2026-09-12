@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,11 +59,20 @@ async def create_retailer(
 
 
 async def list_retailers(
-    db: AsyncSession, *, cursor: str | None = None, limit: int = 50
+    db: AsyncSession, *, cursor: str | None = None, limit: int = 50, search: str | None = None
 ) -> tuple[list[RetailerOut], bool, str | None]:
     stmt = (
         select(Retailer).order_by(Retailer.created_at.desc(), Retailer.id.desc()).limit(limit + 1)
     )
+    if search:
+        search_term = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                Retailer.name.ilike(search_term),
+                Retailer.shop_name.ilike(search_term),
+                Retailer.phone.ilike(search_term),
+            )
+        )
     if cursor:
         stmt = stmt.where(Retailer.id < UUID(cursor))
     rows = list((await db.scalars(stmt)).all())

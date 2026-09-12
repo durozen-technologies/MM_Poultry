@@ -38,3 +38,25 @@ async def test_today_orders(client: AsyncClient) -> None:
     listed = await client.get("/admin/orders/today", headers=headers)
     assert listed.status_code == 200
     assert len(listed.json()["items"]) >= 1
+
+@pytest.mark.asyncio
+async def test_admin_create_order(client: AsyncClient) -> None:
+    _, admin = await create_org_with_admin(client, slug="admin_order_org")
+    item = await create_default_item(client, admin["access_token"])
+    headers = auth_headers(admin["access_token"])
+    retailer = await client.post(
+        "/admin/retailers",
+        json={"name": "Admin Order Retailer"},
+        headers=headers,
+    )
+    assert retailer.status_code == 200
+    r_id = retailer.json()["id"]
+    
+    placed = await client.post(
+        f"/admin/retailers/{r_id}/orders",
+        json={"items": [{"item_id": item["id"], "requested_kg": "30.000", "total_boxes": 3}]},
+        headers=headers,
+    )
+    assert placed.status_code == 200
+    assert placed.json()["total_boxes"] == 3
+    assert placed.json()["status"] == "PLACED"

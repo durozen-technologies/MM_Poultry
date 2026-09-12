@@ -63,7 +63,7 @@ class LedgerBillItem(BaseModel):
     item_name: str
     boxes: int
     net_kg: Decimal
-    amount: Decimal
+    amount: Decimal | None = None
 
 
 class LedgerEntry(BaseModel):

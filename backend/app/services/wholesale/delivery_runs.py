@@ -109,6 +109,7 @@ async def create_delivery_run(
     *,
     actor_user_id: UUID | None = None,
 ) -> DeliveryRunOut:
+    from app.services.wholesale.common import q_money
     if not payload.order_ids:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="order_ids required")
     if len(payload.order_ids) != len(set(payload.order_ids)):
@@ -153,6 +154,11 @@ async def create_delivery_run(
     if payload.order_adjustments:
         for adj in payload.order_adjustments:
             adj_map[(adj.order_id, adj.item_id)] = adj.requested_kg
+
+    price_map = {}
+    if payload.order_prices:
+        for price_upd in payload.order_prices:
+            price_map[(price_upd.order_id, price_upd.item_id)] = price_upd.locked_rate_per_kg
 
     total_ordered_kg = ZERO
     for ord in orders:
@@ -237,7 +243,12 @@ async def create_delivery_run(
             await db.flush()
 
             for item in order.items:
-                rate = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
+                if (order.id, item.item_id) in price_map:
+                    rate_in = price_map[(order.id, item.item_id)]
+                    item.locked_rate_per_kg = q_money(rate_in) if rate_in is not None else None
+                elif item.locked_rate_per_kg is None:
+                    item.locked_rate_per_kg = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
+
                 req_kg = adj_map.get((order.id, item.item_id), item.requested_kg or ZERO)
                 ordered = q_kg(req_kg)
                 stop_item = DeliveryStopItem(
@@ -245,7 +256,7 @@ async def create_delivery_run(
                     item_id=item.item_id,
                     ordered_kg=ordered,
                     remaining_kg=ordered,
-                    rate_per_kg=rate,
+                    rate_per_kg=item.locked_rate_per_kg,
                 )
                 db.add(stop_item)
 
@@ -263,6 +274,15 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     )
     if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery run not found")
+
+    from app.models.user import User
+    vehicle_name = None
+    vehicle_number = None
+    if run.driver_user_id:
+        driver = await db.scalar(select(User).where(User.id == run.driver_user_id))
+        if driver:
+            vehicle_name = driver.vehicle_name
+            vehicle_number = driver.mobile_number
 
     stops_res = await db.execute(
         select(DeliveryStop, Retailer.name, Retailer.shop_name, Retailer.route_name)
@@ -284,6 +304,8 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
             oi_map[(oi.order_id, oi.item_id)] = oi
 
     out = DeliveryRunOut.model_validate(run, from_attributes=True)
+    out.vehicle_name = vehicle_name
+    out.vehicle_number = vehicle_number
     stops_out = []
     for stop, r_name, r_shop, r_route in stops_data:
         s_out = DeliveryStopOut.model_validate(stop, from_attributes=True)
@@ -304,21 +326,21 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     return out
 
 
-async def get_active_run(
+async def get_active_runs(
     db: AsyncSession, driver_user_id: UUID | None = None
-) -> DeliveryRunOut | None:
+) -> list[DeliveryRunOut]:
     stmt = (
         select(DeliveryRun)
         .where(DeliveryRun.status.in_(_ACTIVE_RUN_STATUSES))
-        .order_by(DeliveryRun.created_at.desc())
-        .limit(1)
+        .order_by(DeliveryRun.created_at.asc())
     )
     if driver_user_id is not None:
         stmt = stmt.where(DeliveryRun.driver_user_id == driver_user_id)
-    run = await db.scalar(stmt)
-    if run is None:
-        return None
-    return await get_delivery_run(db, run.id)
+    runs = (await db.scalars(stmt)).all()
+    result = []
+    for r in runs:
+        result.append(await get_delivery_run(db, r.id))
+    return result
 
 
 async def list_delivery_runs(

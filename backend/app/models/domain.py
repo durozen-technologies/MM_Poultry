@@ -326,7 +326,7 @@ class DeliveryStopItem(Base, BaseModelMixin):
     delivered_boxes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gross_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     empty_box_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
-    rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     gross_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     delivered_bird_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_override_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -390,8 +390,8 @@ class DeliveryBillItem(Base, BaseModelMixin):
         UUID_SQL_TYPE, ForeignKey("items.id"), nullable=False, index=True
     )
     weight_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
-    rate_per_kg: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
-    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    rate_per_kg: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     box_charge: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, server_default=text("0.00")
     )

@@ -18,8 +18,8 @@ class BillPreviewRequest(BaseModel):
 class BillItemPreviewOut(BaseModel):
     item_id: UUID
     weight_kg: Decimal
-    rate_per_kg: Decimal
-    amount: Decimal
+    rate_per_kg: Decimal | None = None
+    amount: Decimal | None = None
 
 
 class BillPreviewOut(BaseModel):
@@ -54,8 +54,8 @@ class DeliveryBillItemOut(BaseModel):
     delivery_bill_id: UUID
     item_id: UUID
     weight_kg: Decimal
-    rate_per_kg: Decimal
-    amount: Decimal
+    rate_per_kg: Decimal | None = None
+    amount: Decimal | None = None
 
 
 class DeliveryBillOut(BaseModel):

@@ -119,7 +119,7 @@ async def weigh_stop(
             item.delivered_weight_kg = weight
             item.delivered_boxes = pi.delivered_boxes
             item.delivered_bird_count = pi.delivered_bird_count
-            item.gross_amount = q_money(weight * item.rate_per_kg)
+            item.gross_amount = q_money(weight * item.rate_per_kg) if item.rate_per_kg is not None else None
             item.remaining_kg = q_kg(max(item.ordered_kg - weight, ZERO))
             if payload.weight_override_reason:
                 item.weight_override_reason = payload.weight_override_reason[:500]
@@ -128,7 +128,32 @@ async def weigh_stop(
 
     stop.status = DeliveryStopStatus.WEIGHED
     stop.weighed_at = now_ist()
+
+    # Mark the order as FULFILLED (Delivered) immediately on weigh — even if unpriced.
+    # is_billed is tracked separately via DeliveryStop.status == BILLED.
+    if stop.daily_order_id:
+        order = await db.scalar(
+            select(RetailerDailyOrder).where(RetailerDailyOrder.id == stop.daily_order_id)
+        )
+        if order and order.status not in (OrderStatus.FULFILLED, OrderStatus.CANCELLED):
+            order.status = OrderStatus.FULFILLED
+
     await db.flush()
+
+    # Auto-commit bill if all items have prices set
+    if all(i.rate_per_kg is not None for i in stop.items):
+        from app.schemas.billing import BillCommitRequest
+        try:
+            # We don't return the bill from weigh_stop, just change the state to BILLED
+            await commit_bill(db, stop.id, BillCommitRequest(
+                cash_payment=Decimal("0.0"),
+                upi_payment=Decimal("0.0"),
+                checkout_id=str(uuid4())
+            ))
+            # commit_bill flushes on its own
+        except Exception:
+            pass  # If auto-commit fails, leave it in WEIGHED state
+
     return await _stop_out(db, stop)
 
 
@@ -138,17 +163,23 @@ def _preview_from_stop(
     items_out = []
     total_amount = ZERO
     for item in stop.items:
-        if item.delivered_weight_kg is None or item.gross_amount is None:
+        if item.delivered_weight_kg is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Stop items not weighed fully"
             )
-        total_amount += item.gross_amount
+        # Always recalculate from weight * rate so price edits are reflected immediately
+        if item.rate_per_kg is not None:
+            amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
+            item.gross_amount = amount  # keep DB in sync
+        else:
+            amount = item.gross_amount  # unpriced — use whatever is stored
+        total_amount += (amount or ZERO)
         items_out.append(
             BillItemPreviewOut(
                 item_id=item.item_id,
                 weight_kg=item.delivered_weight_kg,
                 rate_per_kg=item.rate_per_kg,
-                amount=item.gross_amount,
+                amount=amount,
             )
         )
 
@@ -234,8 +265,8 @@ async def commit_bill(
         .options(selectinload(DeliveryBill.items))
         .where(DeliveryBill.delivery_stop_id == stop_id)
     )
-    if existing and stop.status == DeliveryStopStatus.BILLED:
-        return DeliveryBillOut.model_validate(existing, from_attributes=True)
+    # NOTE: do NOT short-circuit here for BILLED stops — if admin edited prices
+    # after billing, we must fall through to the update path to reprice the bill.
 
     if stop.status not in {DeliveryStopStatus.WEIGHED, DeliveryStopStatus.BILLED}:
         raise HTTPException(
@@ -451,6 +482,32 @@ async def record_standalone_payment(
     db.add(payment)
     retailer.credit_balance = q_money(retailer.credit_balance - total_payment)
     await db.flush()
+
+
+async def record_advance_payment(
+    db: AsyncSession, stop_id: UUID, payload: 'BillCommitRequest'
+) -> None:
+    from app.services.wholesale.common import today_ist
+    
+    stop = await db.scalar(
+        select(DeliveryStop).where(DeliveryStop.id == stop_id)
+    )
+    if not stop:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stop not found")
+        
+    cash = q_money(payload.cash_payment) if payload.cash_payment else ZERO
+    upi = q_money(payload.upi_payment) if payload.upi_payment else ZERO
+    total = q_money(cash + upi)
+    
+    if total > ZERO:
+        from app.schemas.billing import PaymentCreateRequest
+        payment_payload = PaymentCreateRequest(
+            payment_date=today_ist(),
+            cash_amount=cash,
+            upi_amount=upi,
+            notes=payload.notes,
+        )
+        await record_standalone_payment(db, stop.retailer_id, payment_payload)
 
 
 

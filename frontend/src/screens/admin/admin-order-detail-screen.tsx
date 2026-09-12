@@ -7,11 +7,13 @@ import type { DailyOrder } from "../../types/api";
 import { useAuthStore } from "../../store/auth-store";
 import { formatIstDate } from "../../utils/ist-date";
 import { cancelOrder, getOrderBill } from "../../api/orders";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
 import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
+import { EditOrderPricesModal } from "./components/edit-order-prices-modal";
 
 import { PrimaryButton } from "../../components/ui/primary-button";
 
@@ -20,7 +22,9 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  const [cancelling, setCancelling] = useState(false);
  const [showDispatchModal, setShowDispatchModal] = useState(false);
  const [showConfirmModal, setShowConfirmModal] = useState(false);
+ const [showEditPricesModal, setShowEditPricesModal] = useState(false);
  const user = useAuthStore((s) => s.user);
+ const queryClient = useQueryClient();
 
  const { data: itemsPage } = useQuery({
  queryKey: ["admin_items"],
@@ -310,6 +314,20 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  </View>
  </Pressable>
  )}
+
+ {user?.role !== "DELIVERY" && order.status !== "CANCELLED" && (
+ <Pressable
+ className="mb-8 h-14 rounded-lg flex-row items-center justify-center px-6 bg-white border border-[#e5e7eb] active:bg-[#f7f8fa] transition-transform"
+ onPress={() => setShowEditPricesModal(true)}
+ >
+ <View className="flex-row items-center justify-center gap-2">
+ <MaterialIcons name="edit" size={22} className="text-[#202124]" />
+ <Text className="text-[#202124] font-bold text-base uppercase tracking-wider">
+ Edit Prices
+ </Text>
+ </View>
+ </Pressable>
+ )}
  </ScrollView>
  
  {showDispatchModal && (
@@ -330,6 +348,19 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  onConfirmed={() => {
  setShowConfirmModal(false);
  setOrder({ ...order, status: "ACKNOWLEDGED"});
+ }}
+ />
+ )}
+
+ {showEditPricesModal && (
+ <EditOrderPricesModal
+ order={order}
+ onClose={() => setShowEditPricesModal(false)}
+ onUpdated={(updated) => {
+ setOrder(updated);
+ // Prices changed — the bill total is now stale, force a refetch
+ queryClient.invalidateQueries({ queryKey: ["order_bill", order?.id] });
+ setShowEditPricesModal(false);
  }}
  />
  )}

@@ -337,6 +337,11 @@ async def repair_tenant_schema_async(schema_name: str) -> None:
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS checkout_id VARCHAR(64)",
         "ALTER TABLE delivery_bills ADD COLUMN IF NOT EXISTS overall_balance NUMERIC(12,2) NOT NULL DEFAULT 0.00",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle_name VARCHAR(120)",
+        "ALTER TABLE delivery_stop_items ALTER COLUMN rate_per_kg DROP NOT NULL",
+        "ALTER TABLE delivery_stop_items ALTER COLUMN gross_amount DROP NOT NULL",
+        "ALTER TABLE retailer_daily_order_items ALTER COLUMN locked_rate_per_kg DROP NOT NULL",
+        "ALTER TABLE delivery_bill_items ALTER COLUMN rate_per_kg DROP NOT NULL",
+        "ALTER TABLE delivery_bill_items ALTER COLUMN amount DROP NOT NULL",
     ]
     async with engine.begin() as conn:
         await conn.execute(text("SET TIME ZONE 'Asia/Kolkata'"))

@@ -1,11 +1,10 @@
 import React, { useCallback, useState, useMemo } from "react";
-import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatList } from "react-native";
+import { Pressable, Text, View, ScrollView, TextInput, ActivityIndicator, FlatList, Modal } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { getLedger, createRetailerPortalUser, recordRetailerPayment } from "../../api/retailers";
 import { listOrdersByDate } from "../../api/orders";
 import { apiItems } from "../../api/items";
-import { listRates, upsertRate } from "../../api/rates";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
@@ -15,6 +14,9 @@ import { getApiErrorMessage } from "../../api/client";
 
 import { AdminScreenContainer } from "../../components/admin/admin-screen-container";
 import { AdminHeader } from "../../components/admin/admin-header";
+import { startOfWeek, startOfMonth, startOfYear } from "date-fns";
+
+export type DateRangeOption = "All" | "Today" | "This Week" | "This Month" | "This Year" | "Custom";
 
 export function AdminRetailerProfileScreen({ route, navigation }: { route: any; navigation: any }) {
  const { retailerId } = route.params;
@@ -29,47 +31,46 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  const [paymentNotes, setPaymentNotes] = useState("");
  const [recordingPayment, setRecordingPayment] = useState(false);
 
+ const [dateRangeOption, setDateRangeOption] = useState<DateRangeOption>("All");
+ const [startDate, setStartDate] = useState<Date | null>(null);
+ const [endDate, setEndDate] = useState<Date | null>(null);
+ const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+ const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+ const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+ const [searchQueryOrderId, setSearchQueryOrderId] = useState("");
+
+ React.useEffect(() => {
+ const now = new Date();
+ if (dateRangeOption === "Today") {
+ setStartDate(now);
+ setEndDate(now);
+ } else if (dateRangeOption === "This Week") {
+ setStartDate(startOfWeek(now, { weekStartsOn: 1 }));
+ setEndDate(now);
+ } else if (dateRangeOption === "This Month") {
+ setStartDate(startOfMonth(now));
+ setEndDate(now);
+ } else if (dateRangeOption === "This Year") {
+ setStartDate(startOfYear(now));
+ setEndDate(now);
+ } else if (dateRangeOption === "Custom") {
+ setStartDate(customStartDate);
+ setEndDate(customEndDate);
+ } else {
+ setStartDate(null);
+ setEndDate(null);
+ }
+ }, [dateRangeOption, customStartDate, customEndDate]);
+
 
  const queryClient = useQueryClient();
- const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
- const [customRateInput, setCustomRateInput] = useState("");
- const [rateMsg, setRateMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
- const { data: itemsPage, isLoading: loadingItems } = useQuery({
- queryKey: ["admin_items", { activeOnly: true }],
- queryFn: () => apiItems.list(true),
- });
- const items = itemsPage?.items || [];
-
- const { data: rates = [], isLoading: loadingRates } = useQuery({
- queryKey: ["admin_rates"],
- queryFn: () => listRates(),
- });
-
- const saveRateMutation = useMutation({
- mutationFn: (payload: { item_id: string; retailer_id: string; rate_per_kg: string }) => upsertRate(payload),
- onSuccess: () => {
- setRateMsg({ text: "Custom rate saved successfully", type: 'success' });
- queryClient.invalidateQueries({ queryKey: ["admin_rates"] });
- queryClient.invalidateQueries({ queryKey: ["admin_items", { activeOnly: true }] });
- setTimeout(() => setRateMsg(null), 3000);
- },
- onError: (e) => {
- setRateMsg({ text: getApiErrorMessage(e), type: 'error' });
- setTimeout(() => setRateMsg(null), 3000);
- }
- });
-
- const saveCustomRate = useCallback(() => {
- if (!selectedItemId || !customRateInput) return;
- saveRateMutation.mutate({ item_id: selectedItemId, retailer_id: retailerId, rate_per_kg: customRateInput });
- }, [selectedItemId, customRateInput, retailerId, saveRateMutation]);
 
  const refresh = useCallback(async () => {
  try {
  const [ledgerData, orderData] = await Promise.all([
  getLedger(retailerId),
- listOrdersByDate(undefined, retailerId),
+ listOrdersByDate({ retailer_id: retailerId }),
  ]);
  setLedger(ledgerData);
  setOrders(orderData.items);
@@ -144,6 +145,24 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "BILL") || [], [ledger?.entries]);
  const ledgerEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type !== "BILL") || [], [ledger?.entries]);
 
+ const filteredOrders = useMemo(() => {
+ let filtered = orders;
+ if (startDate && endDate) {
+ const startStr = toApiDate(startDate);
+ const endStr = toApiDate(endDate);
+ if (startStr && endStr) {
+ filtered = filtered.filter(o => o.order_date >= startStr && o.order_date <= endStr);
+ }
+ }
+ if (searchQueryOrderId) {
+ filtered = filtered.filter(o => 
+ o.id.toLowerCase().includes(searchQueryOrderId.toLowerCase()) || 
+ (o.order_number && String(o.order_number).toLowerCase().includes(searchQueryOrderId.toLowerCase()))
+ );
+ }
+ return filtered;
+ }, [orders, startDate, endDate, searchQueryOrderId]);
+
  if (loading && !ledger) {
  return (
  <AdminScreenContainer
@@ -212,35 +231,43 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  />
  }
  >
- {/* Header Profile Section */}
- <View className="bg-white px-4 py-6 border-b border-[#e5e7eb] items-center z-10 relative overflow-hidden">
- <View className="absolute top-0 right-0 w-32 h-32 bg-[#2E7D32]/5 rounded-lg -translate-y-16 translate-x-16"/>
- <View className="absolute bottom-0 left-0 w-24 h-24 bg-error/5 rounded-lg translate-y-12 -translate-x-12"/>
- 
- <Text className="text-2xl font-bold text-[#202124] font-black text-center mb-1">
- {retailer.name}
- </Text>
- <Text className="text-sm font-bold text-[#5f6368] text-[#5f6368] text-center mb-6">
- {retailer.shop_name || "—"}
- </Text>
+  {/* Header Profile Section */}
+  <View className="bg-white px-5 py-6 border-b border-[#e5e7eb] flex-row items-center justify-between z-10 relative">
+    <View className="flex-1 pr-4">
+      <Text className="text-[22px] font-bold text-[#111111] mb-1">
+        {retailer.name}
+      </Text>
+      {retailer.shop_name ? (
+        <Text className="text-[15px] font-medium text-[#5f6368] mb-0.5">
+          {retailer.shop_name}
+        </Text>
+      ) : null}
+      {retailer.phone ? (
+        <Text className="text-[15px] font-medium text-[#5f6368]">
+          {retailer.phone}
+        </Text>
+      ) : null}
+    </View>
 
- <View className="w-64 bg-error-container/20 p-5 rounded-lg border border-error/20 flex-col items-center justify-center">
- <View className="flex-row items-center gap-1.5 mb-1.5">
- <MaterialIcons name="account-balance-wallet"size={16} className="text-error"/>
- <Text className="text-sm font-bold text-[#5f6368] text-error uppercase tracking-widest">
- Outstanding Balance
- </Text>
- </View>
- <Text className="text-2xl font-bold text-error font-black">
- ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
- </Text>
- </View>
- </View>
+    <View className="bg-[#FFF5F5] py-3 px-4 rounded-xl border border-[#FFE4E4] min-w-[140px]">
+      <View className="flex-row items-center gap-1.5 mb-1.5">
+        <View className="bg-[#D32F2F] rounded p-0.5">
+          <MaterialIcons name="account-balance-wallet" size={12} color="white" />
+        </View>
+        <Text className="text-xs font-semibold text-[#D32F2F]">
+          Outstanding Balance
+        </Text>
+      </View>
+      <Text className="text-[26px] font-black text-[#D32F2F]">
+        ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+      </Text>
+    </View>
+  </View>
 
  {/* Tabs */}
  <View className="bg-white border-b border-[#e5e7eb] z-10">
  <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"contentContainerStyle={{ paddingHorizontal: 16 }}>
- {["OVERVIEW", "ORDERS", "BILLS", "RATES", "LEDGER"].map((tab) => (
+ {["OVERVIEW", "ORDERS", "BILLS", "LEDGER"].map((tab) => (
  <Pressable 
  key={tab}
  onPress={() => setActiveTab(tab)}
@@ -354,8 +381,35 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </ScrollView>
  )}
  {activeTab === "ORDERS"&& (
+ <View className="flex-1">
+ <View className="px-4 py-3 bg-white border-b border-[#e5e7eb] flex-row gap-3 z-20">
+ <View className="flex-1 relative justify-center">
+ <View className="absolute left-3 z-10">
+ <MaterialIcons name="search" size={20} className="text-[#5f6368]"/>
+ </View>
+ <TextInput 
+ className="w-full bg-[#f7f8fa] h-12 rounded-lg border border-[#e5e7eb] pl-10 pr-3 font-sans text-base text-[#111111] focus:border-[#2E7D32]"
+ placeholder="Search order ID..."
+ placeholderTextColor="#717973"
+ value={searchQueryOrderId}
+ onChangeText={setSearchQueryOrderId}
+ />
+ </View>
+ <View className="w-32">
+ <Pressable 
+ className="h-12 bg-white rounded-lg border border-[#e5e7eb] flex-row items-center justify-between px-3 active:bg-[#f7f8fa]"
+ onPress={() => setIsDateModalOpen(true)}
+ >
+ <View className="flex-1 pr-1">
+ <Text className="text-[10px] text-[#7a7f85] font-sans uppercase font-bold tracking-wider">Date</Text>
+ <Text className="text-xs font-sans text-[#202124] font-semibold" numberOfLines={1}>{dateRangeOption}</Text>
+ </View>
+ <MaterialIcons name="arrow-drop-down" size={20} className="text-[#5f6368]" />
+ </Pressable>
+ </View>
+ </View>
  <FlatList
- data={orders}
+ data={filteredOrders}
  keyExtractor={item => item.id}
  className="flex-1 px-4"
  contentContainerStyle={{ paddingBottom: 100 }}
@@ -391,7 +445,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  order.status === 'FULFILLED' ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20 text-[#2E7D32]' : 'bg-[#f7f8fa] border-[#e5e7eb] text-[#5f6368]'
  }`}>
  <Text className="text-xs font-bold uppercase tracking-widest text-inherit">
- {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? 'DELIVERED' : order.status}
+ {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? (order.is_billed ? 'BILLED' : 'DELIVERED') : order.status}
  </Text>
  </View>
  </View>
@@ -415,6 +469,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </Pressable>
  )}
  />
+ </View>
  )}
  {activeTab === "BILLS"&& (
  <FlatList
@@ -512,135 +567,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </View>
  </View>
  )}
-{activeTab === "RATES"&& (
- <View className="flex-col gap-6">
- <View className="bg-white border border-[#e5e7eb] rounded-lg py-4">
- <Text className="text-sm font-bold text-[#5f6368] text-[#5f6368] uppercase tracking-wider mb-3 px-5">Select Item to Override</Text>
- {loadingItems ? (
- <View className="py-4 items-center">
- <ActivityIndicator color="#115E29"/>
- </View>
- ) : (
- <View className="flex-row flex-wrap px-4 gap-2 mb-2">
- {items.map((item) => {
- const isSelected = selectedItemId === item.id;
- return (
- <Pressable 
- key={item.id}
- onPress={() => {
- setSelectedItemId(item.id);
- const existingRate = rates.find((r) => r.item_id === item.id && r.retailer_id === retailerId);
- setCustomRateInput(existingRate ? String(existingRate.rate_per_kg) : "");
- }}
- className={`px-4 py-2.5 rounded-lg border flex-row items-center transition-colors active:scale-95 ${
- isSelected 
- ? "bg-[#2E7D32] border-[#2E7D32] "
- : "bg-[#f7f8fa] border-[#e5e7eb]"
- }`}
- >
- {isSelected && (
- <MaterialIcons name="check"size={16} color="white"className="mr-1.5"/>
- )}
- <Text className={` ${
- isSelected ? "text-white font-bold": "text-[#5f6368]"
- }`}>
- {item.name}
- </Text>
- </Pressable>
- );
- })}
- </View>
- )}
- </View>
 
- {selectedItemId && (
- <View className="bg-white rounded-lg p-5 border border-[#e5e7eb] relative overflow-hidden">
- <View className="absolute top-0 right-0 w-24 h-24 bg-[#2E7D32]/5 rounded-lg -translate-y-8 translate-x-8"pointerEvents="none"/>
- 
- <View className="flex-row items-center gap-2 mb-4">
- <View className="w-8 h-8 rounded-lg bg-[#2E7D32]/10 items-center justify-center">
- <MaterialIcons name="price-change"size={16} className="text-[#2E7D32]"/>
- </View>
- <Text className="text-base font-bold text-[#5f6368] text-[#202124]">Custom Rate Override</Text>
- </View>
-
- <MessageBanner message={rateMsg} />
-
- <View className="mb-4">
- <Text className="text-xs font-bold text-[#5f6368] uppercase tracking-wider mb-2 ml-1">
- Special Rate (₹ / KG)
- </Text>
- <View className="flex-row items-center bg-[#f7f8fa]/50 h-14 rounded-lg border border-[#e5e7eb] px-4">
- <Text className="text-2xl font-bold text-[#5f6368] mr-2">₹</Text>
- <TextInput
- className="flex-1 text-2xl font-bold font-black text-[#2E7D32] h-full py-0"
- value={customRateInput}
- onChangeText={setCustomRateInput}
- placeholder="0.00"
- keyboardType="decimal-pad"
- placeholderTextColor="#717973"
- />
- </View>
- </View>
- 
- <Pressable 
- className={`h-14 rounded-lg flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
- !customRateInput.trim() ? "bg-[#f7f8fa]": "bg-[#2E7D32] "
- }`} 
- onPress={saveCustomRate}
- disabled={saveRateMutation.isPending || !customRateInput.trim()}
- >
- {saveRateMutation.isPending ? (
- <ActivityIndicator color="white"/>
- ) : (
- <>
- <MaterialIcons name="save"size={18} color={!customRateInput.trim() ? "#717973": "white"} />
- <Text className={` text-base font-bold uppercase tracking-wider ${!customRateInput.trim() ? "text-[#5f6368]": "text-white font-bold"}`}>Save Rate</Text>
- </>
- )}
- </Pressable>
- </View>
- )}
-
- <View className="flex-col gap-3">
- <Text className="text-2xl font-bold text-[#202124] ml-1 mb-1">Active Rates for this Retailer</Text>
- {items.map((item) => {
- const customRate = rates.find((r) => r.item_id === item.id && r.retailer_id === retailerId);
- const globalRate = rates.find((r) => r.item_id === item.id && !r.retailer_id);
- if (!customRate && !globalRate) return null;
-
- return (
- <Pressable 
- key={item.id} 
- onPress={() => {
- setSelectedItemId(item.id);
- setCustomRateInput(customRate ? String(customRate.rate_per_kg) : "");
- }}
- className={`bg-white rounded-lg p-4 border flex-row justify-between items-center relative overflow-hidden active:scale-[0.98] transition-colors ${
- selectedItemId === item.id ? 'border-[#2E7D32]' : 'border-[#e5e7eb]'
- }`}
- >
- <View className={`absolute top-0 left-0 w-1.5 h-full ${customRate ? 'bg-[#2E7D32]' : 'bg-[#f7f8fa]'}`} />
- <View className="ml-2 flex-1">
- <Text className="text-sm font-bold text-[#5f6368] text-[#202124] mb-1">{item.name}</Text>
- <View className={`self-start px-2 py-0.5 rounded ${customRate ? 'bg-[#2E7D32]/10 border border-[#2E7D32]/20' : 'bg-[#f7f8fa] border border-[#e5e7eb]'}`}>
- <Text className={`text-xs font-bold uppercase tracking-wider ${customRate ? 'text-[#2E7D32]' : 'text-[#5f6368]'}`}>
- {customRate ? "Custom Rate": "Global Default"}
- </Text>
- </View>
- </View>
- <View className="items-end bg-[#f7f8fa]/30 px-4 py-2 rounded-lg border border-[#e5e7eb]">
- <Text className="text-xs font-bold text-[#5f6368] uppercase tracking-wider mb-0.5">Rate / KG</Text>
- <Text className={`text-2xl font-bold font-black ${customRate ? 'text-[#2E7D32]' : 'text-[#202124]'}`}>
- ₹{customRate ? customRate.rate_per_kg : globalRate?.rate_per_kg}
- </Text>
- </View>
- </Pressable>
- );
- })}
- </View>
- </View>
- )}
  </>
 
  {/* Record Payment Modal */}
@@ -705,6 +632,57 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </View>
  </View>
  )}
+
+ {/* Date Filter Modal */}
+ <Modal visible={isDateModalOpen} transparent animationType="slide" onRequestClose={() => setIsDateModalOpen(false)}>
+ <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setIsDateModalOpen(false)}>
+ <Pressable className="bg-white rounded-t-2xl p-6 min-h-[40%]" onPress={(e) => e.stopPropagation()}>
+ <Text className="text-xl font-bold font-sans text-[#111111] mb-4">Filter by Date</Text>
+ 
+ {(["All", "Today", "This Week", "This Month", "This Year", "Custom"] as DateRangeOption[]).map((opt) => (
+ <Pressable 
+ key={opt}
+ className="py-3 border-b border-[#e5e7eb] last:border-b-0 flex-row items-center justify-between"
+ onPress={() => {
+ if (opt !== "Custom") {
+ setDateRangeOption(opt);
+ setIsDateModalOpen(false);
+ } else {
+ setDateRangeOption("Custom");
+ }
+ }}
+ >
+ <Text className={`font-sans text-base ${dateRangeOption === opt ? 'text-[#2E7D32] font-bold' : 'text-[#202124]'}`}>{opt}</Text>
+ {dateRangeOption === opt && <MaterialIcons name="check" size={20} className="text-[#2E7D32]" />}
+ </Pressable>
+ ))}
+ 
+ {dateRangeOption === "Custom" && (
+ <View className="mt-4 gap-4">
+ <DatePickerField 
+ label="Start Date"
+ value={customStartDate}
+ onChange={setCustomStartDate}
+ maximumDate={customEndDate || todayIstDate()}
+ />
+ <DatePickerField 
+ label="End Date"
+ value={customEndDate}
+ onChange={setCustomEndDate}
+ minimumDate={customStartDate || undefined}
+ maximumDate={todayIstDate()}
+ />
+ <Pressable 
+ className="bg-[#2E7D32] h-12 rounded-lg items-center justify-center mt-2"
+ onPress={() => setIsDateModalOpen(false)}
+ >
+ <Text className="text-white font-bold font-sans">Apply Custom Range</Text>
+ </Pressable>
+ </View>
+ )}
+ </Pressable>
+ </Pressable>
+ </Modal>
 
  </AdminScreenContainer>
  );

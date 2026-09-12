@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
@@ -106,12 +106,12 @@ async def delivery_reconcile_run(
     )
 
 
-@router.get("/delivery/runs/active", response_model=DeliveryRunOut | None)
+@router.get("/delivery/runs/active", response_model=list[DeliveryRunOut])
 async def delivery_active_run(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
-) -> DeliveryRunOut | None:
+) -> list[DeliveryRunOut]:
     driver_id = auth.user.id if auth.user.role == UserRole.DELIVERY else None
-    return await svc.get_active_run(auth.db, driver_user_id=driver_id)
+    return await svc.get_active_runs(auth.db, driver_user_id=driver_id)
 
 
 @router.post("/delivery/runs/{run_id}/start", response_model=DeliveryRunOut)
@@ -155,6 +155,15 @@ async def delivery_bill_commit(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
 ) -> DeliveryBillOut:
     return await svc.commit_bill(auth.db, stop_id, payload)
+
+
+@router.post("/delivery/stops/{stop_id}/advance-payment", status_code=status.HTTP_204_NO_CONTENT)
+async def delivery_advance_payment(
+    stop_id: UUID,
+    payload: BillCommitRequest,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> None:
+    return await svc.record_advance_payment(auth.db, stop_id, payload)
 
 
 @router.patch("/delivery/bills/{bill_id}/print-status", response_model=DeliveryBillOut)

@@ -20,11 +20,18 @@ class OrderItemAdjustment(BaseModel):
     requested_kg: Decimal = Field(gt=0)
 
 
+class OrderItemPriceUpdate(BaseModel):
+    order_id: UUID
+    item_id: UUID
+    locked_rate_per_kg: Decimal | None = None
+
+
 class DeliveryRunCreate(BaseModel):
     farm_load_id: UUID | None = None
     farm_load_allocations: list[FarmLoadAllocation] | None = None
     order_ids: list[UUID] = Field(..., min_length=1)
     order_adjustments: list[OrderItemAdjustment] | None = None
+    order_prices: list[OrderItemPriceUpdate] | None = None
     run_date: IstDateOptional = None
     route_id: UUID | None = None
     driver_user_id: UUID | None = None
@@ -61,7 +68,7 @@ class DeliveryStopItemOut(BaseModel):
     delivered_boxes: int | None = None
     gross_weight_kg: Decimal | None = None
     empty_box_weight_kg: Decimal | None = None
-    rate_per_kg: Decimal
+    rate_per_kg: Decimal | None = None
     gross_amount: Decimal | None = None
     delivered_bird_count: int | None = None
     original_requested_kg: Decimal | None = None
@@ -102,6 +109,8 @@ class DeliveryRunOut(BaseModel):
     status: DeliveryRunStatus
     driver_user_id: UUID | None = None
     driver_name: str | None = None
+    vehicle_name: str | None = None
+    vehicle_number: str | None = None
     planned_kg: Decimal | None = None
     actual_loaded_kg: Decimal | None = None
     returned_kg: Decimal | None = None

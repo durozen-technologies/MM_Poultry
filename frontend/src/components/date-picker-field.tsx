@@ -55,7 +55,7 @@ export function DatePickerField({
 
   return (
     <View className={containerStyle}>
-      {label ? <Text className="text-on-surface mb-1">{label} (DD/MM/YYYY - IST)</Text> : null}
+      {label ? <Text className="text-on-surface mb-1">{label} (DD/MM/YYYY)</Text> : null}
       {Platform.OS === "web" ? (
         <input
           type="date"

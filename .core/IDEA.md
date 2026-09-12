@@ -91,3 +91,7 @@ Expanded blueprint beyond short proposal. Implementing IDEA MVP-1 slice: ops das
 - Real-time auto-calculation computes line-item amounts and overall bill totals dynamically as weights are entered.
 - Strict typography and input centering (`paddingVertical: 0`, `textAlignVertical: "center"`, `includeFontPadding: false`) ensures consistent baseline alignment on mobile devices.
 
+
+### [2026-09-13 00:24:32] Active Vehicle Details Grouping
+- **Idea**: Group delivery runs by vehicle in the admin view. Show top-level aggregate stats (total orders, total boxes, total KGs) per vehicle. Add an expandable dropdown showing an item-wise summary and a retailer-wise breakdown.
+- **Status**: Implemented in AdminDeliveryRunsScreen.

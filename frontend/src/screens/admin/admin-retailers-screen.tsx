@@ -337,93 +337,63 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
 }
 
 const RetailerListItem = React.memo(({ 
- item, 
- onPress,
- onPay
+  item, 
+  onPress,
+  onPay
 }: { 
- item: any; 
- onPress: () => void;
- onPay: () => void;
+  item: any; 
+  onPress: () => void;
+  onPay: () => void;
 }) => {
- const bal = useMemo(() => Number(item.credit_balance || 0), [item.credit_balance]);
- 
- return (
- <Pressable
- className="bg-white rounded-lg p-5 border border-[#e5e7eb] border-l-4 active:opacity-80"
- style={{ borderLeftColor: item.is_active ? "#012d1d": "#c1c9bf"}}
- onPress={onPress}
- >
- <View className="flex-row justify-between items-start mb-4 ml-2">
- <View className="flex-col flex-1 pr-4">
- <Text className="text-2xl font-bold text-[#202124] tracking-tight mb-1"numberOfLines={1}>
- {item.name}
- </Text>
- <Text className="text-base text-[#5f6368] text-[#5f6368] font-medium">
- {item.shop_name || "No shop name"}
- </Text>
- </View>
- <View
- className={`px-3 py-1 rounded-lg border ${
- item.is_active ? "bg-[#2E7D32]/10 border-[#2E7D32]/20": "bg-[#f7f8fa] border-[#e5e7eb]"
- }`}
- >
- <Text
- className={`text-xs font-bold uppercase tracking-widest ${
- item.is_active ? "text-[#2E7D32]": "text-[#5f6368]"
- }`}
- >
- {item.is_active ? "Active": "Inactive"}
- </Text>
- </View>
- </View>
+  const bal = useMemo(() => Number(item.credit_balance || 0), [item.credit_balance]);
+  
+  return (
+    <Pressable
+      className="bg-white rounded-xl p-4 border border-[#e5e7eb] active:opacity-80 flex-row items-center justify-between overflow-hidden"
+      onPress={onPress}
+    >
+      <View className={`absolute top-0 left-0 bottom-0 w-[4px] ${item.is_active ? 'bg-[#012d1d]' : 'bg-[#c1c9bf]'}`} />
+      
+      <View className="flex-1 pl-2 pr-4 justify-center">
+        <Text className="text-[20px] font-bold text-[#111111] tracking-tight mb-0.5" numberOfLines={1}>
+          {item.name}
+        </Text>
+        {item.shop_name ? (
+          <Text className="text-[15px] font-medium text-[#5f6368] mb-0.5" numberOfLines={1}>
+            {item.shop_name}
+          </Text>
+        ) : null}
+        {item.phone ? (
+          <Text className="text-[15px] font-medium text-[#5f6368]">
+            {item.phone}
+          </Text>
+        ) : null}
+      </View>
 
- <View className="flex-row justify-between ml-2 mb-4">
- <View className="flex-col flex-1 pr-2">
- <View className="flex-row items-center mb-1">
- <MaterialIcons name="location-on"size={14} className="text-[#5f6368] mr-1"/>
- <Text className="text-xs font-bold text-[#5f6368] uppercase tracking-wider">
- Location
- </Text>
- </View>
- <Text className="text-base text-[#5f6368] text-[#202124] font-medium"numberOfLines={1}>
- {item.address || "N/A"}
- </Text>
- </View>
- <View className="flex-col flex-1 pl-2 border-l border-[#e5e7eb]">
- <View className="flex-row items-center mb-1">
- <MaterialIcons name="call"size={14} className="text-[#5f6368] mr-1"/>
- <Text className="text-xs font-bold text-[#5f6368] uppercase tracking-wider">
- Contact
- </Text>
- </View>
- <Text className="text-base text-[#5f6368] text-[#202124] font-medium">
- {item.phone || "N/A"}
- </Text>
- </View>
- </View>
-
- <View className="pt-4 mt-2 border-t border-[#e5e7eb] ml-2 flex-row justify-between items-center">
- <View className="flex-col">
- <Text className="text-xs font-bold text-[#5f6368] uppercase tracking-wider mb-1">
- Outstanding Balance
- </Text>
- <Text
- className={`text-lg text-[#5f6368] font-black ${
- bal > 0 ? "text-error": "text-[#2E7D32]"
- }`}
- >
- ₹{bal.toLocaleString("en-IN")}
- </Text>
- </View>
- {bal > 0 && (
- <Pressable
- className="bg-[#2E7D32]/10 px-4 py-2 rounded-lg border border-[#2E7D32]/20 active:bg-[#2E7D32]/20"
- onPress={onPay}
- >
- <Text className="text-[#2E7D32]">Pay Now</Text>
- </Pressable>
- )}
- </View>
- </Pressable>
- );
+      <View className="flex-col items-end gap-2">
+        <View className="bg-[#FFF5F5] py-2.5 px-3 rounded-lg border border-[#FFE4E4] min-w-[120px]">
+          <View className="flex-row items-center gap-1.5 mb-1">
+            <View className="bg-[#D32F2F] rounded p-0.5">
+              <MaterialIcons name="account-balance-wallet" size={10} color="white" />
+            </View>
+            <Text className="text-[11px] font-semibold text-[#D32F2F] uppercase tracking-wider">
+              Outstanding
+            </Text>
+          </View>
+          <Text className="text-[20px] font-black text-[#D32F2F]">
+            ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+          </Text>
+        </View>
+        
+        {bal > 0 && (
+          <Pressable
+            className="bg-[#2E7D32]/10 px-4 py-2 rounded-lg w-full items-center active:bg-[#2E7D32]/20"
+            onPress={onPay}
+          >
+            <Text className="text-[#2E7D32] font-semibold text-[13px]">Record Payment</Text>
+          </Pressable>
+        )}
+      </View>
+    </Pressable>
+  );
 });

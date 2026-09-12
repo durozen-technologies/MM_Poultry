@@ -93,8 +93,8 @@ export function useAdminDashboard(dateStr: string | null) {
 export function useConfirmOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orderId, expected_delivery_date }: { orderId: string, expected_delivery_date: string }) => {
-      const { data } = await api.post(`/admin/orders/${orderId}/confirm`, { expected_delivery_date });
+    mutationFn: async ({ orderId, expected_delivery_date, item_prices }: { orderId: string, expected_delivery_date: string, item_prices?: any[] }) => {
+      const { data } = await api.post(`/admin/orders/${orderId}/confirm`, { expected_delivery_date, item_prices });
       return data;
     },
     onSuccess: () => {

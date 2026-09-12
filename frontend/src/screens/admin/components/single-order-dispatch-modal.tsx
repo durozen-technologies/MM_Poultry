@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, ActivityIndicator, ScrollView, TextInput } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminDeliveryUsers, useCreateDeliveryRun } from "../../../hooks/use-queries";
@@ -20,6 +20,15 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
 
  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
  const [error, setError] = useState<string | null>(null);
+ const [prices, setPrices] = useState<Record<string, string>>(() => {
+   const initial: Record<string, string> = {};
+   order.items?.forEach(it => {
+     if (it.locked_rate_per_kg != null) {
+       initial[it.item_id] = String(it.locked_rate_per_kg);
+     }
+   });
+   return initial;
+ });
 
  const handleAssign = () => {
  if (!selectedDriverId) return;
@@ -31,11 +40,19 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
  }
 
  setError(null);
+
+ const order_prices = order.items.map(it => ({
+    order_id: order.id,
+    item_id: it.item_id,
+    locked_rate_per_kg: prices[it.item_id] && !isNaN(Number(prices[it.item_id])) ? Number(prices[it.item_id]) : null
+ }));
+
  createRun(
  {
  order_ids: [order.id],
  driver_user_id: driver.id,
  driver_name: driver.full_name || driver.username,
+ order_prices,
  },
  {
  onSuccess: () => {
@@ -52,10 +69,10 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
 
  return (
  <Modal visible transparent animationType="fade"onRequestClose={onClose}>
- <View className="flex-1 bg-[#2E7D32]/50 justify-center items-center p-4">
- <View className="w-full max-w-sm bg-white rounded-lg overflow-hidden">
- <View className="p-4 border-b border-[#e5e7eb] flex-row items-center justify-between bg-[#f7f8fa]-low">
- <Text className="text-base font-bold text-[#5f6368] text-[#202124] font-semibold">
+ <View className="flex-1 bg-black/50 justify-center items-center p-4">
+ <View className="w-full max-w-sm bg-white rounded-xl overflow-hidden">
+ <View className="p-4 border-b border-[#e5e7eb] flex-row items-center justify-between">
+ <Text className="text-lg text-[#202124] font-semibold">
  Dispatch Order
  </Text>
  <Pressable onPress={onClose} className="p-2 -mr-2 rounded-lg active:bg-[#f7f8fa]">
@@ -65,23 +82,43 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
 
  <ScrollView className="p-4 max-h-[70vh]">
  {error ? (
- <View className="mb-3 p-3 rounded-lg bg-error-container/30">
- <Text className="text-error font-semibold">{error}</Text>
+ <View className="mb-3 p-3 rounded-lg bg-red-50">
+ <Text className="text-red-600 font-semibold">{error}</Text>
  </View>
  ) : null}
 
  <View className="mb-4 bg-white rounded-lg p-3 border border-[#e5e7eb]">
- <Text className="text-sm font-bold text-[#5f6368] text-[#202124] mb-1">
+ <Text className="text-sm font-semibold text-[#202124] mb-1">
  {order.shop_name || order.retailer_name || "Unknown Retailer"}
  </Text>
- <Text className="text-sm text-[#5f6368] text-[#5f6368]">
+ <Text className="text-sm text-[#5f6368]">
  {order.order_number || order.id.slice(0, 8).toUpperCase()}
  </Text>
  </View>
 
+ <Text className="text-sm font-semibold text-[#202124] mt-2 mb-2">
+ Item Prices (Optional)
+ </Text>
+ {order.items.map((item) => (
+   <View key={item.item_id} className="flex-row items-center justify-between mb-3 bg-[#f7f8fa] p-3 rounded-lg border border-[#e5e7eb]">
+     <View className="flex-1 mr-2">
+       <Text className="text-sm font-semibold text-[#202124] mb-1">{item.item_name}</Text>
+       <Text className="text-xs text-[#5f6368]">Qty: {item.total_boxes} boxes</Text>
+     </View>
+     <View className="w-24">
+       <TextInput
+         value={prices[item.item_id] || (item.locked_rate_per_kg ? String(item.locked_rate_per_kg) : "")}
+         onChangeText={(v) => setPrices(prev => ({...prev, [item.item_id]: v}))}
+         placeholder="Rate/kg"
+         keyboardType="numeric"
+         placeholderTextColor="#a0a5ab"
+         className="bg-white border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm text-[#202124]"
+       />
+     </View>
+   </View>
+ ))}
 
-
- <Text className="text-base font-bold text-[#5f6368] text-[#202124] font-semibold mb-2">
+ <Text className="text-base font-semibold text-[#202124] mb-2 mt-2">
  Driver
  </Text>
  {loadingUsers ? (

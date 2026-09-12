@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   completeRun,
@@ -24,7 +24,7 @@ function genCheckoutId(stopId: string): string {
 }
 
 export function useDeliveryRun() {
-  const [run, setRun] = useState<DeliveryRun | null>(null);
+  const [runs, setRuns] = useState<DeliveryRun[]>([]);
   const [activeStop, setActiveStop] = useState<DeliveryStop | null>(null);
   const [cash, setCash] = useState("0");
   const [upi, setUpi] = useState("0");
@@ -39,11 +39,18 @@ export function useDeliveryRun() {
   const refresh = useCallback(async () => {
     try {
       const data = await getActiveRun();
-      setRun(data);
+      setRuns(data || []);
     } catch (e) {
-      setRun(null);
+      setRuns([]);
     }
   }, []);
+
+  const run = useMemo(() => {
+    if (runs.length === 0) return null;
+    const merged = { ...runs[0] };
+    merged.stops = runs.flatMap(r => r.stops).sort((a, b) => a.sequence - b.sequence);
+    return merged;
+  }, [runs]);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,10 +59,14 @@ export function useDeliveryRun() {
   );
 
   async function onStartRun() {
-    if (!run || startingRun) return;
+    if (runs.length === 0 || startingRun) return;
     setStartingRun(true);
     try {
-      await startRun(run.id);
+      for (const r of runs) {
+        if (r.status === "PENDING") {
+          await startRun(r.id);
+        }
+      }
       await refresh();
     } catch (e) {
       setMsg(getApiErrorMessage(e));
@@ -67,31 +78,27 @@ export function useDeliveryRun() {
   const [weights, setWeights] = useState<Record<string, string>>({});
 
   async function onCompleteRun() {
-    if (!run) return;
+    if (runs.length === 0) return;
     try {
-      if (!run.reconciled_at) {
-        // Phase 1: Auto-reconcile to bypass manual reconciliation step
-        let totalDelivered = 0;
-        for (const stop of run.stops) {
-          if (stop.status === "BILLED" || stop.status === "PRINT_PENDING") {
-            for (const item of stop.items || []) {
-              totalDelivered += Number(item.ordered_kg || 0);
+      for (const r of runs) {
+        if (!r.reconciled_at) {
+          let totalDelivered = 0;
+          for (const stop of r.stops) {
+            if (stop.status === "BILLED" || stop.status === "PRINT_PENDING") {
+              for (const item of stop.items || []) {
+                totalDelivered += Number(item.delivered_weight_kg ?? item.ordered_kg ?? 0);
+              }
             }
           }
+          await reconcileRun(r.id, {
+            returned_kg: 0,
+            wastage_kg: 0,
+            actual_loaded_kg: totalDelivered,
+          });
         }
-        await reconcileRun(run.id, {
-          returned_kg: 0,
-          wastage_kg: 0,
-          actual_loaded_kg: totalDelivered,
-        });
+        await completeRun(r.id);
       }
-      await completeRun(run.id);
-      const loss = await getTripWeightLoss(run.id);
-      if (loss) {
-        setMsg(`Run complete. Loss ${loss.loss_kg} kg (${loss.loss_pct}%)`);
-      } else {
-        setMsg(`Run complete.`);
-      }
+      setMsg(`All active runs completed.`);
       await refresh();
     } catch (e: unknown) {
       setMsg(getApiErrorMessage(e));

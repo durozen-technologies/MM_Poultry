@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PrimaryButton } from "../../components/ui/primary-button";
 import { getApiErrorMessage } from "../../api/client";
-import { weighStop, previewBill, commitBill, updatePrintStatus, markWhatsAppShared } from "../../api/delivery";
+import { weighStop, previewBill, commitBill, advancePayment, updatePrintStatus, markWhatsAppShared } from "../../api/delivery";
 import { deliveryBillToPrintPayload, printThermalReceipt, shareWhatsAppBill } from "../../services/printer";
 import { getOrderBill } from "../../api/orders";
 import type { DeliveryBill, DeliveryStop } from "../../types/api";
@@ -131,6 +131,54 @@ export function DeliveryWeighingScreen() {
         }
       }
       if (!weighDone) throw new Error("Failed to save weights");
+
+      // Check if we should generate a bill or just a weighment slip
+      const hasMissingPrices = stop.items.some(i => !i.rate_per_kg || Number(i.rate_per_kg) === 0);
+
+      if (hasMissingPrices) {
+        setMsg("Weights saved. (Awaiting Pricing)");
+        if (cashNum > 0 || upiNum > 0) {
+          setMsg("Recording payment...");
+          try {
+            await advancePayment(stop.id, {
+              cash_payment: String(cashNum),
+              upi_payment: String(upiNum),
+              notes,
+              items: [],
+            });
+          } catch (e) {
+            console.warn("Failed to record advance payment", e);
+            Alert.alert("Payment Error", "Failed to save payment. Please record it manually.");
+          }
+        }
+        let printStatus: "PRINTED" | "FAILED" | "SKIPPED" = "SKIPPED";
+        if (!skipPrint) {
+          setMsg(`Data saved! Printing Weighment Slip...`);
+          try {
+              printStatus = await printThermalReceipt(
+                deliveryBillToPrintPayload(
+                  { 
+                    bill_number: "WEIGH SLIP", 
+                    items: stop.items.map(i => ({...i, amount: null, rate_per_kg: null, weight_kg: weights[i.item_id]?.weight || "0"})),
+                    cash_payment: String(cashNum),
+                    upi_payment: String(upiNum),
+                    total_amount: "0",
+                    balance_amount: "0",
+                  } as any, 
+                  stop, 
+                  getItemName, 
+                  receiptOpts
+                )
+              );
+          } catch (printErr) {
+            console.warn("Print error after save:", printErr);
+            printStatus = "FAILED";
+          }
+        }
+        Alert.alert("Success", `Weighment saved successfully.\nPrint: ${printStatus}`);
+        navigation.goBack();
+        return;
+      }
 
       // STEP 2: Commit & save bill to database first
       setMsg("Saving bill to server...");

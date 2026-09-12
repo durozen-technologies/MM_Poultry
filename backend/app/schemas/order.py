@@ -14,10 +14,12 @@ class OrderItemCreate(BaseModel):
     total_boxes: int = Field(gt=0)
     requested_kg: Decimal | None = None
     notes: str | None = None
+    locked_rate_per_kg: Decimal | None = None
 
 
 class DailyOrderCreate(BaseModel):
     order_id: UUID | None = None
+    notes: str | None = None
     items: list[OrderItemCreate] = Field(..., min_length=1)
 
 
@@ -32,13 +34,22 @@ class DailyOrderItemOut(BaseModel):
     requested_kg: Decimal | None = None
     delivered_kg: Decimal | None = None
     notes: str | None = None
+    locked_rate_per_kg: Decimal | None = None
 
+
+class OrderItemPriceCreate(BaseModel):
+    item_id: UUID
+    locked_rate_per_kg: Decimal | None = None
 
 class ConfirmOrderRequest(BaseModel):
     expected_delivery_date: IstDate = Field(
         ..., description="The estimated delivery date chosen by the admin"
     )
+    item_prices: list[OrderItemPriceCreate] | None = None
 
+
+class SetOrderPricesRequest(BaseModel):
+    item_prices: list[OrderItemPriceCreate] = Field(..., min_length=1)
 
 class DailyOrderOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -55,6 +66,8 @@ class DailyOrderOut(BaseModel):
     route_name: str | None = None
     route_area: str | None = None
     retailer_area: str | None = None
+    notes: str | None = None
+    is_billed: bool = False
     items: list[DailyOrderItemOut] = []
 
 

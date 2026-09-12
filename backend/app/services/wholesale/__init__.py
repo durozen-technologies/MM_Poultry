@@ -9,7 +9,7 @@ from .billing import (
 from .delivery_runs import (
     cancel_delivery_run,
     create_delivery_run,
-    get_active_run,
+    get_active_runs,
     list_delivery_runs,
     start_delivery_run,
 )
@@ -101,7 +101,7 @@ __all__ = [
     "get_retailer_order_detail", "list_retailer_bills", "get_retailer_bill", "get_retailer_profile",
     "upsert_today_order", "list_today_orders", "list_orders_by_date", "confirm_order", "cancel_order",
     "get_bill_by_order_id",
-    "list_delivery_runs", "create_delivery_run", "cancel_delivery_run", "get_active_run",
+    "list_delivery_runs", "create_delivery_run", "cancel_delivery_run", "get_active_runs",
     "start_delivery_run", "complete_delivery_run", "reconcile_delivery_run", "create_stock_adjustment",
     "list_delivery_routes", "list_routes", "list_unassigned_retailers", "create_route", "get_route",
     "update_route", "deactivate_route", "replace_route_retailers", "list_orders_for_route",

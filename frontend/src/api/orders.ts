@@ -38,12 +38,27 @@ export async function cancelOrder(orderId: string) {
   return data;
 }
 
-export async function confirmOrder(orderId: string, expected_delivery_date: string) {
-  const { data } = await api.post<DailyOrder>(`/admin/orders/${orderId}/confirm`, { expected_delivery_date });
+export async function confirmOrder(orderId: string, payload: { expected_delivery_date: string; item_prices?: { item_id: string; locked_rate_per_kg: string | number | null }[] }) {
+  const { data } = await api.post<DailyOrder>(`/admin/orders/${orderId}/confirm`, payload);
+  return data;
+}
+
+export async function setOrderPrices(orderId: string, item_prices: { item_id: string; locked_rate_per_kg: string | number | null }[]) {
+  const { data } = await api.post<DailyOrder>(`/admin/orders/${orderId}/set-prices`, { item_prices });
+  return data;
+}
+
+export async function makeOrderBilled(orderId: string) {
+  const { data } = await api.post<any>(`/admin/orders/${orderId}/make-billed`);
   return data;
 }
 
 export async function getOrderBill(orderId: string) {
   const { data } = await api.get<any>(`/admin/orders/${orderId}/bill`);
+  return data;
+}
+
+export async function createOrderAsAdmin(retailerId: string, payload: import("../types/api").DailyOrderCreate) {
+  const { data } = await api.post<DailyOrder>(`/admin/retailers/${retailerId}/orders`, payload);
   return data;
 }

@@ -87,10 +87,12 @@ type ReceiptExportPayload = {
  */
 export function buildReceiptExportPayload(data: DeliveryReceiptData): ReceiptExportPayload {
   const hasBoxWeight = data.items.some((item) => item.quantity_display);
+  const hasPrices = data.items.some((item) => item.rate_line);
+  
   const items = data.items.map((item) => ({
     itemName: item.rate_line ? `${item.name}  ${item.rate_line}` : item.name,
     quantityText: item.quantity_display ?? String(item.quantity),
-    lineTotal: formatReceiptCurrency(item.total),
+    lineTotal: item.rate_line ? formatReceiptCurrency(item.total) : "",
   }));
 
   const isPayment = data.receipt_type === 'PAYMENT';
@@ -127,14 +129,14 @@ export function buildReceiptExportPayload(data: DeliveryReceiptData): ReceiptExp
     totalBoxesValue: data.total_boxes != null ? String(data.total_boxes) : undefined,
     totalWeightLabel: data.total_weight_kg != null ? "Total Weight:" : undefined,
     totalWeightValue: data.total_weight_kg != null ? `${data.total_weight_kg.toFixed(3)} kg` : undefined,
-    totalLabel: isPayment ? undefined : "Total Bill Amount:",
-    totalValue: isPayment ? undefined : formatReceiptCurrency(data.total_bill),
+    totalLabel: isPayment || !hasPrices ? undefined : "Total Bill Amount:",
+    totalValue: isPayment || !hasPrices ? undefined : formatReceiptCurrency(data.total_bill),
     cashLabel: isPayment ? "Amount Paid (Cash):" : "Cash Paid:",
-    cashValue: formatReceiptCurrency(data.cash_collected),
+    cashValue: hasPrices || isPayment || data.cash_collected > 0 ? formatReceiptCurrency(data.cash_collected) : "",
     upiLabel: isPayment ? "Amount Paid (UPI):" : "UPI Paid:",
-    upiValue: formatReceiptCurrency(data.upi_collected),
-    balanceAmountLabel: isPayment ? undefined : "Balance Amount:",
-    balanceAmountValue: isPayment
+    upiValue: hasPrices || isPayment || data.upi_collected > 0 ? formatReceiptCurrency(data.upi_collected) : "",
+    balanceAmountLabel: isPayment || !hasPrices ? undefined : "Balance Amount:",
+    balanceAmountValue: isPayment || !hasPrices
       ? undefined
       : formatReceiptCurrency(data.total_bill - data.cash_collected - data.upi_collected),
     closingBalanceLabel: data.closing_balance > 0 ? "Closing Balance" : undefined,

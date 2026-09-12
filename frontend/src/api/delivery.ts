@@ -16,6 +16,7 @@ export async function createDeliveryRun(payload: {
   farm_load_allocations?: FarmLoadAllocationPayload[];
   order_ids: string[];
   order_adjustments?: { order_id: string; item_id: string; requested_kg: string | number }[];
+  order_prices?: { order_id: string; item_id: string; locked_rate_per_kg: string | number | null }[];
   run_date?: string;
   route_id?: string | null;
   driver_user_id?: string;
@@ -48,7 +49,7 @@ export async function reconcileRun(
 }
 
 export async function getActiveRun() {
-  const { data } = await api.get<DeliveryRun | null>("/delivery/runs/active");
+  const { data } = await api.get<DeliveryRun[]>("/delivery/runs/active");
   return data;
 }
 
@@ -80,6 +81,10 @@ export async function previewBill(stopId: string, payload: { cash_payment: strin
 export async function commitBill(stopId: string, payload: Record<string, unknown>) {
   const { data } = await api.post<DeliveryBill>(`/delivery/stops/${stopId}/bill/commit`, payload);
   return data;
+}
+
+export async function advancePayment(stopId: string, payload: Record<string, unknown>) {
+  await api.post(`/delivery/stops/${stopId}/advance-payment`, payload);
 }
 
 export async function updatePrintStatus(billId: string, printStatus: string) {

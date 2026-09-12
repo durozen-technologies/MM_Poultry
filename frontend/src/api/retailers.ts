@@ -1,10 +1,10 @@
 import { api } from "./client";
 import type { LedgerOut, Retailer } from "../types/api";
 
-export async function listRetailers(cursor?: string, limit = 50) {
+export async function listRetailers(cursor?: string, limit = 50, search?: string) {
   const { data } = await api.get<{ items: Retailer[]; has_more: boolean; next_cursor: string | null }>(
     "/admin/retailers",
-    { params: { cursor, limit } }
+    { params: { cursor, limit, search } }
   );
   return data;
 }
