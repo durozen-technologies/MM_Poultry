@@ -7,7 +7,7 @@ import { listOrdersByDate } from "../../api/orders";
 import { apiItems } from "../../api/items";
 import type { DailyOrder, LedgerOut } from "../../types/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
+import { formatIstDate, toApiDate, todayIstDate, parseIstDate } from "../../utils/ist-date";
 import { DatePickerField } from "../../components/date-picker-field";
 import { FormField } from "../../components/form-field";
 import { getApiErrorMessage } from "../../api/client";
@@ -38,6 +38,8 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
  const [searchQueryOrderId, setSearchQueryOrderId] = useState("");
+ const [searchQueryBill, setSearchQueryBill] = useState("");
+ const [searchQueryLedger, setSearchQueryLedger] = useState("");
 
  React.useEffect(() => {
  const now = new Date();
@@ -142,8 +144,30 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  }, [portalUsername, portalPassword, retailerId]);
 
  const bal = useMemo(() => Number(ledger?.retailer?.credit_balance || 0), [ledger?.retailer?.credit_balance]);
- const billEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type === "BILL") || [], [ledger?.entries]);
- const ledgerEntries = useMemo(() => ledger?.entries?.filter((e) => e.entry_type !== "BILL") || [], [ledger?.entries]);
+  const billEntries = useMemo(() => {
+    const bills = ledger?.entries?.filter((e) => e.entry_type === "BILL") || [];
+    return [...bills].sort((a, b) => {
+      const timeA = parseIstDate(a.entry_date)?.getTime() || 0;
+      const timeB = parseIstDate(b.entry_date)?.getTime() || 0;
+      const timeDiff = timeB - timeA;
+      if (timeDiff !== 0) return timeDiff;
+      const refA = a.reference || "";
+      const refB = b.reference || "";
+      return refB.localeCompare(refA);
+    });
+  }, [ledger?.entries]);
+  const ledgerEntries = useMemo(() => {
+    const entries = ledger?.entries?.filter((e) => e.entry_type !== "BILL") || [];
+    return [...entries].sort((a, b) => {
+      const timeA = parseIstDate(a.entry_date)?.getTime() || 0;
+      const timeB = parseIstDate(b.entry_date)?.getTime() || 0;
+      const timeDiff = timeB - timeA;
+      if (timeDiff !== 0) return timeDiff;
+      const refA = a.reference || "";
+      const refB = b.reference || "";
+      return refB.localeCompare(refA);
+    });
+  }, [ledger?.entries]);
 
  const filteredOrders = useMemo(() => {
  let filtered = orders;
@@ -162,6 +186,36 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  }
  return filtered;
  }, [orders, startDate, endDate, searchQueryOrderId]);
+
+  const filteredBills = useMemo(() => {
+    let filtered = billEntries;
+    if (startDate && endDate) {
+      const startStr = toApiDate(startDate);
+      const endStr = toApiDate(endDate);
+      if (startStr && endStr) {
+        filtered = filtered.filter(b => b.entry_date >= startStr && b.entry_date <= endStr);
+      }
+    }
+    if (searchQueryBill) {
+      filtered = filtered.filter(b => b.reference?.toLowerCase().includes(searchQueryBill.toLowerCase()) || b.notes?.toLowerCase().includes(searchQueryBill.toLowerCase()));
+    }
+    return filtered;
+  }, [billEntries, startDate, endDate, searchQueryBill]);
+
+  const filteredLedger = useMemo(() => {
+    let filtered = ledgerEntries;
+    if (startDate && endDate) {
+      const startStr = toApiDate(startDate);
+      const endStr = toApiDate(endDate);
+      if (startStr && endStr) {
+        filtered = filtered.filter(b => b.entry_date >= startStr && b.entry_date <= endStr);
+      }
+    }
+    if (searchQueryLedger) {
+      filtered = filtered.filter(b => b.reference?.toLowerCase().includes(searchQueryLedger.toLowerCase()) || b.notes?.toLowerCase().includes(searchQueryLedger.toLowerCase()));
+    }
+    return filtered;
+  }, [ledgerEntries, startDate, endDate, searchQueryLedger]);
 
  if (loading && !ledger) {
  return (
@@ -427,11 +481,12 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  className="bg-white rounded-lg p-5 border border-[#e5e7eb] relative overflow-hidden active:scale-[0.98] transition-transform mb-3"
  onPress={() => navigation.navigate("OrderDetail", { order })}
  >
- <View className={`absolute top-0 left-0 w-1.5 h-full ${
- order.status === 'PLACED' ? 'bg-error' : 
- order.status === 'ACKNOWLEDGED' ? 'bg-tertiary' :
- order.status === 'FULFILLED' ? 'bg-[#2E7D32]' : 'bg-[#f7f8fa]'
- }`} />
+  <View className={`absolute top-0 left-0 w-1.5 h-full ${
+  order.status === 'PLACED' ? 'bg-error' : 
+  order.status === 'ACKNOWLEDGED' ? 'bg-[#3B82F6]' :
+  order.status === 'DISPATCHED' ? 'bg-[#F59E0B]' :
+  order.status === 'FULFILLED' ? 'bg-[#2E7D32]' : 'bg-[#e5e7eb]'
+  }`} />
  
  <View className="ml-2">
  <View className="flex-row justify-between items-center mb-3">
@@ -439,15 +494,25 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  <MaterialIcons name="event"size={16} className="text-[#5f6368]"/>
  <Text className="text-sm font-bold text-[#5f6368] text-[#202124]">{formatIstDate(order.order_date)}</Text>
  </View>
- <View className={`px-2.5 py-1 rounded-lg border ${
- order.status === 'PLACED' ? 'bg-error-container/50 border-error/20 text-error' : 
- order.status === 'ACKNOWLEDGED' ? 'bg-[#f7f8fa] border border-[#e5e7eb] border-tertiary/20 text-tertiary' :
- order.status === 'FULFILLED' ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20 text-[#2E7D32]' : 'bg-[#f7f8fa] border-[#e5e7eb] text-[#5f6368]'
- }`}>
- <Text className="text-xs font-bold uppercase tracking-widest text-inherit">
- {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? (order.is_billed ? 'BILLED' : 'DELIVERED') : order.status}
- </Text>
- </View>
+  <View className="flex-col items-end gap-1.5">
+  <View className={`px-2.5 py-1 rounded-lg border ${
+  order.status === 'PLACED' ? 'bg-error-container/50 border-error/20 text-error' : 
+  order.status === 'ACKNOWLEDGED' ? 'bg-[#3B82F6]/10 border-[#3B82F6]/20 text-[#3B82F6]' :
+  order.status === 'DISPATCHED' ? 'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]' :
+  order.status === 'FULFILLED' ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20 text-[#2E7D32]' : 'bg-[#f7f8fa] border-[#e5e7eb] text-[#5f6368]'
+  }`}>
+  <Text className="text-xs font-bold uppercase tracking-widest text-inherit">
+  {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status === 'FULFILLED' ? (order.is_billed ? 'BILLED' : 'DELIVERED') : order.status}
+  </Text>
+  </View>
+  {order.items && order.items.length > 0 && (
+  <View className={`rounded-full px-2 py-0.5 border ${order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20' : 'bg-[#EF4444]/10 border-[#EF4444]/20'}`}>
+  <Text className={`text-[10px] font-bold uppercase tracking-wider ${order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'text-[#2E7D32]' : 'text-[#EF4444]'}`}>
+  {order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'Price Set' : 'Price Not Set'}
+  </Text>
+  </View>
+  )}
+  </View>
  </View>
  <View className="mt-2 border-t border-surface-variant/40 pt-2">
  {order.items?.map((it) => (
@@ -472,8 +537,35 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </View>
  )}
  {activeTab === "BILLS"&& (
+ <View className="flex-1">
+ <View className="px-4 py-3 bg-white border-b border-[#e5e7eb] flex-row gap-3 z-20">
+ <View className="flex-1 relative justify-center">
+ <View className="absolute left-3 z-10">
+ <MaterialIcons name="search" size={20} className="text-[#5f6368]"/>
+ </View>
+ <TextInput 
+ className="w-full bg-[#f7f8fa] h-12 rounded-lg border border-[#e5e7eb] pl-10 pr-3 font-sans text-base text-[#111111] focus:border-[#2E7D32]"
+ placeholder="Search bills..."
+ placeholderTextColor="#717973"
+ value={searchQueryBill}
+ onChangeText={setSearchQueryBill}
+ />
+ </View>
+ <View className="w-32">
+ <Pressable 
+ className="h-12 bg-white rounded-lg border border-[#e5e7eb] flex-row items-center justify-between px-3 active:bg-[#f7f8fa]"
+ onPress={() => setIsDateModalOpen(true)}
+ >
+ <View className="flex-1 pr-1">
+ <Text className="text-[10px] text-[#7a7f85] font-sans uppercase font-bold tracking-wider">Date</Text>
+ <Text className="text-xs font-sans text-[#202124] font-semibold" numberOfLines={1}>{dateRangeOption}</Text>
+ </View>
+ <MaterialIcons name="arrow-drop-down" size={20} className="text-[#5f6368]" />
+ </Pressable>
+ </View>
+ </View>
  <FlatList
- data={billEntries}
+ data={filteredBills}
  keyExtractor={(_, idx) => String(idx)}
  className="flex-1 px-4"
  contentContainerStyle={{ paddingBottom: 100 }}
@@ -526,12 +618,40 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </View>
  )}
  />
+ </View>
  )}
  {activeTab === "LEDGER"&& (
- <View className="flex-1 px-4">
+ <View className="flex-1">
+ <View className="px-4 py-3 bg-white border-b border-[#e5e7eb] flex-row gap-3 z-20">
+ <View className="flex-1 relative justify-center">
+ <View className="absolute left-3 z-10">
+ <MaterialIcons name="search" size={20} className="text-[#5f6368]"/>
+ </View>
+ <TextInput 
+ className="w-full bg-[#f7f8fa] h-12 rounded-lg border border-[#e5e7eb] pl-10 pr-3 font-sans text-base text-[#111111] focus:border-[#2E7D32]"
+ placeholder="Search ledger..."
+ placeholderTextColor="#717973"
+ value={searchQueryLedger}
+ onChangeText={setSearchQueryLedger}
+ />
+ </View>
+ <View className="w-32">
+ <Pressable 
+ className="h-12 bg-white rounded-lg border border-[#e5e7eb] flex-row items-center justify-between px-3 active:bg-[#f7f8fa]"
+ onPress={() => setIsDateModalOpen(true)}
+ >
+ <View className="flex-1 pr-1">
+ <Text className="text-[10px] text-[#7a7f85] font-sans uppercase font-bold tracking-wider">Date</Text>
+ <Text className="text-xs font-sans text-[#202124] font-semibold" numberOfLines={1}>{dateRangeOption}</Text>
+ </View>
+ <MaterialIcons name="arrow-drop-down" size={20} className="text-[#5f6368]" />
+ </Pressable>
+ </View>
+ </View>
+ <View className="flex-1 px-4 mt-3">
  <View className="bg-white rounded-lg p-2 border border-[#e5e7eb] flex-1 overflow-hidden">
  <FlatList
- data={ledgerEntries}
+ data={filteredLedger}
  keyExtractor={(_, idx) => String(idx)}
  contentContainerStyle={{ paddingBottom: 100 }}
  ListEmptyComponent={
@@ -564,6 +684,7 @@ export function AdminRetailerProfileScreen({ route, navigation }: { route: any; 
  </View>
  )}
  />
+ </View>
  </View>
  </View>
  )}

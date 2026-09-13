@@ -27,6 +27,7 @@ import { AdminOrdersScreen } from "../screens/admin/admin-orders-screen";
 import { AdminOrderDetailScreen } from "../screens/admin/admin-order-detail-screen";
 import { AdminNewOrderScreen } from "../screens/admin/admin-new-order-screen";
 import { AdminSettingsScreen } from "../screens/admin/admin-settings-screen";
+import { AdminOperationalSettingsScreen } from "../screens/admin/admin-operational-settings-screen";
 import { AdminRatesScreen } from "../screens/admin/admin-rates-screen";
 import { AdminDeliveryRunsScreen } from "../screens/admin/admin-delivery-runs-screen";
 import { AdminRouteDispatchScreen } from "../screens/admin/admin-route-dispatch-screen";
@@ -243,6 +244,7 @@ export function AppNavigator() {
           ) : user.role === "ADMIN" ? (
             <>
               <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
+              <Stack.Screen name="OperationalSettings" component={AdminOperationalSettingsScreen} />
               <Stack.Screen name="Items" component={AdminItemsScreen} />
               <Stack.Screen name="AddRetailer" component={AdminAddRetailerScreen} />
               <Stack.Screen name="EditRetailer" component={AdminEditRetailerScreen} />

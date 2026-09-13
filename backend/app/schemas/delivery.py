@@ -87,6 +87,7 @@ class DeliveryStopOut(BaseModel):
     failure_reason: str | None = None
     retailer_name: str | None = None
     shop_name: str | None = None
+    retailer_mobile: str | None = None
     route_name: str | None = None
     items: list[DeliveryStopItemOut] = []
 

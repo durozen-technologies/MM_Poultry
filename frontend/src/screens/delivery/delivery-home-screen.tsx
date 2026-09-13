@@ -142,72 +142,60 @@ export function DeliveryHomeScreen() {
 
 const StopListItem = React.memo(({ item, isActive, getItemName, onPress }: { item: any, isActive: boolean, getItemName: (id: string) => string, onPress: () => void }) => {
   const isWeighed = item.status === "WEIGHED" || item.status === "BILLED";
-  const totalKg = item.items?.reduce((sum: number, it: any) => {
-    const kg = isWeighed ? (it.delivered_weight_kg ?? it.ordered_kg) : it.ordered_kg;
-    return sum + Number(kg || 0);
-  }, 0) || 0;
+  
   return (
     <Pressable accessibilityRole="button"
       accessibilityLabel={`Open stop ${item.sequence}, ${item.shop_name || item.retailer_name}`}
-      className={`bg-surface-container-lowest rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden active:opacity-90 ${
-        isActive ? "border-primary" : "border-outline-variant/20"
+      className={`bg-white rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden active:opacity-90 ${
+        isActive ? "border-[#0052CC]" : "border-[#E5E7EB]"
       }`}
       onPress={onPress}
     >
-      <View className={`absolute top-0 left-0 w-1 h-full ${isActive ? 'bg-primary' : 'bg-transparent'}`} />
+      <View className={`absolute top-0 left-0 w-1 h-full ${isActive ? 'bg-[#0052CC]' : 'bg-transparent'}`} />
 
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center gap-2 flex-1 mr-2">
-          <View className={`w-8 h-8 rounded-full items-center justify-center ${isActive ? 'bg-primary' : 'bg-surface-variant'}`}>
-            <Text className={`font-bold ${isActive ? 'text-on-primary' : 'text-on-surface-variant'}`}>{item.sequence}</Text>
+      <View className="flex-row items-center justify-between mb-1">
+        <View className="flex-row items-center gap-3 flex-1 mr-2">
+          <View className={`w-8 h-8 rounded-full items-center justify-center ${isActive ? 'bg-[#0052CC]' : 'bg-[#E5E7EB]'}`}>
+            <Text className={`font-bold text-[15px] ${isActive ? 'text-white' : 'text-[#202124]'}`}>{item.sequence}</Text>
           </View>
           <View className="flex-1">
-            <Text className="font-headline-sm text-on-surface font-bold" numberOfLines={1}>
+            <Text className="text-[16px] text-[#202124] font-bold" numberOfLines={1}>
               {item.shop_name || item.retailer_name}
             </Text>
-            {item.shop_name ? (
-              <Text className="font-body-sm text-on-surface-variant" numberOfLines={1}>
-                {item.retailer_name}
+            {(item.shop_name || item.retailer_mobile) ? (
+              <Text className="text-[14px] text-[#5F6368]" numberOfLines={1}>
+                {item.shop_name ? `${item.retailer_name} ` : ""}
+                {item.retailer_mobile ? (item.shop_name ? `• ${item.retailer_mobile}` : item.retailer_mobile) : ""}
               </Text>
             ) : null}
           </View>
         </View>
         <View className="flex-row items-center gap-2">
-          <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-error-container' : 'bg-primary-container'}`}>
-            <Text className={`font-label-md font-semibold ${item.status === 'PENDING' ? 'text-error' : 'text-on-primary-container'}`}>
+          <View className={`px-3 py-1 rounded-full ${item.status === 'PENDING' ? 'bg-[#FFEBEE]' : 'bg-[#115E29]'}`}>
+            <Text className={`text-[12px] font-bold tracking-wider ${item.status === 'PENDING' ? 'text-[#C62828]' : 'text-white'}`}>
               {item.status}
             </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={22} className="text-on-surface-variant" />
+          <MaterialIcons name="chevron-right" size={22} className="text-[#5F6368]" />
         </View>
-      </View>
-      
-      <View className="flex-row items-center gap-2 mt-1 pl-10">
-        <MaterialIcons name="inventory-2" size={16} className="text-on-surface-variant" />
-        <Text className="font-body-md text-on-surface-variant">
-          Total: <Text className="font-bold text-on-surface">{totalKg} kg</Text>
-        </Text>
       </View>
 
       {item.items && item.items.length > 0 && (
-        <View className="mt-3 pl-10 border-t border-outline-variant/10 pt-2">
-          {item.items.map((it: any) => {
+        <View className="mt-3 flex-row items-center bg-[#F7F8FA] rounded-lg p-2.5">
+          {item.items.map((it: any, index: number) => {
             const boxes = isWeighed ? (it.delivered_boxes ?? it.original_total_boxes ?? 0) : (it.original_total_boxes || 0);
-            const kg = isWeighed ? (it.delivered_weight_kg ?? it.ordered_kg) : it.ordered_kg;
+            const isLast = index === item.items.length - 1;
             return (
-            <View key={it.item_id} className="flex-row justify-between items-center py-1">
-              <Text className="font-body-sm text-on-surface font-semibold flex-1" numberOfLines={1}>
-                {getItemName(it.item_id)}
-              </Text>
-              <View className="flex-row gap-3">
-                <Text className="font-body-sm text-on-surface-variant">
-                  {boxes} boxes
+              <View key={it.item_id} className={`flex-1 flex-row items-center justify-between px-2 ${!isLast ? 'border-r border-[#E5E7EB]' : ''}`}>
+                <Text className="text-[14px] text-[#202124] mr-2 flex-1" numberOfLines={1}>
+                  {getItemName(it.item_id)}
                 </Text>
-                <Text className="font-body-sm text-on-surface font-semibold">
-                  {kg || 0} kg
-                </Text>
+                <View className="bg-[#2E7D32]/15 px-2 py-0.5 rounded-md">
+                  <Text className="text-[13px] text-[#115E29] font-bold">
+                    {boxes} boxes
+                  </Text>
+                </View>
               </View>
-            </View>
             );
           })}
         </View>

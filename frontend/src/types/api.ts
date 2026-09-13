@@ -222,6 +222,7 @@ export type DeliveryStop = {
   failure_reason?: string | null;
   retailer_name?: string | null;
   shop_name?: string | null;
+  retailer_mobile?: string | null;
   route_name?: string | null;
   items: DeliveryStopItem[];
 };
@@ -437,6 +438,7 @@ export type OrderItemCreate = {
   total_boxes: number;
   requested_kg?: string | null;
   notes?: string | null;
+  locked_rate_per_kg?: string | number | null;
 };
 
 export type DailyOrderCreate = {

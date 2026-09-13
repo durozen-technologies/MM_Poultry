@@ -277,8 +277,17 @@ export function AdminOrdersScreen({ navigation }: { navigation: any }) {
                       <Text className="font-sans text-[13px] text-[#5f6368] mt-0.5" numberOfLines={1}>{o.shop_name}</Text>
                     )}
                   </View>
-                  <View className={`${badgeBg} rounded-full px-3 py-1 min-h-[26px] justify-center`}>
-                    <Text className={`font-sans text-[12px] font-bold ${badgeText}`}>{statusText}</Text>
+                  <View className="flex-col items-end gap-1.5">
+                    <View className={`${badgeBg} rounded-full px-3 py-1 min-h-[26px] justify-center`}>
+                      <Text className={`font-sans text-[12px] font-bold ${badgeText}`}>{statusText}</Text>
+                    </View>
+                    {o.items && o.items.length > 0 && (
+                      <View className={`rounded-full px-2 py-0.5 border ${o.items.every((it: any) => it.locked_rate_per_kg != null) ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20' : 'bg-[#EF4444]/10 border-[#EF4444]/20'}`}>
+                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${o.items.every((it: any) => it.locked_rate_per_kg != null) ? 'text-[#2E7D32]' : 'text-[#EF4444]'}`}>
+                          {o.items.every((it: any) => it.locked_rate_per_kg != null) ? 'Price Set' : 'Price Not Set'}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
                 <View className="flex-row justify-between items-center pt-3 border-t border-[#f7f8fa] mt-1">
@@ -341,12 +350,21 @@ const OrderListItem = React.memo(({
  )}
  <Text className="font-sans text-[13px] text-[#7a7f85] mt-1">Order {order.order_number || `#${order.id.split("-")[0].toUpperCase()}`}</Text>
  </View>
- <View className={`${badgeBg} rounded-full px-3 py-1 flex-row items-center gap-1 min-h-[26px]`}>
- {order.status === 'FULFILLED' && <MaterialIcons name="check" size={14} className={badgeText} />}
- <Text className={`font-sans text-[12px] font-bold ${badgeText}`}>
- {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status === 'FULFILLED' ? (order.is_billed ? 'Billed' : 'Delivered') : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
- </Text>
- </View>
+  <View className="flex-col items-end gap-1.5">
+  <View className={`${badgeBg} rounded-full px-3 py-1 flex-row items-center gap-1 min-h-[26px]`}>
+  {order.status === 'FULFILLED' && <MaterialIcons name="check" size={14} className={badgeText} />}
+  <Text className={`font-sans text-[12px] font-bold ${badgeText}`}>
+  {order.status === 'ACKNOWLEDGED' ? 'Confirmed' : order.status === 'FULFILLED' ? (order.is_billed ? 'Billed' : 'Delivered') : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+  </Text>
+  </View>
+  {order.items && order.items.length > 0 && (
+  <View className={`rounded-full px-2 py-0.5 border ${order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'bg-[#2E7D32]/10 border-[#2E7D32]/20' : 'bg-[#EF4444]/10 border-[#EF4444]/20'}`}>
+  <Text className={`text-[10px] font-bold uppercase tracking-wider ${order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'text-[#2E7D32]' : 'text-[#EF4444]'}`}>
+  {order.items.every((it: any) => it.locked_rate_per_kg != null) ? 'Price Set' : 'Price Not Set'}
+  </Text>
+  </View>
+  )}
+  </View>
  </View>
 
  <View className="bg-[#f7f8fa] rounded-lg p-4 mb-4 border border-[#e5e7eb]">

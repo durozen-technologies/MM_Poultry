@@ -97,16 +97,16 @@ async def upsert_today_order(
         # If no editable order exists, we will create a new one (existing = None)
 
     # Block non-placed orders from being modified (safety guard for explicit order_id path)
-    _blocked = (OrderStatus.ACKNOWLEDGED, OrderStatus.DISPATCHED, OrderStatus.PARTIAL)
+    _blocked = (OrderStatus.DISPATCHED, OrderStatus.PARTIAL)
     if existing:
         if existing.status in _blocked:
             from fastapi import HTTPException, status
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Cannot update a confirmed or dispatched order. Please place a new order.",
+                detail="Cannot update a dispatched or partially fulfilled order.",
             )
 
-        if existing.status != OrderStatus.PLACED:
+        if existing.status not in (OrderStatus.PLACED, OrderStatus.ACKNOWLEDGED):
             existing.status = OrderStatus.PLACED
         if not existing.order_number:
             existing.order_number = await _next_order_number(db, day)

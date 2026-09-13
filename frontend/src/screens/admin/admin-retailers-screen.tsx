@@ -136,7 +136,7 @@ export function AdminRetailersScreen({ navigation }: { navigation: any }) {
  <View className="flex-row gap-3 mb-2">
  <View className="flex-1 min-w-0 bg-[#2E7D32] rounded-lg p-4 flex-col">
  <View className="flex-row justify-between items-start mb-2">
- <Text className="text-sm font-bold text-[#5f6368] text-[#2E7D32] uppercase tracking-wider flex-1"numberOfLines={1}>Active Retailers</Text>
+ <Text className="text-sm font-bold text-white uppercase tracking-wider flex-1"numberOfLines={1}>Active Retailers</Text>
  <View className="w-8 h-8 shrink-0 bg-white/10 rounded-lg items-center justify-center ml-1">
  <MaterialIcons name="storefront"size={16} className="text-[#2E7D32]"/>
  </View>

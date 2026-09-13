@@ -45,6 +45,7 @@ async def _stop_out(db: AsyncSession, stop: DeliveryStop) -> DeliveryStopOut:
     out = DeliveryStopOut.model_validate(stop, from_attributes=True)
     out.retailer_name = retailer.name
     out.shop_name = retailer.shop_name
+    out.retailer_mobile = retailer.phone
     out.route_name = retailer.route_name
     
     if stop.daily_order_id:

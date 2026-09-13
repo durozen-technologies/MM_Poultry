@@ -14,6 +14,7 @@ import { AdminHeader } from "../../components/admin/admin-header";
 import { SingleOrderDispatchModal } from "./components/single-order-dispatch-modal";
 import { ConfirmOrderModal } from "./components/confirm-order-modal";
 import { EditOrderPricesModal } from "./components/edit-order-prices-modal";
+import { EditOrderItemModal } from "./components/edit-order-item-modal";
 
 import { PrimaryButton } from "../../components/ui/primary-button";
 
@@ -23,6 +24,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  const [showDispatchModal, setShowDispatchModal] = useState(false);
  const [showConfirmModal, setShowConfirmModal] = useState(false);
  const [showEditPricesModal, setShowEditPricesModal] = useState(false);
+ const [editingItem, setEditingItem] = useState<any>(null);
  const user = useAuthStore((s) => s.user);
  const queryClient = useQueryClient();
 
@@ -211,8 +213,17 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  <Text className="text-sm font-bold text-[#5f6368] text-[#202124] mb-1">
  {getItemName(item.item_id)}
  </Text>
+ {(order.status === "PLACED" || order.status === "ACKNOWLEDGED") && (
+ <Pressable 
+ onPress={() => setEditingItem(item)}
+ className="flex-row items-center gap-1 mt-0.5 active:opacity-70"
+ >
+ <MaterialIcons name="edit" size={14} className="text-[#0052CC]" />
+ <Text className="text-xs font-bold text-[#0052CC]">Edit Boxes/Kg</Text>
+ </Pressable>
+ )}
  </View>
- <View className="flex-row gap-2">
+ <View className="flex-row flex-wrap gap-2 justify-end max-w-[65%]">
  <View className="items-end bg-[#f7f8fa] border border-[#e5e7eb] px-3 py-2 rounded-lg border border-tertiary/20">
  <Text className="text-xs font-bold text-tertiary uppercase tracking-wider mb-0.5">Boxes</Text>
  <View className="flex-row items-end gap-0.5">
@@ -243,8 +254,9 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  </>
  );
  }
- if (item.requested_kg && Number(item.requested_kg) > 0) {
  return (
+ <>
+ {item.requested_kg && Number(item.requested_kg) > 0 ? (
  <View className="items-end bg-[#2E7D32]/10 px-3 py-2 rounded-lg border border-[#2E7D32]/20">
  <Text className="text-xs font-bold text-[#2E7D32] uppercase tracking-wider mb-0.5">Est. Wt</Text>
  <View className="flex-row items-end gap-0.5">
@@ -252,9 +264,23 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">KG</Text>
  </View>
  </View>
+ ) : null}
+ {item.locked_rate_per_kg != null ? (
+ <View className="items-end bg-[#2E7D32]/10 px-3 py-2 rounded-lg border border-[#2E7D32]/20">
+ <Text className="text-xs font-bold text-[#2E7D32] uppercase tracking-wider mb-0.5">Price</Text>
+ <View className="flex-row items-end gap-0.5">
+ <Text className="text-base font-bold text-[#5f6368] font-black text-[#2E7D32]">₹{Number(item.locked_rate_per_kg).toLocaleString("en-IN")}</Text>
+ <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">/kg</Text>
+ </View>
+ </View>
+ ) : (
+ <View className="items-end justify-center bg-[#EF4444]/10 px-3 py-2 rounded-lg border border-[#EF4444]/20">
+ <Text className="text-[10px] font-bold text-[#EF4444] uppercase tracking-wider mt-1">Price</Text>
+ <Text className="text-xs font-bold text-[#EF4444] uppercase tracking-wider mt-0.5 mb-1">Not Set</Text>
+ </View>
+ )}
+ </>
  );
- }
- return null;
  })()}
  </View>
  </View>
@@ -361,6 +387,19 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  // Prices changed — the bill total is now stale, force a refetch
  queryClient.invalidateQueries({ queryKey: ["order_bill", order?.id] });
  setShowEditPricesModal(false);
+ }}
+ />
+ )}
+ 
+ {editingItem && (
+ <EditOrderItemModal
+ order={order}
+ itemToEdit={editingItem}
+ itemName={getItemName(editingItem.item_id)}
+ onClose={() => setEditingItem(null)}
+ onSaved={(updated) => {
+ setOrder(updated);
+ setEditingItem(null);
  }}
  />
  )}

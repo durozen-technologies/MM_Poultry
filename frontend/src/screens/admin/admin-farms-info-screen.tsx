@@ -75,7 +75,7 @@ export function AdminFarmsInfoScreen({ navigation }: { navigation: any }) {
  <View className="flex-row gap-4 mb-2">
  <View className="flex-1 bg-[#2E7D32] rounded-lg p-4 relative overflow-hidden">
  <View className="absolute -right-4 -top-4 w-16 h-16 bg-white/10 rounded-lg"/>
- <Text className="text-sm font-bold text-[#5f6368] text-[#2E7D32] mb-1 uppercase tracking-wider">Total Farms</Text>
+ <Text className="text-sm font-bold text-white mb-1 uppercase tracking-wider">Total Farms</Text>
  <Text className="text-3xl font-black text-white font-bold">{farms.length}</Text>
  </View>
  <View className="flex-1 bg-white rounded-lg p-4 border border-[#e5e7eb] relative overflow-hidden">
