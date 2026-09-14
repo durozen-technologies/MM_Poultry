@@ -5,12 +5,15 @@ import { getRetailerOrder, upsertTodayOrder } from "../api/retailer";
 import { getApiErrorMessage } from "../api/client";
 import { apiItems } from "../api/items";
 import type { OrderItemCreate } from "../types/api";
+import { useToastStore } from "../store/toast-store";
 
 export function useRetailerCart(onSuccess: () => void, orderId?: string) {
   const [cart, setCart] = useState<Record<string, OrderItemCreate>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [orderNotes, setOrderNotes] = useState<string>("");
+
+  const showToast = useToastStore((s) => s.showToast);
 
   const { data: itemsPage, isLoading: loadingItems } = useQuery({
     queryKey: ["retailer_items", { activeOnly: true }],
@@ -102,11 +105,17 @@ export function useRetailerCart(onSuccess: () => void, orderId?: string) {
     setBusy(true);
     setMessage(null);
     try {
-      await upsertTodayOrder({ 
+      const order = await upsertTodayOrder({ 
         order_id: orderId, 
         items: payloadItems,
         notes: orderNotes.trim() || undefined
       });
+      
+      if (order) {
+        const idToShow = order.order_number || order.short_id || order.id.slice(0, 8);
+        showToast("Order Successfully Placed", `Order ID: ${idToShow}`);
+      }
+      
       onSuccess();
     } catch (e) {
       let code = null;

@@ -104,36 +104,60 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
 
                 {todayOrders.length > 0 ? (
                   <View className="flex-col gap-4">
-                    {todayOrders.map(order => (
-                      <View key={order.id} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 relative">
-                        <View className="absolute right-4 top-4 px-2 py-1 bg-primary-container rounded-md">
-                          <Text className="text-on-primary-container text-[10px] font-bold uppercase">{order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}</Text>
-                        </View>
-                        
-                        {order.expected_delivery_date && (
-                          <View className="mb-2">
-                            <Text className="font-body-sm text-[#2e7d32] font-semibold">
-                              Delivery: {formatIstDate(order.expected_delivery_date)}
-                            </Text>
+                    {todayOrders.map(order => {
+                      let bgClass = "bg-surface-container";
+                      let textClass = "text-on-surface";
+                      let label: string = order.status;
+
+                      if (order.status === "PLACED") {
+                        bgClass = "bg-[#fee2e2]"; // red-100
+                        textClass = "text-[#b91c1c]"; // red-700
+                      } else if (order.status === "ACKNOWLEDGED") {
+                        bgClass = "bg-[#dbeafe]"; // blue-100
+                        textClass = "text-[#1d4ed8]"; // blue-700
+                        label = "CONFIRMED";
+                      } else if (order.status === "DISPATCHED") {
+                        bgClass = "bg-[#fef9c3]"; // yellow-100
+                        textClass = "text-[#a16207]"; // yellow-700
+                      } else if (order.status === "FULFILLED") {
+                        bgClass = "bg-[#dcfce7]"; // green-100
+                        textClass = "text-[#15803d]"; // green-700
+                        label = order.is_billed ? "BILLED" : "DELIVERED";
+                      } else if (order.status === "CANCELLED") {
+                        bgClass = "bg-error-container";
+                        textClass = "text-on-error-container";
+                      }
+
+                      return (
+                        <View key={order.id} className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 relative">
+                          <View className={`absolute right-4 top-4 px-2 py-1 rounded-md ${bgClass}`}>
+                            <Text className={`font-bold uppercase tracking-wider text-[10px] ${textClass}`}>{label}</Text>
                           </View>
-                        )}
-
-                        <View className="flex-col gap-2 mt-1">
-                          {order.items?.map(it => (
-                            <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">
-                              <Text className="font-headline-sm text-on-surface font-bold">{it.item_name || "Item"}</Text>
-                              <Text className="font-body-md text-on-surface-variant font-medium ml-1">
-                                {it.total_boxes || 0} Boxes
+                          
+                          {order.expected_delivery_date && (
+                            <View className="mb-2">
+                              <Text className="font-body-sm text-[#2e7d32] font-semibold">
+                                Delivery: {formatIstDate(order.expected_delivery_date)}
                               </Text>
-                              {it.requested_kg ? (
-                                <Text className="font-body-md text-on-surface-variant ml-1">({it.requested_kg} kg)</Text>
-                              ) : null}
                             </View>
-                          ))}
+                          )}
 
+                          <View className="flex-col gap-2 mt-1">
+                            {order.items?.map(it => (
+                              <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">
+                                <Text className="font-headline-sm text-on-surface font-bold">{it.item_name || "Item"}</Text>
+                                <Text className="font-body-md text-on-surface-variant font-medium ml-1">
+                                  {it.total_boxes || 0} Boxes
+                                </Text>
+                                {it.requested_kg ? (
+                                  <Text className="font-body-md text-on-surface-variant ml-1">({it.requested_kg} kg)</Text>
+                                ) : null}
+                              </View>
+                            ))}
+                          </View>
                         </View>
-                      </View>
-                    ))}
+                      );
+                    })}
                   </View>
                 ) : (
                   <View className="py-2 items-center flex-col">

@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, FlatList, Pressable, RefreshControl, ScrollView } from "react-native";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, Text, FlatList, Pressable, RefreshControl, ScrollView, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -58,14 +58,27 @@ export function DeliveryHomeScreen() {
     }
   };
 
+  const pendingStops = useMemo(() => {
+    return run?.stops?.filter((s: any) => s.status === 'PENDING') || [];
+  }, [run]);
+
   return (
     <View className="flex-1 max-w-3xl mx-auto w-full bg-background" style={{ paddingTop: insets.top }}>
       <View className="h-16 px-4 flex-row justify-between items-center bg-surface-container-lowest border-b border-outline-variant/20">
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-2 flex-1 mr-2">
           <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center">
             <MaterialIcons name="local-shipping" size={18} className="text-primary" />
           </View>
-          <Text className="text-on-surface text-headline-sm font-bold tracking-tight">Delivery Run</Text>
+          <View className="flex-1">
+            <Text className="text-on-surface text-base font-bold tracking-tight truncate" numberOfLines={1}>
+              {run ? `${run.vehicle_name || 'Vehicle'} (${run.vehicle_number || 'No/NA'})` : "Delivery Run"}
+            </Text>
+            {run ? (
+              <Text className="text-on-surface-variant text-xs truncate" numberOfLines={1}>
+                {run.driver_name || "Unknown Driver"}
+              </Text>
+            ) : null}
+          </View>
         </View>
         <View className="flex-row items-center gap-1">
           <Pressable 
@@ -106,8 +119,14 @@ export function DeliveryHomeScreen() {
           </ScrollView>
         ) : (
           <>
+            <View className="flex-row justify-between items-center mb-3 px-1">
+              <Text className="font-headline-sm text-on-surface font-bold tracking-tight">Pending Orders</Text>
+              <View className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                <Text className="text-primary font-bold text-xs uppercase tracking-wider">Total: {pendingStops.length}</Text>
+              </View>
+            </View>
             <FlatList
-              data={run.stops}
+              data={pendingStops}
               keyExtractor={(s) => s.id}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
               ListEmptyComponent={<Text className="text-on-surface-variant text-center py-4">No stops in this run</Text>}
@@ -144,7 +163,7 @@ const StopListItem = React.memo(({ item, isActive, getItemName, onPress }: { ite
   const isWeighed = item.status === "WEIGHED" || item.status === "BILLED";
   
   return (
-    <Pressable accessibilityRole="button"
+    <Pressable
       accessibilityLabel={`Open stop ${item.sequence}, ${item.shop_name || item.retailer_name}`}
       className={`bg-white rounded-xl p-4 shadow-sm elevation-sm mb-3 border relative overflow-hidden active:opacity-90 ${
         isActive ? "border-[#0052CC]" : "border-[#E5E7EB]"
@@ -162,11 +181,18 @@ const StopListItem = React.memo(({ item, isActive, getItemName, onPress }: { ite
             <Text className="text-[16px] text-[#202124] font-bold" numberOfLines={1}>
               {item.shop_name || item.retailer_name}
             </Text>
-            {(item.shop_name || item.retailer_mobile) ? (
+            {item.shop_name && item.shop_name !== item.retailer_name ? (
               <Text className="text-[14px] text-[#5F6368]" numberOfLines={1}>
-                {item.shop_name ? `${item.retailer_name} ` : ""}
-                {item.retailer_mobile ? (item.shop_name ? `• ${item.retailer_mobile}` : item.retailer_mobile) : ""}
+                {item.retailer_name}
               </Text>
+            ) : null}
+            {item.retailer_mobile ? (
+              <Pressable onPress={() => Linking.openURL(`tel:${item.retailer_mobile}`)} className="flex-row items-center gap-1 mt-0.5 bg-blue-50/50 self-start px-2 py-1 rounded-md border border-blue-100 active:bg-blue-100">
+                <MaterialIcons name="phone" size={14} className="text-[#0052CC]" />
+                <Text className="text-[14px] text-[#0052CC] font-medium" numberOfLines={1}>
+                  {item.retailer_mobile}
+                </Text>
+              </Pressable>
             ) : null}
           </View>
         </View>
@@ -181,18 +207,25 @@ const StopListItem = React.memo(({ item, isActive, getItemName, onPress }: { ite
       </View>
 
       {item.items && item.items.length > 0 && (
-        <View className="mt-3 flex-row items-center bg-[#F7F8FA] rounded-lg p-2.5">
+        <View className="mt-3 flex-col gap-1 bg-[#F7F8FA] rounded-lg p-3 border border-[#E5E7EB]">
           {item.items.map((it: any, index: number) => {
             const boxes = isWeighed ? (it.delivered_boxes ?? it.original_total_boxes ?? 0) : (it.original_total_boxes || 0);
             const isLast = index === item.items.length - 1;
             return (
-              <View key={it.item_id} className={`flex-1 flex-row items-center justify-between px-2 ${!isLast ? 'border-r border-[#E5E7EB]' : ''}`}>
-                <Text className="text-[14px] text-[#202124] mr-2 flex-1" numberOfLines={1}>
-                  {getItemName(it.item_id)}
-                </Text>
-                <View className="bg-[#2E7D32]/15 px-2 py-0.5 rounded-md">
-                  <Text className="text-[13px] text-[#115E29] font-bold">
-                    {boxes} boxes
+              <View key={it.item_id} className={`flex-row items-center justify-between py-1.5 ${!isLast ? 'border-b border-[#E5E7EB]' : ''}`}>
+                <View className="flex-1 mr-2 flex-col justify-center gap-1">
+                  <Text className="text-[16px] text-[#202124] font-extrabold tracking-tight" numberOfLines={1}>
+                    {getItemName(it.item_id)}
+                  </Text>
+                  <View className={`self-start px-2 py-0.5 rounded ${it.rate_per_kg ? 'bg-[#E8F5E9]' : 'bg-[#FFF3E0]'}`}>
+                    <Text className={`text-[10px] font-bold ${it.rate_per_kg ? 'text-[#2E7D32]' : 'text-[#E65100]'}`}>
+                      {it.rate_per_kg ? 'Price Set' : 'Price Not Set'}
+                    </Text>
+                  </View>
+                </View>
+                <View className="bg-[#E8F5E9] px-4 py-1.5 rounded-lg border border-[#2E7D32]/30">
+                  <Text className="text-[16px] text-[#115E29] font-black">
+                    {boxes} Boxes
                   </Text>
                 </View>
               </View>

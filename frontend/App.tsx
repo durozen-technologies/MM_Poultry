@@ -42,6 +42,8 @@ if (Platform.OS === "web") {
   };
 }
 
+import { ToastOverlay } from "./src/components/toast-overlay";
+
 export default function App() {
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydratePrinter = usePrinterStore((s) => s.hydrate);
@@ -57,6 +59,7 @@ export default function App() {
         <StatusBar barStyle="dark-content" />
         <ReceiptPrintProvider>
           <AppNavigator />
+          <ToastOverlay />
         </ReceiptPrintProvider>
       </SafeAreaProvider>
     </QueryClientProvider>

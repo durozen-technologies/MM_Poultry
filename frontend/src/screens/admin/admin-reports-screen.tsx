@@ -10,7 +10,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import { downloadReportPdf, getReportSummary } from "../../api/reports";
+import { downloadReportPdf, getReportSummary, downloadBalanceSheetPdf } from "../../api/reports";
 import type { ReportSummary } from "../../types/api";
 import { DatePickerField } from "../../components/date-picker-field";
 import { formatIstDate, toApiDate, todayIstDate } from "../../utils/ist-date";
@@ -27,6 +27,7 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
  const [loading, setLoading] = useState(false);
  const [msg, setMsg] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
  const [isExporting, setIsExporting] = useState(false);
+ const [isExportingBalance, setIsExportingBalance] = useState(false);
 
  const refresh = useCallback(async () => {
  setLoading(true);
@@ -72,6 +73,33 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
  setMsg({ text: e instanceof Error ? e.message : "Failed to export PDF", type: 'error' });
  } finally {
  setIsExporting(false);
+ }
+ }
+
+ async function shareBalanceSheetPdf() {
+ setIsExportingBalance(true);
+ try {
+ const buffer = await downloadBalanceSheetPdf();
+ const bytes = new Uint8Array(buffer);
+ let binary = "";
+ for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+ const base64 =
+ typeof globalThis.btoa === "function"
+ ? globalThis.btoa(binary)
+ : Buffer.from(bytes).toString("base64");
+ const path = `${FileSystem.cacheDirectory}balance-sheet.pdf`;
+ await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
+ if (await Sharing.isAvailableAsync()) {
+ await Sharing.shareAsync(path, { mimeType: "application/pdf"});
+ setMsg({ text: "Balance Sheet exported successfully", type: 'success' });
+ setTimeout(() => setMsg(null), 3000);
+ } else {
+ setMsg({ text: "Sharing not available on this device", type: 'error' });
+ }
+ } catch (e) {
+ setMsg({ text: e instanceof Error ? e.message : "Failed to export PDF", type: 'error' });
+ } finally {
+ setIsExportingBalance(false);
  }
  }
 
@@ -258,6 +286,24 @@ export function AdminReportsScreen({ navigation }: { navigation: any }) {
  <>
  <MaterialIcons name="picture-as-pdf"size={20} color="white"/>
  <Text className="text-white font-bold text-base font-bold uppercase tracking-wider">Export PDF Report</Text>
+ </>
+ )}
+ </Pressable>
+ 
+ <Pressable 
+ accessibilityRole="button"
+ className={`h-14 mt-3 rounded-lg flex-row items-center justify-center gap-2 active:scale-[0.98] transition-transform ${
+ isExportingBalance ? 'bg-[#2E7D32]/10' : 'bg-[#2E7D32] '
+ }`} 
+ onPress={shareBalanceSheetPdf}
+ disabled={isExportingBalance}
+ >
+ {isExportingBalance ? (
+ <ActivityIndicator color="#115E29"/>
+ ) : (
+ <>
+ <MaterialIcons name="picture-as-pdf"size={20} color="white"/>
+ <Text className="text-white font-bold text-base font-bold uppercase tracking-wider">Export Balance Sheet PDF</Text>
  </>
  )}
  </Pressable>

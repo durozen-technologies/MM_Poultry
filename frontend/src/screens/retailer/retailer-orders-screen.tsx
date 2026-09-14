@@ -97,15 +97,25 @@ export function RetailerOrdersScreen({ navigation }: { navigation: any }) {
 }
 
 const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPress: () => void }) => {
-  const isDelivered = order.status === "FULFILLED";
-  const isCancelled = order.status === "CANCELLED";
-  
-  let bgClass = "bg-primary-container";
-  let textClass = "text-on-primary-container";
-  if (isDelivered) {
-    bgClass = "bg-[#e8f5e9]";
-    textClass = "text-[#2e7d32]";
-  } else if (isCancelled) {
+  let bgClass = "bg-surface-container";
+  let textClass = "text-on-surface";
+  let label: string = order.status;
+
+  if (order.status === "PLACED") {
+    bgClass = "bg-[#fee2e2]"; // red-100
+    textClass = "text-[#b91c1c]"; // red-700
+  } else if (order.status === "ACKNOWLEDGED") {
+    bgClass = "bg-[#dbeafe]"; // blue-100
+    textClass = "text-[#1d4ed8]"; // blue-700
+    label = "CONFIRMED";
+  } else if (order.status === "DISPATCHED") {
+    bgClass = "bg-[#fef9c3]"; // yellow-100
+    textClass = "text-[#a16207]"; // yellow-700
+  } else if (order.status === "FULFILLED") {
+    bgClass = "bg-[#dcfce7]"; // green-100
+    textClass = "text-[#15803d]"; // green-700
+    label = order.is_billed ? "BILLED" : "DELIVERED";
+  } else if (order.status === "CANCELLED") {
     bgClass = "bg-error-container";
     textClass = "text-on-error-container";
   }
@@ -117,7 +127,7 @@ const OrderListItem = React.memo(({ order, onPress }: { order: DailyOrder; onPre
     >
       <View className={`absolute right-4 top-4 px-2 py-1 rounded-md ${bgClass}`}>
         <Text className={`font-bold uppercase tracking-wider text-[10px] ${textClass}`}>
-          {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' : order.status}
+          {label}
         </Text>
       </View>
 

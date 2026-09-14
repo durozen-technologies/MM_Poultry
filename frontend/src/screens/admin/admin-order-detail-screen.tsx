@@ -24,6 +24,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  const [showDispatchModal, setShowDispatchModal] = useState(false);
  const [showConfirmModal, setShowConfirmModal] = useState(false);
  const [showEditPricesModal, setShowEditPricesModal] = useState(false);
+ const [showMenu, setShowMenu] = useState(false);
  const [editingItem, setEditingItem] = useState<any>(null);
  const user = useAuthStore((s) => s.user);
  const queryClient = useQueryClient();
@@ -93,11 +94,48 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  <AdminScreenContainer
  noScroll
  header={
+ <View className="z-50">
  <AdminHeader 
  title="Order Details"
  subtitle={order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`}
  onBack={() => navigation.goBack()} 
+ rightContent={
+ <View className="relative z-50">
+ <Pressable
+ accessibilityRole="button"
+ className="w-10 h-10 rounded-lg flex items-center justify-center active:bg-[#f7f8fa] transition-colors"
+ onPress={() => setShowMenu(!showMenu)}
+ >
+ <MaterialIcons name="more-vert" size={24} className="text-[#5f6368]" />
+ </Pressable>
+
+ {showMenu && (
+ <View className="absolute top-12 right-0 bg-white rounded-lg border border-[#e5e7eb] overflow-hidden w-48 shadow-sm z-50" style={{ elevation: 5 }}>
+ {(order.status === "PLACED" || order.status === "ACKNOWLEDGED" || order.status === "PARTIAL") && (
+ <Pressable 
+ className="flex-row items-center gap-3 px-4 py-3.5 active:bg-[#f7f8fa]"
+ onPress={() => {
+ setShowMenu(false);
+ handleCancel();
+ }}
+ >
+ <MaterialIcons name="cancel" size={20} className="text-error" />
+ <Text className="text-sm font-bold text-error">
+ Cancel Order
+ </Text>
+ </Pressable>
+ )}
+ {order.status !== "PLACED" && order.status !== "ACKNOWLEDGED" && order.status !== "PARTIAL" && (
+ <View className="px-4 py-3.5">
+ <Text className="text-sm font-medium text-[#5f6368]">No actions available</Text>
+ </View>
+ )}
+ </View>
+ )}
+ </View>
+ }
  />
+ </View>
  }
  >
  <ScrollView className="flex-1 px-4 pt-2"contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -163,6 +201,9 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  <View className="bg-[#f7f8fa]/30 rounded-lg p-1 border border-[#e5e7eb]">
  <InfoRow label="Retailer"value={order.shop_name || order.retailer_name || "Unknown"} icon="storefront"isFirst />
  <InfoRow label="Order Date"value={formatIstDate(order.order_date)} icon="event"/>
+ {order.notes && (
+ <InfoRow label="Notes" value={order.notes} icon="notes" />
+ )}
  
  <View className="h-[1px] bg-outline-variant/20 my-2 mx-3"/>
  
@@ -316,16 +357,7 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  </View>
  </Pressable>
  )}
- {(order.status === "PLACED"|| order.status === "ACKNOWLEDGED"|| order.status === "PARTIAL") && (
- <PrimaryButton
- title="Cancel Order"
- icon="cancel"
- variant="error"
- onPress={handleCancel}
- loading={cancelling}
- className="mb-4"
- />
- )}
+  {/* Cancel order moved to top right menu */}
 
  {user?.role !== "DELIVERY"&& (order.status === "ACKNOWLEDGED"|| order.status === "PARTIAL") && (
  <Pressable

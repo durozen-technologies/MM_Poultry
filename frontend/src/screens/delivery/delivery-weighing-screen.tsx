@@ -510,13 +510,30 @@ const WeighingRow = React.memo(({ item, input, rate, isKgAdjusted, itemName, onU
   return (
     <View className="bg-surface-container-lowest p-4 rounded-2xl mb-4 border border-outline-variant/20 shadow-sm">
       {/* Item Name & Prominent Rate Badge */}
-      <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-outline-variant/20">
+      <View className="flex-row justify-between items-start mb-4 pb-3 border-b border-outline-variant/20">
         <View className="flex-1 pr-3">
-          <Text className="font-bold text-xl text-on-surface" numberOfLines={1}>
+          <Text className="font-bold text-xl text-on-surface mb-1" numberOfLines={1}>
             {itemName}
           </Text>
+          <View className="flex-row flex-wrap items-center gap-x-3 gap-y-2 mt-1">
+            <View className="bg-[#E8F5E9] px-3 py-1 rounded-lg border border-[#2E7D32]/30">
+              <Text className="text-[14px] text-[#115E29] font-black">
+                {item.original_total_boxes || 0} Boxes
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-1">
+              <Text className="text-sm text-on-surface-variant font-medium">
+                Expected: <Text className="text-on-surface font-bold">{item.ordered_kg || "0"} kg</Text>
+              </Text>
+              {isKgAdjusted && (
+                <View className="bg-error/10 px-1.5 py-0.5 rounded ml-1">
+                  <Text className="text-[10px] text-error font-bold uppercase tracking-tight">Adjusted</Text>
+                </View>
+              )}
+            </View>
+          </View>
         </View>
-        <View className="bg-primary/10 px-3.5 py-2 rounded-xl border border-primary/20 flex-row items-center gap-1.5">
+        <View className="bg-primary/10 px-3.5 py-2 rounded-xl border border-primary/20 flex-row items-center gap-1.5 self-center mt-1">
           <Text className="text-xs font-black text-primary/80 uppercase tracking-wider">RATE</Text>
           <Text className="text-xl font-black text-primary">
             ₹{rate.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
@@ -525,40 +542,11 @@ const WeighingRow = React.memo(({ item, input, rate, isKgAdjusted, itemName, onU
         </View>
       </View>
 
-      {/* Ordered Boxes & Ordered Weight */}
-      <View className="flex-row gap-3 mb-3">
-        <View className="flex-1">
-          <View className="h-5 flex-row items-center mb-1.5">
-            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Ordered Boxes</Text>
-          </View>
-          <View className="border border-outline-variant rounded-xl px-4 bg-surface-container-high/60 justify-center h-12">
-            <Text className="text-on-surface font-bold text-base" style={{ includeFontPadding: false }}>
-              {item.original_total_boxes || 0}
-            </Text>
-          </View>
-        </View>
-        <View className="flex-1">
-          <View className="h-5 flex-row items-center justify-between mb-1.5">
-            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Ordered Weight</Text>
-            {isKgAdjusted && (
-              <View className="bg-error/10 px-1.5 py-0.5 rounded">
-                <Text className="text-[10px] text-error font-bold uppercase tracking-tight">Adjusted</Text>
-              </View>
-            )}
-          </View>
-          <View className="border border-outline-variant rounded-xl px-4 bg-surface-container-high/60 justify-center h-12">
-            <Text className="text-on-surface font-bold text-base" style={{ includeFontPadding: false }}>
-              {item.ordered_kg || "0"} kg
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Delivered Boxes Given & Weight */}
+      {/* Delivered Boxes & Weight */}
       <View className="flex-row gap-3 mb-4">
         <View className="flex-1">
           <View className="h-5 flex-row items-center mb-1.5">
-            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Boxes Given</Text>
+            <Text className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Boxes</Text>
           </View>
           <TextInput
             className="border border-outline-variant rounded-xl px-4 bg-surface text-on-surface font-bold text-base h-12"
@@ -568,7 +556,7 @@ const WeighingRow = React.memo(({ item, input, rate, isKgAdjusted, itemName, onU
               includeFontPadding: false,
             }}
             value={input.boxes}
-            placeholder={item.original_total_boxes ? String(item.original_total_boxes) : "0"}
+            placeholder="0"
             placeholderTextColor="#9ca3af"
             onChangeText={(v) => onUpdate(item.item_id, "boxes", v)}
             keyboardType="number-pad"

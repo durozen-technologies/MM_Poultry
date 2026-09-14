@@ -48,15 +48,45 @@ export function RetailerOrderDetailScreen({ route, navigation }: { route: any; n
         {busy && !order ? <ActivityIndicator className="text-primary mt-8" /> : null}
         {order ? (
           <>
-            <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4">
-              <Text className="font-headline-md text-on-surface font-semibold">
-                Date: {formatIstDate(order.order_date)}
-              </Text>
-              {order.expected_delivery_date ? (
-                <Text className="font-label-md text-on-surface-variant mt-2">
-                  Delivery: {formatIstDate(order.expected_delivery_date)}
-                </Text>
-              ) : null}
+            <View className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/20 mb-4 relative overflow-hidden">
+              <View className={`absolute top-0 left-0 w-2 h-full ${
+                order.status === 'PLACED' ? 'bg-error' : 
+                order.status === 'ACKNOWLEDGED' ? 'bg-[#0052CC]' :
+                order.status === 'DISPATCHED' ? 'bg-[#d97706]' :
+                order.status === 'FULFILLED' ? 'bg-[#2E7D32]' : 
+                order.status === 'CANCELLED' ? 'bg-error' : 'bg-[#f7f8fa]'
+              }`} />
+              <View className="flex-row justify-between items-start pl-2">
+                <View>
+                  <Text className="font-headline-md text-on-surface font-semibold">
+                    Date: {formatIstDate(order.order_date)}
+                  </Text>
+                  {order.expected_delivery_date ? (
+                    <Text className="font-label-md text-on-surface-variant mt-2">
+                      Delivery: {formatIstDate(order.expected_delivery_date)}
+                    </Text>
+                  ) : null}
+                </View>
+                <View className={`px-2 py-1 rounded-md ${
+                  order.status === 'PLACED' ? 'bg-[#fee2e2]' : 
+                  order.status === 'ACKNOWLEDGED' ? 'bg-[#dbeafe]' :
+                  order.status === 'DISPATCHED' ? 'bg-[#fef9c3]' :
+                  order.status === 'FULFILLED' ? 'bg-[#dcfce7]' : 
+                  order.status === 'CANCELLED' ? 'bg-error-container' : 'bg-surface-variant'
+                }`}>
+                  <Text className={`font-bold uppercase tracking-wider text-[10px] ${
+                    order.status === 'PLACED' ? 'text-[#b91c1c]' : 
+                    order.status === 'ACKNOWLEDGED' ? 'text-[#1d4ed8]' :
+                    order.status === 'DISPATCHED' ? 'text-[#a16207]' :
+                    order.status === 'FULFILLED' ? 'text-[#15803d]' : 
+                    order.status === 'CANCELLED' ? 'text-on-error-container' : 'text-on-surface-variant'
+                  }`}>
+                    {order.status === 'ACKNOWLEDGED' ? 'CONFIRMED' :
+                     order.status === 'FULFILLED' ? (order.is_billed ? 'BILLED' : 'DELIVERED') :
+                     order.status}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             <Text className="font-headline-sm text-on-surface mb-3">Order Items</Text>

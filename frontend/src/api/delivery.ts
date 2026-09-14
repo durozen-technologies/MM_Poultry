@@ -78,6 +78,11 @@ export async function previewBill(stopId: string, payload: { cash_payment: strin
   return data;
 }
 
+export async function getBill(stopId: string) {
+  const { data } = await api.get<DeliveryBill>(`/delivery/stops/${stopId}/bill`);
+  return data;
+}
+
 export async function commitBill(stopId: string, payload: Record<string, unknown>) {
   const { data } = await api.post<DeliveryBill>(`/delivery/stops/${stopId}/bill/commit`, payload);
   return data;

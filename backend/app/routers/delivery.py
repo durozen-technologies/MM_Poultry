@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 
 from app.auth.dependencies import AuthContext, require_roles
 from app.models.enums import UserRole
@@ -137,6 +137,17 @@ async def delivery_weigh(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
 ) -> DeliveryStopOut:
     return await svc.weigh_stop(auth.db, stop_id, payload, actor_role=auth.user.role)
+
+
+@router.get("/delivery/stops/{stop_id}/bill", response_model=DeliveryBillOut)
+async def delivery_stop_bill(
+    stop_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.DELIVERY, UserRole.ADMIN))],
+) -> DeliveryBillOut:
+    bill = await svc.get_bill_for_stop(auth.db, stop_id)
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found for this stop")
+    return bill
 
 
 @router.post("/delivery/stops/{stop_id}/bill/preview", response_model=BillPreviewOut)

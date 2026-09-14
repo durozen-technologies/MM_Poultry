@@ -188,36 +188,61 @@ export function AdminHomeScreen({ navigation }: { navigation: any }) {
  </Pressable>
  </View>
 
- {recentOrders.map(({ order, totalKg, totalBoxes }) => (
- <Pressable
- key={order.id}
- accessibilityRole="button"
- accessibilityLabel={`Order ${order.order_number || order.id.slice(0, 5)} for ${order.shop_name || order.retailer_name}, ${totalKg} kilograms, status ${formatStatus(order.status)}`}
- className="bg-white border border-[#e5e7eb] rounded-lg p-5 mb-3 active:bg-[#f7f8fa]"
- onPress={() => navigation.navigate("OrderDetail", { order })}
- >
- <View className="flex-row justify-between items-start mb-4">
- <View className="flex-1 pr-4">
- <Text className="font-sans text-[#111111] text-base font-bold" numberOfLines={1}>{order.shop_name || order.retailer_name}</Text>
- <Text className="font-mono text-[#5f6368] text-xs mt-1">Order {order.order_number || `#${order.id.slice(0, 5)}`}</Text>
- </View>
- <View className="bg-[#f7f8fa] rounded-full px-3 py-1 min-h-[26px] justify-center border border-[#e5e7eb]">
- <Text className="font-mono text-[10px] uppercase tracking-[1px] text-[#202124] font-bold">{formatStatus(order.status)}</Text>
- </View>
- </View>
+ {recentOrders.map(({ order, totalKg, totalBoxes }) => {
+   let bgClass = "bg-[#f7f8fa]";
+   let textClass = "text-[#202124]";
+   let label = formatStatus(order.status);
 
- <View className="flex-row justify-between items-center bg-[#f7f8fa] rounded-md p-3 mt-4 border border-[#e5e7eb]">
- <View className="flex-row items-center gap-2">
- <MaterialIcons name="scale" size={16} className="text-[#202124]" />
- <Text className="font-mono text-[#111111] text-sm font-bold">
- {totalKg || '-'} kg
- <Text className="font-sans text-[#5f6368] text-xs font-normal"> ({totalBoxes || 0} boxes)</Text>
- </Text>
- </View>
- <MaterialIcons name="chevron-right" size={20} className="text-[#202124]" />
- </View>
- </Pressable>
- ))}
+   if (order.status === "PLACED") {
+     bgClass = "bg-[#fee2e2]";
+     textClass = "text-[#b91c1c]";
+   } else if (order.status === "ACKNOWLEDGED") {
+     bgClass = "bg-[#dbeafe]";
+     textClass = "text-[#1d4ed8]";
+     label = "CONFIRMED";
+   } else if (order.status === "DISPATCHED") {
+     bgClass = "bg-[#fef9c3]";
+     textClass = "text-[#a16207]";
+   } else if (order.status === "FULFILLED") {
+     bgClass = "bg-[#dcfce7]";
+     textClass = "text-[#15803d]";
+     label = order.is_billed ? "BILLED" : "DELIVERED";
+   } else if (order.status === "CANCELLED") {
+     bgClass = "bg-error-container";
+     textClass = "text-on-error-container";
+   }
+
+   return (
+     <Pressable
+       key={order.id}
+       accessibilityRole="button"
+       accessibilityLabel={`Order ${order.order_number || order.id.slice(0, 5)} for ${order.shop_name || order.retailer_name}, ${totalKg} kilograms, status ${label}`}
+       className="bg-white border border-[#e5e7eb] rounded-lg p-5 mb-3 active:bg-[#f7f8fa]"
+       onPress={() => navigation.navigate("OrderDetail", { order })}
+     >
+       <View className="flex-row justify-between items-start mb-4">
+         <View className="flex-1 pr-4">
+           <Text className="font-sans text-[#111111] text-base font-bold" numberOfLines={1}>{order.shop_name || order.retailer_name}</Text>
+           <Text className="font-mono text-[#5f6368] text-xs mt-1">Order {order.order_number || `#${order.id.slice(0, 5)}`}</Text>
+         </View>
+         <View className={`${bgClass} rounded-full px-3 py-1 min-h-[26px] justify-center border border-black/5`}>
+           <Text className={`font-mono text-[10px] uppercase tracking-[1px] ${textClass} font-bold`}>{label}</Text>
+         </View>
+       </View>
+
+       <View className="flex-row justify-between items-center bg-[#f7f8fa] rounded-md p-3 mt-4 border border-[#e5e7eb]">
+         <View className="flex-row items-center gap-2">
+           <MaterialIcons name="scale" size={16} className="text-[#202124]" />
+           <Text className="font-mono text-[#111111] text-sm font-bold">
+             {totalKg || '-'} kg
+             <Text className="font-sans text-[#5f6368] text-xs font-normal"> ({totalBoxes || 0} boxes)</Text>
+           </Text>
+         </View>
+         <MaterialIcons name="chevron-right" size={20} className="text-[#202124]" />
+       </View>
+     </Pressable>
+   );
+ })}
 
  {orders.length === 0 && !isInitialLoading && (
  <View className="bg-[#f7f8fa] py-10 px-6 rounded-lg items-center justify-center border border-[#e5e7eb]">

@@ -426,3 +426,90 @@ def build_report_pdf(summary: ReportSummary) -> bytes:
     c.showPage()
     c.save()
     return buffer.getvalue()
+
+def build_balance_sheet_pdf(retailers: list["Retailer"]) -> bytes:
+    from io import BytesIO
+    from reportlab.lib import colors  # type: ignore
+    from reportlab.lib.pagesizes import A4  # type: ignore
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle  # type: ignore
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph  # type: ignore
+    from decimal import Decimal
+    from app.core.timezone import now_ist
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        name='TitleStyle', 
+        parent=styles['Heading1'], 
+        alignment=1, 
+        fontSize=24,
+        spaceAfter=6,
+    )
+    elements.append(Paragraph("Balance Sheet", title_style))
+    
+    subtitle_style = ParagraphStyle(
+        name='SubtitleStyle', 
+        parent=styles['Normal'], 
+        alignment=1, 
+        fontSize=12,
+        textColor=colors.HexColor("#555555"),
+        spaceAfter=20,
+    )
+    now_str = now_ist().strftime("%d-%m-%Y %I:%M %p")
+    elements.append(Paragraph(f"Generate On: {now_str}", subtitle_style))
+    
+    data = [
+        ["Retailer Name/Shop Name", "Balance Amount (Rs)"]
+    ]
+    
+    total = Decimal("0.00")
+    for r in retailers:
+        name_str = f"{r.name}"
+        if r.shop_name:
+            name_str += f"\n{r.shop_name}"
+        
+        balance = r.credit_balance or Decimal("0.00")
+        total += balance
+        if balance == 0:
+            bal_str = "-"
+        else:
+            bal_str = f"Rs.{balance:,.2f}"
+            
+        data.append([name_str, bal_str])
+    
+    data.append(["Total", f"Rs.{total:,.2f}"])
+    
+    table = Table(data, colWidths=[300, 200])
+    
+    tstyle = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#f0f0f0")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor("#e0e0e0")),
+        ('BOX', (0, 0), (-1, -1), 0.25, colors.HexColor("#e0e0e0")),
+        
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -2), 11),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor("#f7f7f7")),
+    ])
+    table.setStyle(tstyle)
+    elements.append(table)
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer.read()

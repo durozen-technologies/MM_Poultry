@@ -61,3 +61,22 @@ async def admin_report_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=report.pdf"},
     )
+
+
+@router.get("/admin/reports/balance-sheet.pdf")
+async def admin_balance_sheet_pdf(
+    auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
+) -> Response:
+    from app.models.domain import Retailer
+    from sqlalchemy import select
+    
+    retailers = list((await auth.db.scalars(
+        select(Retailer).order_by(Retailer.name.asc())
+    )).all())
+    
+    pdf = svc.build_balance_sheet_pdf(retailers)
+    return StreamingResponse(
+        BytesIO(pdf),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=balance-sheet.pdf"},
+    )

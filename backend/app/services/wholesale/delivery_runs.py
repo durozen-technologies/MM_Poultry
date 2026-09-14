@@ -18,6 +18,7 @@ from app.models.domain import (
     Retailer,
     RetailerDailyOrder,
     RetailerDailyOrderItem,
+    DeliveryBill,
 )
 from app.models.enums import (
     DeliveryRunStatus,
@@ -25,6 +26,7 @@ from app.models.enums import (
     FarmLoadStatus,
     OrderStatus,
 )
+from app.schemas.billing import DeliveryBillOut
 from app.schemas.delivery import (
     DeliveryRunCreate,
     DeliveryRunOut,
@@ -286,7 +288,7 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
             vehicle_number = driver.mobile_number
 
     stops_res = await db.execute(
-        select(DeliveryStop, Retailer.name, Retailer.shop_name, Retailer.route_name)
+        select(DeliveryStop, Retailer.name, Retailer.shop_name, Retailer.route_name, Retailer.phone)
         .options(selectinload(DeliveryStop.items))
         .join(Retailer, Retailer.id == DeliveryStop.retailer_id)
         .where(DeliveryStop.delivery_run_id == run.id)
@@ -294,7 +296,7 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     )
     stops_data = list(stops_res)
 
-    order_ids = [stop.daily_order_id for stop, _, _, _ in stops_data if stop.daily_order_id]
+    order_ids = [stop.daily_order_id for stop, *_ in stops_data if stop.daily_order_id]
     oi_map = {}
     if order_ids:
         order_items = (await db.scalars(
@@ -308,11 +310,12 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
     out.vehicle_name = vehicle_name
     out.vehicle_number = vehicle_number
     stops_out = []
-    for stop, r_name, r_shop, r_route in stops_data:
+    for stop, r_name, r_shop, r_route, r_phone in stops_data:
         s_out = DeliveryStopOut.model_validate(stop, from_attributes=True)
         s_out.retailer_name = r_name
         s_out.shop_name = r_shop
         s_out.route_name = r_route
+        s_out.retailer_mobile = r_phone
 
         if stop.daily_order_id:
             for item_out in s_out.items:
@@ -325,6 +328,17 @@ async def get_delivery_run(db: AsyncSession, run_id: UUID) -> DeliveryRunOut:
 
     out.stops = stops_out
     return out
+
+
+async def get_bill_for_stop(db: AsyncSession, stop_id: UUID) -> DeliveryBillOut | None:
+    bill = await db.scalar(
+        select(DeliveryBill)
+        .options(selectinload(DeliveryBill.items))
+        .where(DeliveryBill.delivery_stop_id == stop_id)
+    )
+    if not bill:
+        return None
+    return DeliveryBillOut.model_validate(bill)
 
 
 async def get_active_runs(

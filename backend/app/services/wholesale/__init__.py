@@ -10,6 +10,7 @@ from .delivery_runs import (
     cancel_delivery_run,
     create_delivery_run,
     get_active_runs,
+    get_bill_for_stop,
     list_delivery_runs,
     start_delivery_run,
 )
@@ -56,6 +57,7 @@ from .rates import (
 )
 from .reports import (
     build_report_pdf,
+    build_balance_sheet_pdf,
     complete_delivery_run,
     compute_trip_weight_loss,
     create_stock_adjustment,
@@ -101,13 +103,13 @@ __all__ = [
     "get_retailer_order_detail", "list_retailer_bills", "get_retailer_bill", "get_retailer_profile",
     "upsert_today_order", "list_today_orders", "list_orders_by_date", "confirm_order", "cancel_order",
     "get_bill_by_order_id",
-    "list_delivery_runs", "create_delivery_run", "cancel_delivery_run", "get_active_runs",
+    "list_delivery_runs", "create_delivery_run", "cancel_delivery_run", "get_active_runs", "get_bill_for_stop",
     "start_delivery_run", "complete_delivery_run", "reconcile_delivery_run", "create_stock_adjustment",
     "list_delivery_routes", "list_routes", "list_unassigned_retailers", "create_route", "get_route",
     "update_route", "deactivate_route", "replace_route_retailers", "list_orders_for_route",
     "weigh_stop", "preview_bill", "commit_bill", "update_bill_print_status", "mark_whatsapp_shared",
     "get_ledger", "ops_dashboard",
-    "compute_trip_weight_loss", "report_summary", "build_report_pdf",
+    "compute_trip_weight_loss", "report_summary", "build_report_pdf", "build_balance_sheet_pdf",
     "list_farms", "create_farm", "get_farm", "update_farm", "deactivate_farm",
     "list_farm_loads", "create_farm_load", "get_farm_load", "update_farm_load", "delete_farm_load",
     "list_delivery_users", "create_delivery_user", "update_delivery_user", "delete_delivery_user",

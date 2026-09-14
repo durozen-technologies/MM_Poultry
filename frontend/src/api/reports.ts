@@ -26,3 +26,10 @@ export async function downloadReportPdf(
   });
   return res.data;
 }
+
+export async function downloadBalanceSheetPdf() {
+  const res = await api.get<ArrayBuffer>(`/admin/reports/balance-sheet.pdf`, {
+    responseType: "arraybuffer",
+  });
+  return res.data;
+}
