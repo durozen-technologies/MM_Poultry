@@ -143,17 +143,27 @@ export function RetailerDashboardScreen({ navigation }: { navigation: any }) {
                           )}
 
                           <View className="flex-col gap-2 mt-1">
-                            {order.items?.map(it => (
-                              <View key={it.item_id} className="flex-row items-baseline gap-1 flex-wrap pr-16">
-                                <Text className="font-headline-sm text-on-surface font-bold">{it.item_name || "Item"}</Text>
-                                <Text className="font-body-md text-on-surface-variant font-medium ml-1">
-                                  {it.total_boxes || 0} Boxes
-                                </Text>
-                                {it.requested_kg ? (
-                                  <Text className="font-body-md text-on-surface-variant ml-1">({it.requested_kg} kg)</Text>
-                                ) : null}
-                              </View>
-                            ))}
+                              {order.items?.map(it => (
+                                <View key={it.item_id} className="py-2 border-b border-outline-variant/20 last:border-b-0">
+                                  <Text className="font-headline-sm text-on-surface font-bold mb-1">{it.item_name || "Item"}</Text>
+                                  <View className="flex-row justify-between">
+                                    <View>
+                                      <Text className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">Ordered</Text>
+                                      <Text className="text-sm font-medium text-on-surface">
+                                        <Text className="font-bold">{it.total_boxes || 0}</Text> bx • <Text className="font-bold">{it.requested_kg || 0}</Text> kg
+                                      </Text>
+                                    </View>
+                                    {(it.delivered_boxes != null || it.delivered_kg != null) && (
+                                      <View className="items-end">
+                                        <Text className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">Delivered</Text>
+                                        <Text className="text-sm font-medium text-primary">
+                                          <Text className="font-bold">{it.delivered_boxes ?? "--"}</Text> bx • <Text className="font-bold">{it.delivered_kg ? Number(it.delivered_kg).toFixed(1) : "--"}</Text> kg
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </View>
+                                </View>
+                              ))}
                           </View>
                         </View>
                       );

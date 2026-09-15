@@ -264,65 +264,70 @@ export function AdminOrderDetailScreen({ route, navigation }: { route: any; navi
  </Pressable>
  )}
  </View>
- <View className="flex-row flex-wrap gap-2 justify-end max-w-[65%]">
- <View className="items-end bg-[#f7f8fa] border border-[#e5e7eb] px-3 py-2 rounded-lg border border-tertiary/20">
- <Text className="text-xs font-bold text-tertiary uppercase tracking-wider mb-0.5">Boxes</Text>
- <View className="flex-row items-end gap-0.5">
- <Text className="text-base font-bold text-[#5f6368] font-black text-tertiary">{item.total_boxes || 0}</Text>
- <Text className="text-xs font-bold text-tertiary mb-0.5">BOX</Text>
- </View>
- </View>
- 
- {(() => {
- const billItem = bill?.items?.find((bi: any) => bi.item_id === item.item_id);
- if (billItem) {
- return (
- <>
- <View className="items-end bg-[#115E29]/10 px-3 py-2 rounded-lg border border-[#115E29]/20">
- <Text className="text-xs font-bold text-[#115E29] uppercase tracking-wider mb-0.5">Net Wt</Text>
- <View className="flex-row items-end gap-0.5">
- <Text className="text-base font-bold text-[#5f6368] font-black text-[#115E29]">{Number(billItem.weight_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
- <Text className="text-xs font-bold text-[#115E29] mb-0.5">KG</Text>
- </View>
- </View>
- <View className="items-end bg-error/10 px-3 py-2 rounded-lg border border-error/20">
- <Text className="text-xs font-bold text-error uppercase tracking-wider mb-0.5">Price</Text>
- <View className="flex-row items-end gap-0.5">
- <Text className="text-xs font-bold text-error mb-0.5">₹</Text>
- <Text className="text-base font-bold text-[#5f6368] font-black text-error">{Number(billItem.amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
- </View>
- </View>
- </>
- );
- }
- return (
- <>
- {item.requested_kg && Number(item.requested_kg) > 0 ? (
- <View className="items-end bg-[#2E7D32]/10 px-3 py-2 rounded-lg border border-[#2E7D32]/20">
- <Text className="text-xs font-bold text-[#2E7D32] uppercase tracking-wider mb-0.5">Est. Wt</Text>
- <View className="flex-row items-end gap-0.5">
- <Text className="text-base font-bold text-[#5f6368] font-black text-[#2E7D32]">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
- <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">KG</Text>
- </View>
- </View>
- ) : null}
- {item.locked_rate_per_kg != null ? (
- <View className="items-end bg-[#2E7D32]/10 px-3 py-2 rounded-lg border border-[#2E7D32]/20">
- <Text className="text-xs font-bold text-[#2E7D32] uppercase tracking-wider mb-0.5">Price</Text>
- <View className="flex-row items-end gap-0.5">
- <Text className="text-base font-bold text-[#5f6368] font-black text-[#2E7D32]">₹{Number(item.locked_rate_per_kg).toLocaleString("en-IN")}</Text>
- <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">/kg</Text>
- </View>
- </View>
- ) : (
- <View className="items-end justify-center bg-[#EF4444]/10 px-3 py-2 rounded-lg border border-[#EF4444]/20">
- <Text className="text-[10px] font-bold text-[#EF4444] uppercase tracking-wider mt-1">Price</Text>
- <Text className="text-xs font-bold text-[#EF4444] uppercase tracking-wider mt-0.5 mb-1">Not Set</Text>
- </View>
- )}
- </>
- );
- })()}
+ <View className="mt-2 bg-[#f7f8fa] border border-[#e5e7eb] rounded-lg p-3">
+   <View className="flex-row justify-between mb-2 pb-2 border-b border-[#e5e7eb]">
+     <View>
+       <Text className="text-[10px] font-bold text-[#5f6368] uppercase tracking-wider mb-0.5">Ordered</Text>
+       <View className="flex-row items-end gap-1">
+         <Text className="text-base font-black text-[#202124]">{item.total_boxes || 0}</Text>
+         <Text className="text-xs font-bold text-[#5f6368] mb-0.5">bx</Text>
+         {item.requested_kg && Number(item.requested_kg) > 0 ? (
+           <>
+             <Text className="text-[#5f6368] mx-1 mb-0.5">•</Text>
+             <Text className="text-base font-black text-[#202124]">{Number(item.requested_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+             <Text className="text-xs font-bold text-[#5f6368] mb-0.5">kg</Text>
+           </>
+         ) : null}
+       </View>
+     </View>
+     {(item.delivered_boxes != null || item.delivered_kg != null) && (
+       <View className="items-end">
+         <Text className="text-[10px] font-bold text-[#2E7D32] uppercase tracking-wider mb-0.5">Delivered</Text>
+         <View className="flex-row items-end gap-1">
+           <Text className="text-base font-black text-[#2E7D32]">{item.delivered_boxes ?? "--"}</Text>
+           <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">bx</Text>
+           {item.delivered_kg != null ? (
+             <>
+               <Text className="text-[#2E7D32] mx-1 mb-0.5">•</Text>
+               <Text className="text-base font-black text-[#2E7D32]">{Number(item.delivered_kg).toLocaleString("en-IN", { maximumFractionDigits: 1 })}</Text>
+               <Text className="text-xs font-bold text-[#2E7D32] mb-0.5">kg</Text>
+             </>
+           ) : null}
+         </View>
+       </View>
+     )}
+   </View>
+
+   <View className="flex-row justify-between items-center mt-1">
+     <View className="flex-row items-center gap-2">
+       {item.locked_rate_per_kg != null ? (
+         <View className="flex-row items-baseline gap-1">
+           <Text className="text-sm font-bold text-[#202124]">₹{Number(item.locked_rate_per_kg).toLocaleString("en-IN")}</Text>
+           <Text className="text-xs font-bold text-[#5f6368]">/kg</Text>
+         </View>
+       ) : (
+         <View className="bg-[#EF4444]/10 px-2 py-0.5 rounded">
+           <Text className="text-[10px] font-bold text-[#EF4444] uppercase tracking-wider">Price Not Set</Text>
+         </View>
+       )}
+     </View>
+
+     {(() => {
+       const billItem = bill?.items?.find((bi: any) => bi.item_id === item.item_id);
+       if (billItem) {
+         return (
+           <View className="items-end bg-error/10 px-2.5 py-1 rounded-md border border-error/20">
+             <View className="flex-row items-baseline gap-0.5">
+               <Text className="text-[10px] font-bold text-error mb-0.5 mr-1">Total</Text>
+               <Text className="text-xs font-bold text-error">₹</Text>
+               <Text className="text-sm font-black text-error">{Number(billItem.amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</Text>
+             </View>
+           </View>
+         );
+       }
+       return null;
+     })()}
+   </View>
  </View>
  </View>
  

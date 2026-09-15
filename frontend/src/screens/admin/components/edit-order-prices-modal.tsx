@@ -110,9 +110,16 @@ export function EditOrderPricesModal({ order, onClose, onUpdated }: Props) {
     <View key={item.item_id} className="flex-row items-center justify-between mb-3 bg-[#f7f8fa] p-3 rounded-lg border border-[#e5e7eb]">
       <View className="flex-1 mr-2">
         <Text className="text-sm font-semibold text-[#202124] mb-1">{item.item_name}</Text>
-        <Text className="text-xs text-[#5f6368]">
-          {item.delivered_kg ? `${item.delivered_kg} kg delivered` : `${item.total_boxes} boxes`}
-        </Text>
+        <View className="mt-0.5">
+          <Text className="text-[11px] font-bold text-[#5f6368] uppercase tracking-wider mb-0.5">
+            Ordered: {item.total_boxes} bx • {Number(item.requested_kg || 0).toFixed(1)} kg
+          </Text>
+          {(item.delivered_boxes != null || item.delivered_kg != null) && (
+            <Text className="text-[11px] font-bold text-[#2E7D32] uppercase tracking-wider">
+              Delivered: {item.delivered_boxes ?? "--"} bx • {item.delivered_kg ? Number(item.delivered_kg).toFixed(1) : "--"} kg
+            </Text>
+          )}
+        </View>
         {item.locked_rate_per_kg && prices[item.item_id] && (
           <Text className="text-xs text-[#2E7D32] font-semibold mt-0.5">
             = ₹{(Number(item.delivered_kg || 0) * Number(prices[item.item_id] || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}

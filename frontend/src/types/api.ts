@@ -61,6 +61,7 @@ export type OrderItem = {
   total_boxes?: number;
   requested_kg?: string | null;
   delivered_kg?: string | null;
+  delivered_boxes?: number | null;
   notes?: string | null;
   locked_rate_per_kg?: string | null;
 };

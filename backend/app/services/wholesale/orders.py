@@ -209,6 +209,18 @@ async def get_today_orders_for_retailer(db: AsyncSession, retailer_id: UUID) -> 
     if not orders:
         return []
 
+    fulfilled_ids = [order.id for order in orders if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
+    delivered_stats = {}
+    if fulfilled_ids:
+        stop_stmt = (
+            select(DeliveryStop.daily_order_id, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg, DeliveryStopItem.delivered_boxes)
+            .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
+            .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
+        )
+        stop_res = await db.execute(stop_stmt)
+        for ord_id, it_id, del_kg, del_boxes in stop_res:
+            delivered_stats[(ord_id, it_id)] = {"kg": del_kg, "boxes": del_boxes}
+
     retailer = await get_retailer(db, retailer_id)
     out_list = []
     for order in orders:
@@ -218,6 +230,9 @@ async def get_today_orders_for_retailer(db: AsyncSession, retailer_id: UUID) -> 
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name
+            stats = delivered_stats.get((order.id, model_item.item_id), {})
+            out.items[i].delivered_kg = stats.get("kg")
+            out.items[i].delivered_boxes = stats.get("boxes")
         out_list.append(out)
 
     return out_list
@@ -248,17 +263,17 @@ async def list_today_orders(
     raw_results = res.all()
 
     fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
-    delivered_weights = {}
+    delivered_stats = {}
     billed_order_ids = set()
     if fulfilled_ids:
         stop_stmt = (
-            select(DeliveryStop.daily_order_id, DeliveryStop.status, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
+            select(DeliveryStop.daily_order_id, DeliveryStop.status, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg, DeliveryStopItem.delivered_boxes)
             .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
             .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
         )
         stop_res = await db.execute(stop_stmt)
-        for ord_id, st_status, it_id, del_kg in stop_res:
-            delivered_weights[(ord_id, it_id)] = del_kg
+        for ord_id, st_status, it_id, del_kg, del_boxes in stop_res:
+            delivered_stats[(ord_id, it_id)] = {"kg": del_kg, "boxes": del_boxes}
             if st_status == DeliveryStopStatus.BILLED:
                 billed_order_ids.add(ord_id)
 
@@ -277,7 +292,9 @@ async def list_today_orders(
         for i, model_item in enumerate(order.items):
             if model_item.item:
                 out.items[i].item_name = model_item.item.name
-            out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
+            stats = delivered_stats.get((order.id, model_item.item_id), {})
+            out.items[i].delivered_kg = stats.get("kg")
+            out.items[i].delivered_boxes = stats.get("boxes")
         items.append(out)
         if order.status != OrderStatus.CANCELLED:
             for i in order.items:
@@ -482,17 +499,17 @@ async def list_orders_by_date(
         raw_results = res.all()
 
         fulfilled_ids = [order.id for order, _, _ in raw_results if order.status in (OrderStatus.FULFILLED, OrderStatus.PARTIAL)]
-        delivered_weights = {}
+        delivered_stats = {}
         billed_order_ids = set()
         if fulfilled_ids:
             stop_stmt = (
-                select(DeliveryStop.daily_order_id, DeliveryStop.status, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg)
+                select(DeliveryStop.daily_order_id, DeliveryStop.status, DeliveryStopItem.item_id, DeliveryStopItem.delivered_weight_kg, DeliveryStopItem.delivered_boxes)
                 .join(DeliveryStopItem, DeliveryStop.id == DeliveryStopItem.delivery_stop_id)
                 .where(DeliveryStop.daily_order_id.in_(fulfilled_ids))
             )
             stop_res = await db.execute(stop_stmt)
-            for ord_id, st_status, it_id, del_kg in stop_res:
-                delivered_weights[(ord_id, it_id)] = del_kg
+            for ord_id, st_status, it_id, del_kg, del_boxes in stop_res:
+                delivered_stats[(ord_id, it_id)] = {"kg": del_kg, "boxes": del_boxes}
                 if st_status == DeliveryStopStatus.BILLED:
                     billed_order_ids.add(ord_id)
 
@@ -507,7 +524,9 @@ async def list_orders_by_date(
             for i, model_item in enumerate(order.items):
                 if model_item.item:
                     out.items[i].item_name = model_item.item.name
-                out.items[i].delivered_kg = delivered_weights.get((order.id, model_item.item_id))
+                stats = delivered_stats.get((order.id, model_item.item_id), {})
+                out.items[i].delivered_kg = stats.get("kg")
+                out.items[i].delivered_boxes = stats.get("boxes")
             items.append(out)
             if order.status != OrderStatus.CANCELLED:
                 for i in order.items:

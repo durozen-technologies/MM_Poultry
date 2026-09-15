@@ -580,6 +580,24 @@ function buildReceiptImageExportScript() {
                 y += 7;
 
                 if (payload.items && payload.items.length > 0) {
+                  drawWrappedText(ctx, payload.itemHeader, xItem, y, columnItemWidth, {
+                    size: 16,
+                    weight: 800,
+                    align: "left",
+                    lineHeightRatio: 1.2,
+                  });
+                  drawWrappedText(ctx, payload.quantityHeader, xQty, y, columnQtyWidth, {
+                    size: 16,
+                    weight: 800,
+                    align: "left",
+                    lineHeightRatio: 1.2,
+                  });
+                  drawWrappedText(ctx, payload.totalHeader, xTotal, y, columnTotalWidth, {
+                    size: 16,
+                    weight: 800,
+                    align: "right",
+                    lineHeightRatio: 1.2,
+                  });
                   var headerHeight = getLineHeight(16, 1.2);
                   y += headerHeight;
                   
@@ -597,17 +615,31 @@ function buildReceiptImageExportScript() {
 
                   for (var itemIndex = 0; itemIndex < payload.items.length; itemIndex += 1) {
                     var item = payload.items[itemIndex];
-                    var itemNameLines = wrapText(ctx, item.itemName, columnItemWidth - 6);
-                    var itemNameHeight = itemNameLines.length * getLineHeight(18, 1.3);
-                    var qtyHeight = getLineHeight(18, 1.15);
-                    var totalHeight = measureFittedTextHeight(ctx, item.lineTotal, columnTotalWidth, {
+                    
+                    y += 8;
+                    var itemNameHeight = drawWrappedText(ctx, item.itemName, xItem, y, columnItemWidth - 6, {
+                      size: 18,
+                      weight: 800,
+                      align: "left",
+                      lineHeightRatio: 1.3,
+                    }).height;
+                    
+                    var qtyHeight = drawWrappedText(ctx, item.quantityText, xQty, y, columnQtyWidth - 4, {
+                      size: 18,
+                      weight: 700,
+                      align: "left",
+                      lineHeightRatio: 1.15,
+                      noWrap: true,
+                    }).height;
+                    
+                    var totalHeight = drawFittedText(ctx, item.lineTotal, xTotal, y, columnTotalWidth, {
                       size: 21,
                       weight: 800,
+                      align: "right",
                       lineHeightRatio: 1.15,
                     });
+                    
                     var rowHeight = Math.max(itemNameHeight, qtyHeight, totalHeight);
-
-                    y += 8;
                     y += rowHeight;
                     y += 8;
                   }
@@ -627,34 +659,35 @@ function buildReceiptImageExportScript() {
 
                 }
 
-                function measureTotalRow(label, value, fontSize, fontWeight) {
+                function drawTotalRow(label, value, fontSize, fontWeight) {
                   if (!label) return 0;
-                  var labelBlock = drawWrappedText(ctx, label, 0, 0, totalLabelWidth, {
+                  var labelBlock = drawWrappedText(ctx, label, 0, y, totalLabelWidth, {
                     size: fontSize,
                     weight: fontWeight,
                     align: "left",
                     lineHeightRatio: 1.3,
                   });
-                  var valueHeight = measureFittedTextHeight(ctx, value, totalValueWidth, {
+                  var valueHeight = drawFittedText(ctx, value, totalLabelWidth, y, totalValueWidth, {
                     size: fontSize,
                     weight: fontWeight,
+                    align: "right",
                     lineHeightRatio: 1.3,
                   });
                   return Math.max(labelBlock.height, valueHeight);
                 }
 
                 var rowH;
-                rowH = measureTotalRow(payload.totalBoxesLabel, payload.totalBoxesValue, 17, 700);
+                rowH = drawTotalRow(payload.totalBoxesLabel, payload.totalBoxesValue, 17, 700);
                 if (rowH > 0) y += rowH + 6;
-                rowH = measureTotalRow(payload.totalWeightLabel, payload.totalWeightValue, 17, 700);
+                rowH = drawTotalRow(payload.totalWeightLabel, payload.totalWeightValue, 17, 700);
                 if (rowH > 0) y += rowH + 6;
-                rowH = measureTotalRow(payload.totalLabel, payload.totalValue, 20, 800);
+                rowH = drawTotalRow(payload.totalLabel, payload.totalValue, 20, 800);
                 if (rowH > 0) y += rowH + 8;
-                rowH = measureTotalRow(payload.cashLabel, payload.cashValue, 18, 700);
+                rowH = drawTotalRow(payload.cashLabel, payload.cashValue, 18, 700);
                 if (rowH > 0) y += rowH + 8;
-                rowH = measureTotalRow(payload.upiLabel, payload.upiValue, 18, 700);
+                rowH = drawTotalRow(payload.upiLabel, payload.upiValue, 18, 700);
                 if (rowH > 0) y += rowH + 8;
-                rowH = measureTotalRow(payload.balanceAmountLabel, payload.balanceAmountValue, 20, 800);
+                rowH = drawTotalRow(payload.balanceAmountLabel, payload.balanceAmountValue, 20, 800);
                 if (rowH > 0) y += rowH;
                 y += 10;
                 
@@ -672,11 +705,19 @@ function buildReceiptImageExportScript() {
 
                 if (payload.closingBalanceLabel && payload.closingBalanceValue) {
                   y += 10;
-                  y += measureFittedTextHeight(ctx, payload.closingBalanceValue, receiptWidth, {
-                    size: 22,
-                    weight: 800,
-                    lineHeightRatio: 1.2,
-                  });
+                  y += drawWrappedText(
+                    ctx,
+                    payload.closingBalanceLabel + ": " + payload.closingBalanceValue,
+                    0,
+                    y,
+                    receiptWidth,
+                    {
+                      size: 22,
+                      weight: 800,
+                      align: "center",
+                      lineHeightRatio: 1.15,
+                    },
+                  ).height;
                   y += 10;
                   
                 if (!isMeasure) {

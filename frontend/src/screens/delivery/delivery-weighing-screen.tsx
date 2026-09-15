@@ -78,6 +78,15 @@ export function DeliveryWeighingScreen() {
     );
   }
 
+  const patchedStop = {
+    ...stop,
+    items: (stop.items || []).map((it: any) => ({
+      ...it,
+      delivered_boxes: Number(weights[it.item_id]?.boxes || it.delivered_boxes || 0),
+      delivered_weight_kg: Number(weights[it.item_id]?.weight || it.delivered_weight_kg || 0)
+    }))
+  };
+
   const weighAndBill = async () => {
     setBilling(true);
     setMsg("Saving delivery data...");
@@ -165,7 +174,7 @@ export function DeliveryWeighingScreen() {
                     total_amount: "0",
                     balance_amount: "0",
                   } as any, 
-                  stop, 
+                  patchedStop, 
                   getItemName, 
                   receiptOpts
                 )
@@ -213,7 +222,7 @@ export function DeliveryWeighingScreen() {
         setMsg(`Data saved! Printing receipt for ${bill.bill_number}...`);
         try {
           printStatus = await printThermalReceipt(
-            deliveryBillToPrintPayload(bill, stop, getItemName, receiptOpts)
+            deliveryBillToPrintPayload(bill, patchedStop, getItemName, receiptOpts)
           );
         } catch (printErr) {
           console.warn("Print error after save:", printErr);
@@ -259,7 +268,7 @@ export function DeliveryWeighingScreen() {
   const shareBill = async () => {
     if (!lastBill) return;
     try {
-      await shareWhatsAppBill(deliveryBillToPrintPayload(lastBill, stop, getItemName, receiptOpts));
+      await shareWhatsAppBill(deliveryBillToPrintPayload(lastBill, patchedStop, getItemName, receiptOpts));
       await markWhatsAppShared(lastBill.id);
       setMsg("WhatsApp share marked");
     } catch (e) {
@@ -273,7 +282,7 @@ export function DeliveryWeighingScreen() {
     setMsg(null);
     try {
       const printStatus = await printThermalReceipt(
-        deliveryBillToPrintPayload(lastBill, stop, getItemName, receiptOpts)
+        deliveryBillToPrintPayload(lastBill, patchedStop, getItemName, receiptOpts)
       );
       if (printStatus === "PRINTED") {
         await updatePrintStatus(lastBill.id, "PRINTED");

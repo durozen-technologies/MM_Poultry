@@ -49,7 +49,7 @@ type StopLike = {
   shop_name?: string | null;
   route_name?: string | null;
   sequence?: number;
-  items?: { item_id: string; delivered_boxes?: number | null }[];
+  items?: { item_id: string; delivered_boxes?: number | null; original_total_boxes?: number | null }[];
 };
 
 export type ReceiptPrintOptions = {
@@ -130,7 +130,7 @@ export function deliveryBillToPrintPayload(
   options?: ReceiptPrintOptions
 ): PrintPayload {
   const boxesByItem = new Map(
-    (stop.items || []).map((it) => [it.item_id, Number(it.delivered_boxes ?? 0)])
+    (stop.items || []).map((it) => [it.item_id, Number(it.delivered_boxes ?? it.original_total_boxes ?? 0)])
   );
   const items: PrintLineItem[] = (bill.items || []).map((it) => ({
     name: getItemName(it.item_id),

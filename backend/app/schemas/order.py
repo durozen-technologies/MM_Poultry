@@ -33,6 +33,7 @@ class DailyOrderItemOut(BaseModel):
     total_boxes: int | None = None
     requested_kg: Decimal | None = None
     delivered_kg: Decimal | None = None
+    delivered_boxes: int | None = None
     notes: str | None = None
     locked_rate_per_kg: Decimal | None = None
 

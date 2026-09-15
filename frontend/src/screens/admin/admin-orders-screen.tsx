@@ -369,13 +369,26 @@ const OrderListItem = React.memo(({
 
  <View className="bg-[#f7f8fa] rounded-lg p-4 mb-4 border border-[#e5e7eb]">
  {order.items?.map((it: any, idx: number) => (
- <View key={it.item_id ?? idx} className="flex-row items-center justify-between py-1.5 border-b border-[#e5e7eb] last:border-b-0">
- <Text className="font-sans text-[#111111] text-lg font-bold flex-1 pr-2 truncate">
- {it.item_name || "Item"}
- </Text>
- <Text className="font-sans text-[#5f6368] text-base">
- <Text className="font-sans text-[#111111] font-bold">{it.total_boxes}</Text> Box • <Text className="font-sans text-[#111111] font-bold">{Number(it.requested_kg || 0).toFixed(1)}</Text> KG
- </Text>
+ <View key={it.item_id ?? idx} className="py-2 border-b border-[#e5e7eb] last:border-b-0">
+   <Text className="font-sans text-[#111111] text-base font-bold mb-1">
+     {it.item_name || "Item"}
+   </Text>
+   <View className="flex-row justify-between">
+     <View>
+       <Text className="font-sans text-xs text-[#5f6368] font-bold uppercase tracking-wider mb-0.5">Ordered</Text>
+       <Text className="font-sans text-[#111111] text-sm">
+         <Text className="font-bold">{it.total_boxes}</Text> bx • <Text className="font-bold">{Number(it.requested_kg || 0).toFixed(1)}</Text> kg
+       </Text>
+     </View>
+     {(it.delivered_boxes != null || it.delivered_kg != null) && (
+       <View className="items-end">
+         <Text className="font-sans text-xs text-[#2E7D32] font-bold uppercase tracking-wider mb-0.5">Delivered</Text>
+         <Text className="font-sans text-[#2E7D32] text-sm">
+           <Text className="font-bold">{it.delivered_boxes ?? "--"}</Text> bx • <Text className="font-bold">{it.delivered_kg ? Number(it.delivered_kg).toFixed(1) : "--"}</Text> kg
+         </Text>
+       </View>
+     )}
+   </View>
  </View>
  ))}
  {(!order.items || order.items.length === 0) && (

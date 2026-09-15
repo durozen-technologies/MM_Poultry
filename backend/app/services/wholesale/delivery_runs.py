@@ -249,8 +249,6 @@ async def create_delivery_run(
                 if (order.id, item.item_id) in price_map:
                     rate_in = price_map[(order.id, item.item_id)]
                     item.locked_rate_per_kg = q_money(rate_in) if rate_in is not None else None
-                elif item.locked_rate_per_kg is None:
-                    item.locked_rate_per_kg = await resolve_rate(db, item.item_id, order.retailer_id, run.run_date)
 
                 req_kg = adj_map.get((order.id, item.item_id), item.requested_kg or ZERO)
                 ordered = q_kg(req_kg)

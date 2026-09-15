@@ -103,7 +103,11 @@ export function SingleOrderDispatchModal({ order, onClose, onAssigned }: Props) 
    <View key={item.item_id} className="flex-row items-center justify-between mb-3 bg-[#f7f8fa] p-3 rounded-lg border border-[#e5e7eb]">
      <View className="flex-1 mr-2">
        <Text className="text-sm font-semibold text-[#202124] mb-1">{item.item_name}</Text>
-       <Text className="text-xs text-[#5f6368]">Qty: {item.total_boxes} boxes</Text>
+        <View className="mt-0.5">
+          <Text className="text-[11px] font-bold text-[#5f6368] uppercase tracking-wider mb-0.5">
+            Ordered: {item.total_boxes} bx • {Number(item.requested_kg || 0).toFixed(1)} kg
+          </Text>
+        </View>
      </View>
      <View className="w-24">
        <TextInput
