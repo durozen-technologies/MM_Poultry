@@ -25,11 +25,13 @@ from app.models.enums import (
 )
 from app.schemas.billing import DeliveryBillOut
 from app.schemas.order import (
+    ConfirmOrderRequest,
     DailyOrderCreate,
     DailyOrderOut,
+    SetOrderPricesRequest,
     TodayOrdersResponse,
 )
-from app.services.wholesale.common import q_kg
+from app.services.wholesale.common import q_kg, q_money
 from app.services.wholesale.retailers import get_retailer
 
 
@@ -387,9 +389,9 @@ async def set_order_prices(
     db: AsyncSession, order_id: UUID, payload: 'SetOrderPricesRequest'
 ) -> DailyOrderOut:
     from fastapi import HTTPException, status
+
+    from app.models.domain import DeliveryStop
     from app.services.wholesale.common import q_money
-    from app.models.domain import DeliveryStopItem, DeliveryStop
-    from app.models.enums import DeliveryStopStatus
 
     try:
         order = await db.scalar(
@@ -442,13 +444,15 @@ async def set_order_prices(
 async def make_order_billed(
     db: AsyncSession, order_id: UUID
 ) -> 'DeliveryBillOut':
+    from decimal import Decimal
+    from uuid import uuid4
+
     from fastapi import HTTPException, status
+
     from app.models.domain import DeliveryStop
     from app.models.enums import DeliveryStopStatus
-    from app.services.wholesale.billing import commit_bill
     from app.schemas.billing import BillCommitRequest
-    from uuid import uuid4
-    from decimal import Decimal
+    from app.services.wholesale.billing import commit_bill
 
     stop = await db.scalar(
         select(DeliveryStop)
@@ -541,8 +545,9 @@ async def list_orders_by_date(
 
 async def get_bill_by_order_id(db: AsyncSession, order_id: UUID) -> DeliveryBillOut | None:
     from sqlalchemy.orm import selectinload
+
     from app.models.domain import DeliveryStopItem
-    from app.services.wholesale.common import q_money, q_kg
+    from app.services.wholesale.common import q_money
 
     stmt = (
         select(DeliveryBill)

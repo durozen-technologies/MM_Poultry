@@ -18,6 +18,7 @@ from app.models.domain import (
     DeliveryStopItem,
     FarmLoad,
     Payment,
+    Retailer,
     RetailerDailyOrder,
     RetailerDailyOrderItem,
     StockQuantityEvent,
@@ -428,12 +429,14 @@ def build_report_pdf(summary: ReportSummary) -> bytes:
     return buffer.getvalue()
 
 def build_balance_sheet_pdf(retailers: list["Retailer"]) -> bytes:
+    from decimal import Decimal
     from io import BytesIO
+
     from reportlab.lib import colors  # type: ignore
     from reportlab.lib.pagesizes import A4  # type: ignore
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle  # type: ignore
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph  # type: ignore
-    from decimal import Decimal
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle  # type: ignore
+
     from app.core.timezone import now_ist
     
     buffer = BytesIO()

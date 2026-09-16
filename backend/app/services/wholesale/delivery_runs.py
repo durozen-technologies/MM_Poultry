@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.timezone import now_ist
 from app.models.domain import (
+    DeliveryBill,
     DeliveryRun,
     DeliveryRunFarmLoad,
     DeliveryStop,
@@ -18,7 +19,6 @@ from app.models.domain import (
     Retailer,
     RetailerDailyOrder,
     RetailerDailyOrderItem,
-    DeliveryBill,
 )
 from app.models.enums import (
     DeliveryRunStatus,
@@ -34,7 +34,6 @@ from app.schemas.delivery import (
     FarmLoadAllocation,
 )
 from app.services.wholesale.common import ZERO, q_kg
-from app.services.wholesale.rates import resolve_rate
 from app.services.wholesale.stock_audit import log_quantity_change
 
 _ACTIVE_RUN_STATUSES = (DeliveryRunStatus.PLANNED, DeliveryRunStatus.IN_PROGRESS)

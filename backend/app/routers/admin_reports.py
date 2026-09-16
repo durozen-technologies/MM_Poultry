@@ -67,8 +67,9 @@ async def admin_report_pdf(
 async def admin_balance_sheet_pdf(
     auth: Annotated[AuthContext, Depends(require_roles(UserRole.ADMIN))],
 ) -> Response:
-    from app.models.domain import Retailer
     from sqlalchemy import select
+
+    from app.models.domain import Retailer
     
     retailers = list((await auth.db.scalars(
         select(Retailer).order_by(Retailer.name.asc())

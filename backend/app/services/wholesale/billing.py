@@ -172,8 +172,8 @@ def _preview_from_stop(
             amount = q_money(item.delivered_weight_kg * item.rate_per_kg)
             item.gross_amount = amount  # keep DB in sync
         else:
-            amount = item.gross_amount  # unpriced — use whatever is stored
-        total_amount += (amount or ZERO)
+            amount = item.gross_amount or Decimal("0.0")  # unpriced — use whatever is stored
+        total_amount += amount
         items_out.append(
             BillItemPreviewOut(
                 item_id=item.item_id,
@@ -487,7 +487,7 @@ async def record_standalone_payment(
 async def record_advance_payment(
     db: AsyncSession, stop_id: UUID, payload: 'BillCommitRequest'
 ) -> None:
-    from app.services.wholesale.common import today_ist
+    from app.core.timezone import now_ist
     
     stop = await db.scalar(
         select(DeliveryStop).where(DeliveryStop.id == stop_id)
@@ -502,7 +502,7 @@ async def record_advance_payment(
     if total > ZERO:
         from app.schemas.billing import PaymentCreateRequest
         payment_payload = PaymentCreateRequest(
-            payment_date=today_ist(),
+            payment_date=now_ist().date(),
             cash_amount=cash,
             upi_amount=upi,
             notes=payload.notes,
